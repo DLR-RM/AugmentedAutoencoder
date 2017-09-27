@@ -80,11 +80,11 @@ make
 ```
 
 # Config file parameters
-```
+```yaml
 [Paths]
 # Path to the model file. All formats supported by assimp should work. Tested with ply files.
 MODEL_PATH: 
-Path to some background image folder. Should contain a * as a placeholder for the image name.
+# Path to some background image folder. Should contain a * as a placeholder for the image name.
 BACKGROUND_IMAGES_GLOB: /home_local/henk_di/datasets/VOCdevkit/VOC2012/JPEGImages/*.jpg
 
 [Dataset]
