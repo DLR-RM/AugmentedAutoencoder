@@ -129,7 +129,7 @@ MIN_N_VIEWS: 500
 NUM_CYCLO: 36 
 
 [Network]
-# Size of the latent space, for image size 128 this was the optimal value.
+# Size of the latent space, for image size 128 this is the optimal value.
 LATENT_SPACE_SIZE: 64 
 # Number of filters used for convolution
 NUM_FILTER: [32, 32, 64, 64] 
