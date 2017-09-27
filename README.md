@@ -31,8 +31,6 @@ cp $AE_WORKSPACE_PATH/cfg/template.cfg $AE_WORKSPACE_PATH/cfg/my_autoencoder.cfg
 gedit $AE_WORKSPACE_PATH/cfg/my_autoencoder.cfg
 ```
 
-Explanation of config parameters is here: [Config file parameters](#Config file parameters).
-
 *3. Check that data is generated correctly*
 (Press *ESC* to clos the window.)
 ```bash
