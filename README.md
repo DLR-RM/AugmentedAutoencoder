@@ -112,7 +112,7 @@ CLIP_FAR: 10000
 [Augmentation]
 # During training an offset is sampled from Normal(0, CROP_OFFSET_SIGMA) and added to the ground truth crop.
 CROP_OFFSET_SIGMA: 30 
-# Code for the augmentations, All variants are listed [here](https://github.com/aleju/imgaug).
+# Code for the augmentations. Documentation: https://github.com/aleju/imgaug.
 CODE: Sequential([ 
     Sometimes(0.5, Add((-20, 20), per_channel=0.3)),
     Sometimes(0.3, Invert(0.20, per_channel=True)),
@@ -151,7 +151,8 @@ LEARNING_RATE: 1e-4
 SAVE_INTERVAL: 5000 
 
 [Queue]
-# As OpenGL runs in a background process it communicates with the process used for training using a queue. It's size can be set here.
+# OpenGL runs in a background process it communicates with the main process using a queue.
+# It's size can be set here. As the rendering is a bottleneck of the current implementation increasing this value has no positive effect.
 OPENGL_RENDER_QUEUE_SIZE: 500
 # Number of threads used for augmentation
 NUM_THREADS: 2
