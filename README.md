@@ -83,7 +83,7 @@ make
 ```yaml
 [Paths]
 # Path to the model file. All formats supported by assimp should work. Tested with ply files.
-MODEL_PATH: 
+MODEL_PATH: /net/rmc-lx0050/home_local/shared/ikea_mug_reduced.ply
 # Path to some background image folder. Should contain a * as a placeholder for the image name.
 BACKGROUND_IMAGES_GLOB: /home_local/henk_di/datasets/VOCdevkit/VOC2012/JPEGImages/*.jpg
 
@@ -121,7 +121,6 @@ CODE: Sequential([
     Sometimes(0.5, ContrastNormalization((0.4, 2.3), per_channel=0.3)),
     Sometimes(0.2, CoarseDropout( p=0.3, size_percent=0.01) )
 ], random_order=True)
-
 
 [Embedding]
 # minimum number of views from an evenly sampled viewsphere used to create the codebook
