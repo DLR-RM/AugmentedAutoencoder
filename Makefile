@@ -1,3 +1,4 @@
+.PHONY: init install uninstall test
 
 all: install
 
@@ -10,4 +11,3 @@ uninstall:
 test:
 	nosetests --rednose tests
 
-.PHONY: init install uninstall test

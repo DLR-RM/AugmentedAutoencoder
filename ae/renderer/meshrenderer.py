@@ -5,7 +5,6 @@ import numpy as np
 from OpenGL.GL import *
 
 import gl_utils as gu
-import pysixd
 
 class Renderer(object):
 

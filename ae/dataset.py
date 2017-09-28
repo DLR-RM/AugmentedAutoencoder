@@ -7,8 +7,10 @@ import glob
 import os
 
 import progressbar
-import pysixd
+from pysixd_stuff import transform
+from pysixd_stuff import view_sampler
 import cv2
+
 
 from renderer import meshrenderer
 from utils import lazy_property
@@ -43,7 +45,7 @@ class BackgroundRendering(multiprocessing.Process):
             float(kw['vertex_scale'])
         )
         while not self.exit.is_set():
-            R = pysixd.transform.random_rotation_matrix()[:3,:3]
+            R = transform.random_rotation_matrix()[:3,:3]
             rgb_x, depth_x = renderer.render( 
                 obj_id=0,
                 W=render_dims[0], 
@@ -68,7 +70,7 @@ class BackgroundRendering(multiprocessing.Process):
             )
             ys, xs = np.nonzero(depth_x > 0)
             try:
-                obj_bb = pysixd.misc.calc_2d_bbox(xs, ys, render_dims)
+                obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             except ValueError as e:
                 print 'Object in Rendering not visible. Have you scaled the vertices to mm?'
                 break
@@ -87,7 +89,7 @@ class BackgroundRendering(multiprocessing.Process):
             mask_x = depth_x < 1.
 
             ys, xs = np.nonzero(depth_y > 0)
-            obj_bb = pysixd.misc.calc_2d_bbox(xs, ys, render_dims)
+            obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             x, y, w, h = obj_bb
 
             size = int(np.maximum(h, w) * crop_factor)
@@ -131,7 +133,7 @@ class Dataset(object):
         num_cyclo = int(kw['num_cyclo'])
         azimuth_range = (0, 2 * np.pi)
         elev_range = (-0.5 * np.pi, 0.5 * np.pi)
-        views, _ = pysixd.view_sampler.sample_views(
+        views, _ = view_sampler.sample_views(
             int(kw['min_n_views']), 
             float(kw['radius']), 
             azimuth_range, 
@@ -176,7 +178,7 @@ class Dataset(object):
             )
 
             ys, xs = np.nonzero(depth_y > 0)
-            obj_bb = pysixd.misc.calc_2d_bbox(xs, ys, render_dims)
+            obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             x, y, w, h = obj_bb
 
             size = int(np.maximum(h, w) * crop_factor)

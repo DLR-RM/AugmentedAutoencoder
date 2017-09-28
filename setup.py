@@ -4,7 +4,7 @@ setup(
     name='ae',
     version='0.0.1',
     packages=find_packages(exclude=('tests', 'docs')),
-    #install_requires=['setuptools', 'progressbar'],
+#    install_requires=['pysixd'],
     author='Dimitri Henkel, Martin Sundermeyer',
     author_email='Dimitri.Henkel@dlr.de, Martin.Sundermeyer@dlr.de',
     license='DLR proprietary',

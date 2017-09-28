@@ -15,7 +15,6 @@ ae_init_workspace
 ```
 
 *3. Source environment*
-Consider putting this into your .bashrc
 ```bash
 source /home_local/$USER/autoencoder_ws/setup.bash
 ```
