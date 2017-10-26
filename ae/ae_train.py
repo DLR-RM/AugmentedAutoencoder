@@ -19,6 +19,7 @@ def main():
         print 'Please define a workspace path:\n'
         print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
         exit(-1)
+    print 'o' * 100
 
     gentle_stop = np.array((1,), dtype=np.bool)
     gentle_stop[0] = False
@@ -54,7 +55,6 @@ def main():
 
     with tf.variable_scope(experiment_name):
         dataset = factory.build_dataset(True, dataset_path, args)
-        dataset.start()
         queue = factory.build_queue(dataset, args)
         encoder = factory.build_encoder(queue.x, args)
         decoder = factory.build_decoder(queue.y, encoder, args)
@@ -62,6 +62,9 @@ def main():
         optimize = factory.build_optimizer(ae, args)
         codebook = factory.build_codebook(encoder, dataset)
         saver = tf.train.Saver()
+    print args.items('Dataset')
+    dataset.get_training_images(dataset_path, args)
+    dataset.load_bkgd_images(dataset_path)
 
     num_iter = args.getint('Training', 'NUM_ITER')
     batch_size = args.getint('Training', 'BATCH_SIZE')
@@ -104,7 +107,6 @@ def main():
                 break
 
         queue.stop(sess)
-        dataset.stop()
         if not debug_mode:
             bar.finish()
         if not gentle_stop[0] and not debug_mode:
@@ -113,3 +115,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    

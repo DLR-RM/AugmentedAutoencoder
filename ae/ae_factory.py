@@ -75,7 +75,7 @@ def build_codebook(encoder, dataset):
     codebook = Codebook(encoder, dataset)
     return codebook
 
-def build_codebook_from_name(experiment_name):
+def build_codebook_from_name(experiment_name, return_dataset=False):
     import os
     import ConfigParser
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
@@ -99,7 +99,12 @@ def build_codebook_from_name(experiment_name):
         x = tf.placeholder(tf.float32, [None,] + list(dataset.shape))
         encoder = build_encoder(x, args)
         codebook = build_codebook(encoder, dataset)
-    return codebook
+
+    if return_dataset:
+        return codebook, dataset
+    else:
+        return codebook
+
 
 def restore_checkpoint(session, saver, experiment_name):
     import os
