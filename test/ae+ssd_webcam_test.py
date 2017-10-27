@@ -2,11 +2,12 @@
 import numpy as np
 import cv2
 import thread
-import rospy
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge, CvBridgeError
+# import rospy
+# from sensor_msgs.msg import Image
+# from cv_bridge import CvBridge, CvBridgeError
 import os
 import time
+import argparse
 
 import os
 import math
@@ -130,7 +131,13 @@ saver.restore(isess, tf.train.latest_checkpoint(ckpt_filename))
 # SSD default anchor boxes.
 ssd_anchors = ssd_net.anchors(net_shape)
 
-experiment_name = 'my_autoencoder'
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("experiment_name")
+arguments = parser.parse_args()
+experiment_name = arguments.experiment_name
+# experiment_name = 'bigger_network'
 
 
 start_var_list =set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
@@ -185,6 +192,7 @@ def initializeWebcam(width, height):
     pygame.display.set_caption('Camera')
 
     return cam
+
 
 width = 720/2#480
 height = 1280/2#640

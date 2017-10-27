@@ -19,7 +19,6 @@ def main():
         print 'Please define a workspace path:\n'
         print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
         exit(-1)
-    print 'o' * 100
 
     gentle_stop = np.array((1,), dtype=np.bool)
     gentle_stop[0] = False
@@ -62,9 +61,9 @@ def main():
         optimize = factory.build_optimizer(ae, args)
         codebook = factory.build_codebook(encoder, dataset)
         saver = tf.train.Saver()
-    print args.items('Dataset')
+    print args
     dataset.get_training_images(dataset_path, args)
-    dataset.load_bkgd_images(dataset_path)
+    dataset.load_bg_images(dataset_path)
 
     num_iter = args.getint('Training', 'NUM_ITER')
     batch_size = args.getint('Training', 'BATCH_SIZE')
