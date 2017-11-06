@@ -4,9 +4,9 @@ setup(
     name='ae',
     version='0.0.1',
     packages=find_packages(exclude=('tests', 'docs')),
-#    install_requires=['pysixd'],
-    author='Dimitri Henkel, Martin Sundermeyer',
-    author_email='Dimitri.Henkel@dlr.de, Martin.Sundermeyer@dlr.de',
+    #install_requires=['pysixd'],
+    author='Martin Sundermeyer, Dimitri Henkel',
+    author_email='Martin.Sundermeyer@dlr.de, Dimitri.Henkel@dlr.de',
     license='DLR proprietary',
     entry_points={
         'console_scripts': ['ae_init_workspace = ae.ae_init_workspace:main',

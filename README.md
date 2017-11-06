@@ -82,7 +82,7 @@ make
 # Path to the model file. All formats supported by assimp should work. Tested with ply files.
 MODEL_PATH: /net/rmc-lx0050/home_local/shared/ikea_mug_reduced.ply
 # Path to some background image folder. Should contain a * as a placeholder for the image name.
-BACKGROUND_IMAGES_GLOB: /home_local/henk_di/datasets/VOCdevkit/VOC2012/JPEGImages/*.jpg
+BACKGROUND_IMAGES_GLOB: /net/rmc-lx0050/home_local/sund_ma/data/VOCdevkit/VOC2012/JPEGImages/*.jpg
 
 [Dataset]
 # Hight of the AE input layer
@@ -116,7 +116,7 @@ CODE: Sequential([
     Sometimes(0.5, Multiply((0.6, 1.4), per_channel=0.5)),
     Sometimes(0.5, Multiply((0.6, 1.4))),
     Sometimes(0.5, ContrastNormalization((0.4, 2.3), per_channel=0.3)),
-    Sometimes(0.2, CoarseDropout( p=0.3, size_percent=0.01) )
+    #Sometimes(0.2, CoarseDropout( p=0.3, size_percent=0.01) )
 ], random_order=True)
 
 [Embedding]
@@ -139,7 +139,7 @@ KERNEL_SIZE_DECODER: 5
 # Any other optimizer supported by tensorflow can be used here
 OPTIMIZER: Adam 
 # Train the network this number of steps
-NUM_ITER: 10000
+NUM_ITER: 20000
 # Batchsize used for training
 BATCH_SIZE: 64 
 # Learning rate
@@ -148,12 +148,9 @@ LEARNING_RATE: 1e-4
 SAVE_INTERVAL: 5000 
 
 [Queue]
-# OpenGL runs in a background process it communicates with the main process using a queue.
-# It's size can be set here. As the rendering is a bottleneck of the current implementation increasing this value has no positive effect.
-OPENGL_RENDER_QUEUE_SIZE: 500
 # Number of threads used for augmentation
-NUM_THREADS: 2
+NUM_THREADS: 10
 # This is the queue size of the queue which is used for the training process.
-QUEUE_SIZE: 2 
+QUEUE_SIZE: 10 
 ```
 

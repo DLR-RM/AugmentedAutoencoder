@@ -13,7 +13,7 @@ from pysixd_stuff import view_sampler
 import cv2
 
 
-from renderer import meshrenderer
+import meshrenderer
 from utils import lazy_property
 
 from imgaug.augmenters import *
@@ -38,6 +38,10 @@ class Dataset(object):
            dataset_path, 
            float(kw['vertex_scale'])
         )
+
+        print meshrenderer.__file__
+
+
 
         self.train_x = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.mask_x = np.empty( (self.noof_training_imgs,) + self.shape[:2], dtype= bool)
@@ -125,7 +129,7 @@ class Dataset(object):
             t=t,
             near=clip_near,
             far=clip_far,
-            randomLight=False
+            random_light=False
         )
 
         ys, xs = np.nonzero(depth_y > 0)
@@ -169,7 +173,7 @@ class Dataset(object):
                 t=t,
                 near=clip_near,
                 far=clip_far,
-                randomLight=True
+                random_light=True
             )
             rgb_y, depth_y = self.renderer.render( 
                 obj_id=0,
@@ -180,7 +184,7 @@ class Dataset(object):
                 t=t,
                 near=clip_near,
                 far=clip_far,
-                randomLight=False
+                random_light=False
             )
             render_time = time.time() - start_time
 
@@ -255,7 +259,7 @@ class Dataset(object):
                 t=t,
                 near=clip_near,
                 far=clip_far,
-                randomLight=False
+                random_light=False
             )
 
             ys, xs = np.nonzero(depth_y > 0)
