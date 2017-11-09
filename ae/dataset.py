@@ -41,8 +41,6 @@ class Dataset(object):
 
         print meshrenderer.__file__
 
-
-
         self.train_x = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.mask_x = np.empty( (self.noof_training_imgs,) + self.shape[:2], dtype= bool)
         self.train_y = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
