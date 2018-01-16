@@ -2,6 +2,7 @@
 
 import multiprocessing
 import numpy as np
+import time
 import hashlib
 import glob
 import os
@@ -13,18 +14,18 @@ from pysixd_stuff import view_sampler
 import cv2
 
 
-import meshrenderer
+from meshrenderer import meshrenderer, meshrenderer_phong
 from utils import lazy_property
 
 from imgaug.augmenters import *
 
 class Dataset(object):
 
-    def __init__(self, train_mode, dataset_path, **kw):
+    def __init__(self, dataset_path, **kw):
         
-        h, w = int(kw['h']), int(kw['w'])
-        self.shape = (h, w, 3)
+        self.shape = (int(kw['h']), int(kw['w']), 3)
         self.noof_training_imgs = int(kw['noof_training_imgs'])
+        self.dataset_path = dataset_path
 
         self.bg_img_paths = glob.glob( kw['background_images_glob'] )
         self.noof_bg_imgs = min(int(kw['noof_bg_imgs']), len(self.bg_img_paths))
@@ -32,19 +33,11 @@ class Dataset(object):
         self._aug = eval(kw['code'])
         self._kw = kw
 
-        self.renderer = meshrenderer.Renderer(
-           [kw['model_path']], 
-           int(kw['antialiasing']), 
-           dataset_path, 
-           float(kw['vertex_scale'])
-        )
-
-        print meshrenderer.__file__
-
         self.train_x = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.mask_x = np.empty( (self.noof_training_imgs,) + self.shape[:2], dtype= bool)
         self.train_y = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.bg_imgs = np.empty( (self.noof_bg_imgs,) + self.shape, dtype=np.uint8 )
+
 
 
     @lazy_property
@@ -68,6 +61,27 @@ class Dataset(object):
                 i += 1
         return Rs
 
+    @lazy_property
+    def renderer(self):
+        if self._kw['model'] == 'cad':
+            renderer = meshrenderer.Renderer(
+               [self._kw['model_path']], 
+               int(self._kw['antialiasing']), 
+               self.dataset_path, 
+               float(self._kw['vertex_scale'])
+            )
+        elif self._kw['model'] == 'reconst':
+            renderer = meshrenderer_phong.Renderer(
+               [self._kw['model_path']], 
+               int(self._kw['antialiasing']), 
+               self.dataset_path, 
+               float(self._kw['vertex_scale'])
+            )
+        else:
+            'Error: neither cad nor reconst in model path!'
+            exit()
+        return renderer
+
     def get_training_images(self, dataset_path, args):
 
         current_config_hash = hashlib.md5(str(args.items('Dataset')+args.items('Paths'))).hexdigest()
@@ -83,6 +97,19 @@ class Dataset(object):
             np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
         print 'loaded %s training images' % len(self.train_x)
 
+    # def get_embedding_images(self, dataset_path, args):
+
+    #     current_config_hash = hashlib.md5(str(args.items('Embedding') + args.items('Dataset')+args.items('Paths'))).hexdigest()
+    #     current_file_name = os.path.join(dataset_path, current_config_hash + '.npz')
+
+    #     if os.path.exists(current_file_name):
+    #         embedding_data = np.load(current_file_name)
+    #         self.embedding_data = embedding_data.astype(np.uint8)
+    #     else:
+    #         self.render_embedding_images()
+    #         np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
+    #     print 'loaded %s training images' % len(self.train_x)
+
     def load_bg_images(self, dataset_path):
         current_config_hash = hashlib.md5(str(self.shape) + str(self.bg_img_paths)).hexdigest()
         current_file_name = os.path.join(dataset_path, current_config_hash + '.npy')
@@ -93,15 +120,12 @@ class Dataset(object):
 
             for j,fname in enumerate(file_list):
                 print 'loading bg img %s/%s' % (j,self.noof_bg_imgs)
-                rgb = cv2.imread(fname)
-                rgb = cv2.resize(rgb, self.shape[:2])
+                bgr = cv2.imread(fname)
+                bgr = cv2.resize(bgr, self.shape[:2])
 
-                self.bg_imgs[j] = rgb
+                self.bg_imgs[j] = bgr
             np.save(current_file_name,self.bg_imgs)
         print 'loaded %s bg images' % self.noof_bg_imgs
-
-
-
 
 
     def render_rot(self, R, downSample = 1):
@@ -115,10 +139,11 @@ class Dataset(object):
 
         clip_near = float(kw['clip_near'])
         clip_far = float(kw['clip_far'])
-        crop_factor = float(kw['crop_factor'])
+        pad_factor = float(kw['pad_factor'])
 
         t = np.array([0, 0, float(kw['radius'])])
-        rgb_y, depth_y = self.renderer.render( 
+
+        bgr_y, depth_y = self.renderer.render( 
             obj_id=0,
             W=render_dims[0]/downSample, 
             H=render_dims[1]/downSample,
@@ -134,14 +159,14 @@ class Dataset(object):
         obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
         x, y, w, h = obj_bb
 
-        size = int(np.maximum(h, w) * crop_factor)
+        size = int(np.maximum(h, w) * pad_factor)
         left = x+w/2-size/2
         right = x+w/2+size/2
         top = y+h/2-size/2
         bottom = y+h/2+size/2
 
-        rgb_y = rgb_y[top:bottom, left:right]
-        return cv2.resize(rgb_y, self.shape[:2]) / 255.
+        bgr_y = bgr_y[top:bottom, left:right]
+        return cv2.resize(bgr_y, self.shape[:2])
 
 
     def render_training_images(self):
@@ -152,17 +177,26 @@ class Dataset(object):
         K = np.array(K).reshape(3,3)
         clip_near = float(kw['clip_near'])
         clip_far = float(kw['clip_far'])
-        crop_factor = float(kw['crop_factor'])
+        pad_factor = float(kw['pad_factor'])
         crop_offset_sigma = float(kw['crop_offset_sigma'])
         t = np.array([0, 0, float(kw['radius'])])
 
-        for i in np.arange(self.noof_training_imgs):
 
-            print '%s/%s' % (i,self.noof_training_imgs)
-            import time
-            start_time = time.time()
+        bar = progressbar.ProgressBar(
+            maxval=self.noof_training_imgs, 
+            widgets=[' [', progressbar.Timer(), ' | ', 
+                            progressbar.Counter('%0{}d / {}'.format(len(str(self.noof_training_imgs)), 
+                                self.noof_training_imgs)), ' ] ', progressbar.Bar(), ' (', progressbar.ETA(), ') ']
+            )
+        bar.start()
+
+        for i in np.arange(self.noof_training_imgs):
+            bar.update(i)
+
+            # print '%s/%s' % (i,self.noof_training_imgs)
+            # start_time = time.time()
             R = transform.random_rotation_matrix()[:3,:3]
-            rgb_x, depth_x = self.renderer.render( 
+            bgr_x, depth_x = self.renderer.render( 
                 obj_id=0,
                 W=render_dims[0], 
                 H=render_dims[1],
@@ -173,7 +207,7 @@ class Dataset(object):
                 far=clip_far,
                 random_light=True
             )
-            rgb_y, depth_y = self.renderer.render( 
+            bgr_y, depth_y = self.renderer.render( 
                 obj_id=0,
                 W=render_dims[0], 
                 H=render_dims[1],
@@ -184,7 +218,7 @@ class Dataset(object):
                 far=clip_far,
                 random_light=False
             )
-            render_time = time.time() - start_time
+            # render_time = time.time() - start_time
 
             ys, xs = np.nonzero(depth_x > 0)
             try:
@@ -198,40 +232,40 @@ class Dataset(object):
             rand_trans_x = np.random.uniform(-crop_offset_sigma, crop_offset_sigma)
             rand_trans_y = np.random.uniform(-crop_offset_sigma, crop_offset_sigma)
 
-            size = int(np.maximum(h, w) * crop_factor)
+            size = int(np.maximum(h, w) * pad_factor)
             left = int(x+w/2-size/2 + rand_trans_x)
             right = int(x+w/2+size/2 + rand_trans_x)
             top = int(y+h/2-size/2 + rand_trans_y)
             bottom = int(y+h/2+size/2 + rand_trans_y)
 
-            rgb_x = rgb_x[top:bottom, left:right]
+            bgr_x = bgr_x[top:bottom, left:right]
             depth_x = depth_x[top:bottom, left:right]
-            rgb_x = cv2.resize(rgb_x, (W, H))
-            depth_x = cv2.resize(depth_x, (W, H))
+            bgr_x = cv2.resize(bgr_x, (W, H), interpolation = cv2.INTER_NEAREST)
+            depth_x = cv2.resize(depth_x, (W, H), interpolation = cv2.INTER_NEAREST)
 
-            mask_x = depth_x < 1.
+            mask_x = depth_x == 0.
 
             ys, xs = np.nonzero(depth_y > 0)
             obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             x, y, w, h = obj_bb
 
-            size = int(np.maximum(h, w) * crop_factor)
+            size = int(np.maximum(h, w) * pad_factor)
             left = x+w/2-size/2
             right = x+w/2+size/2
             top = y+h/2-size/2
             bottom = y+h/2+size/2
 
-            rgb_y = rgb_y[top:bottom, left:right]
-            rgb_y = cv2.resize(rgb_y, (W, H))
+            bgr_y = bgr_y[top:bottom, left:right]
+            bgr_y = cv2.resize(bgr_y, (W, H), interpolation = cv2.INTER_NEAREST)
 
-            self.train_x[i] = rgb_x.astype(np.uint8)
+            self.train_x[i] = bgr_x.astype(np.uint8)
             self.mask_x[i] = mask_x
-            self.train_y[i] = rgb_y.astype(np.uint8)
+            self.train_y[i] = bgr_y.astype(np.uint8)
 
-            print 'rendertime ', render_time, 'processing ', time.time() - start_time
+            #print 'rendertime ', render_time, 'processing ', time.time() - start_time
+        bar.finish()
 
-
-    def render_embedding_images(self, start, end):
+    def render_embedding_image_batch(self, start, end):
         kw = self._kw
         h, w = self.shape[:2]
         azimuth_range = (0, 2 * np.pi)
@@ -243,12 +277,14 @@ class Dataset(object):
 
         clip_near = float(kw['clip_near'])
         clip_far = float(kw['clip_far'])
-        crop_factor = float(kw['crop_factor'])
+        pad_factor = float(kw['pad_factor'])
 
         t = np.array([0, 0, float(kw['radius'])])
         batch = np.empty( (end-start,)+ self.shape)
+        obj_bbs = np.empty( (end-start,)+ (4,))
+
         for i, R in enumerate(self.viewsphere_for_embedding[start:end]):
-            rgb_y, depth_y = self.renderer.render( 
+            bgr_y, depth_y = self.renderer.render( 
                 obj_id=0,
                 W=render_dims[0], 
                 H=render_dims[1],
@@ -263,17 +299,18 @@ class Dataset(object):
             ys, xs = np.nonzero(depth_y > 0)
             obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             x, y, w, h = obj_bb
+            obj_bbs[i] = obj_bb
 
-            size = int(np.maximum(h, w) * crop_factor)
+            size = int(np.maximum(h, w) * pad_factor)
             left = x+w/2-size/2
             right = x+w/2+size/2
             top = y+h/2-size/2
             bottom = y+h/2+size/2
 
-            rgb_y = rgb_y[top:bottom, left:right]
-            batch[i] = cv2.resize(rgb_y, self.shape[:2]) / 255.
+            bgr_y = bgr_y[top:bottom, left:right]
+            batch[i] = cv2.resize(bgr_y, self.shape[:2], interpolation = cv2.INTER_NEAREST) / 255.
 
-        return batch
+        return (batch, obj_bbs)
 
     @property
     def embedding_size(self):
@@ -281,32 +318,28 @@ class Dataset(object):
 
     def batch(self, batch_size):
 
-        batch_x = np.empty( (batch_size,) + self.shape, dtype=np.uint8 )
-        batch_y = np.empty( (batch_size,) + self.shape, dtype=np.uint8 )
+
+        # batch_x = np.empty( (batch_size,) + self.shape, dtype=np.uint8 )
+        # batch_y = np.empty( (batch_size,) + self.shape, dtype=np.uint8 )
         
         rand_idcs = np.random.choice(self.noof_training_imgs, batch_size, replace=False)
         rand_idcs_bg = np.random.choice(self.noof_bg_imgs, batch_size, replace=False)
         
+        batch_x, masks, batch_y = self.train_x[rand_idcs], self.mask_x[rand_idcs], self.train_y[rand_idcs]
+        rand_vocs = self.bg_imgs[rand_idcs_bg]
 
-        for i in xrange(batch_size):
-
-            rgb_x, mask, rgb_y = self.train_x[rand_idcs[i]], self.mask_x[rand_idcs[i]], self.train_y[rand_idcs[i]]
-            rand_voc = self.bg_imgs[rand_idcs_bg[i]]
-
-            rgb_x[mask] = rand_voc[mask]
-
-            batch_x[i] = rgb_x
-            batch_y[i] = rgb_y
-
+        batch_x[masks] = rand_vocs[masks]
 
         # augm_time = time.time()
         # print 'rendering: ', time.time()-start_time
 
         batch_x = self._aug.augment_images(batch_x)
+        # print 'augmentation:', time.time()-augm_time 
 
+        #slow...
         batch_x = batch_x / 255.
         batch_y = batch_y / 255.
         
-        # print 'augmentation:', time.time()-augm_time 
+        # print 'float conversion:', time.time()-augm_time 
 
         return (batch_x, batch_y)

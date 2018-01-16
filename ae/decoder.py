@@ -25,8 +25,9 @@ class Decoder(object):
         z = self._latent_code
 
         h, w, c = self._reconstruction_target.get_shape().as_list()[1:]
+        print h,w,c
         layer_dimensions = [ [h/np.prod(self._strides[i:]), w/np.prod(self._strides[i:])]  for i in xrange(len(self._strides))]
-
+        print layer_dimensions
         x = tf.layers.dense(
             inputs=self._latent_code,
             units= layer_dimensions[0][0]*layer_dimensions[0][1]*self._num_filters[0],
@@ -48,19 +49,22 @@ class Decoder(object):
                 activation=tf.nn.relu
             )
             x = tf.layers.batch_normalization(x)
-
+        
+        x = tf.image.resize_nearest_neighbor( x, [h, w] )
         x = tf.layers.conv2d(
                 inputs=x,
                 filters=c,
                 kernel_size=self._kernel_size,
                 padding='same',
                 kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
-                activation=None
+                activation=tf.nn.sigmoid
             )
         return x
 
     @lazy_property
     def reconstr_loss(self):
+        print self.x.shape
+        print self._reconstruction_target.shape
         return tf.losses.mean_squared_error (
             self._reconstruction_target,
             self.x,

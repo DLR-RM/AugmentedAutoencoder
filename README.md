@@ -100,7 +100,7 @@ VERTEX_SCALE: 1000
 # Antialiasing factor used for rendering
 ANTIALIASING: 16 
 # This factor adds a border to the cropped image.
-CROP_FACTOR: 1.2 
+PAD_FACTOR: 1.2 
 # Near plane
 CLIP_NEAR: 10 
 # Far plane

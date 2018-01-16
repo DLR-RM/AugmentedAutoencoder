@@ -11,7 +11,8 @@ setup(
     entry_points={
         'console_scripts': ['ae_init_workspace = ae.ae_init_workspace:main',
                             'ae_train = ae.ae_train:main',
-                            'ae_embed = ae.ae_embed:main']
+                            'ae_embed = ae.ae_embed:main',
+                            'ae_eval = eval.ae_eval:main']
     },
     package_data={'ae': ['cfg/*', 'renderer/shader/*']},
     include_package_data=True

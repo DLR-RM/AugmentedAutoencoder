@@ -13,13 +13,17 @@ def main():
 	    exit(-1)
 
 	cfg_path = os.path.join(current_dir, 'cfg' )
+	eval_cfg_path = os.path.join(current_dir, 'cfg_eval' )
 	experiments_path = os.path.join(current_dir, 'experiments' )
 	setup_bash = os.path.join(current_dir, 'setup.bash' )
 
 	if not os.path.exists(cfg_path):
 		this_dir = os.path.dirname(os.path.abspath(__file__))
 		cfg_template_path = os.path.join(this_dir, 'cfg')
+		eval_cfg_path = os.path.join(this_dir, 'cfg_eval')
 		shutil.copytree(cfg_template_path, cfg_path)
+		shutil.copytree(eval_cfg_path, eval_cfg_path)
+		
 
 	if not os.path.exists(experiments_path):
 		os.makedirs(experiments_path)

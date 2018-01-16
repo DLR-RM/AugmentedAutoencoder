@@ -27,7 +27,7 @@ class Encoder(object):
         x = self._input
 
         for filters, stride in zip(self._num_filters, self._strides):
-            padding = 'valid' if stride > 1 else 'same'
+            padding = 'same'
             x = tf.layers.conv2d(
                 inputs=x,
                 filters=filters,

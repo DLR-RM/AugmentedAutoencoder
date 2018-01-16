@@ -3,6 +3,7 @@ import os
 import numpy as np
 import functools
 
+
 # https://danijar.com/structuring-your-tensorflow-models/
 def lazy_property(function):
     attribute = '_cache_' + function.__name__
@@ -30,27 +31,60 @@ def get_dataset_path(workspace_path):
         'dataset',
     )
 
-def get_log_dir(workspace_path, experiment_name):
+def get_checkpoint_dir(workspace_path, experiment_name, experiment_group=''):
     return os.path.join(
         workspace_path, 
         'experiments',
+        experiment_group,
         experiment_name, 
         'checkpoints'
     )
 
-def get_config_file_path(workspace_path, experiment_name):
+def get_log_dir(workspace_path, experiment_name, experiment_group=''):
     return os.path.join(
         workspace_path, 
-        'cfg',
-        '{}.cfg'.format(experiment_name)
+        'experiments',
+        experiment_group,
+        experiment_name
     )
 
-def get_checkpoint_basefilename(workspace_path, experiment_name):
+def get_checkpoint_basefilename(workspace_path, experiment_name, experiment_group=''):
     return os.path.join(
         workspace_path, 
         'experiments', 
+        experiment_group,
         experiment_name, 
         'checkpoints',
         'chkpt'
     )
+
+
+
+def get_config_file_path(workspace_path, experiment_name, experiment_group=''):
+    return os.path.join(
+        workspace_path, 
+        'cfg',
+        experiment_group,
+        '{}.cfg'.format(experiment_name)
+    )
+
+def get_eval_config_file_path(workspace_path):
+    return os.path.join(
+        workspace_path, 
+        'cfg_eval',
+        'eval.cfg'
+    )
+
+def get_eval_dir(workspace_path, experiment_group, experiment_name, evaluation_name, dataset_name, cam_type):
+    return os.path.join(
+        workspace_path, 
+        'experiments',
+        experiment_group,
+        experiment_name,
+        'eval',
+        evaluation_name,
+        dataset_name + '_' + cam_type
+    )
+
+
 

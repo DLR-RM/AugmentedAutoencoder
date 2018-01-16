@@ -26,14 +26,16 @@ def initializeWebcam(width, height):
 parser = argparse.ArgumentParser()
 parser.add_argument("experiment_name")
 arguments = parser.parse_args()
-experiment_name = arguments.experiment_name
 
-# experiment_name = 'my_autoencoder'
+full_name = arguments.experiment_name.split('/')
+
+experiment_name = full_name.pop()
+experiment_group = full_name.pop() if len(full_name) > 0 else ''
 
 codebook = factory.build_codebook_from_name(experiment_name)
 
 with tf.Session() as sess:
-    factory.restore_checkpoint(sess, tf.train.Saver(), experiment_name)
+    factory.restore_checkpoint(sess, tf.train.Saver(), experiment_name, experiment_group)
 
 
     width = 1280/2

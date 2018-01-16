@@ -23,12 +23,20 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_name")
     arguments = parser.parse_args()
-    experiment_name = arguments.experiment_name
+    full_name = arguments.experiment_name.split('/')
+    
+    experiment_name = full_name.pop()
+    experiment_group = full_name.pop() if len(full_name) > 0 else ''
 
-    cfg_file_path = u.get_config_file_path(workspace_path, experiment_name)
-    checkpoint_file = u.get_checkpoint_basefilename(workspace_path, experiment_name)
-    log_dir = u.get_log_dir(workspace_path, experiment_name)
+    cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
+    checkpoint_file = u.get_checkpoint_basefilename(workspace_path, experiment_name, experiment_group)
+
+    log_dir = u.get_checkpoint_dir(workspace_path, experiment_name, experiment_group)
     dataset_path = u.get_dataset_path(workspace_path)
+
+    print checkpoint_file
+    print log_dir
+    print '#'*20
 
     if not os.path.exists(cfg_file_path):
         print 'Could not find config file:\n'
@@ -39,26 +47,34 @@ def main():
     args.read(cfg_file_path)
 
     with tf.variable_scope(experiment_name):
-        dataset = factory.build_dataset(False, dataset_path, args)
+        dataset = factory.build_dataset(dataset_path, args)
         queue = factory.build_queue(dataset, args)
         encoder = factory.build_encoder(queue.x, args)
         decoder = factory.build_decoder(queue.y, encoder, args)
         ae = factory.build_ae(encoder, decoder)
         optimize = factory.build_optimizer(ae, args)
-        codebook = factory.build_codebook(encoder, dataset)
+        codebook = factory.build_codebook(encoder, dataset, args)
         saver = tf.train.Saver()
 
     batch_size = args.getint('Training', 'BATCH_SIZE')
 
-    with tf.Session() as sess:
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.8)
+    config = tf.ConfigProto(gpu_options=gpu_options)
+
+    with tf.Session(config=config) as sess:
+
+        print log_dir
+        print '#'*20
         chkpt = tf.train.get_checkpoint_state(log_dir)
         if chkpt and chkpt.model_checkpoint_path:
+            print chkpt.model_checkpoint_path
             saver.restore(sess, chkpt.model_checkpoint_path)
         else:
             print 'No checkpoint found. Expected one in:\n'
             print '{}\n'.format(log_dir)
             exit(-1)
-        
+
+
         codebook.update_embedding(sess, batch_size)
         print 'Saving new checkoint ..',
         saver.save(sess, checkpoint_file, global_step=ae.global_step)

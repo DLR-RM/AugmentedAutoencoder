@@ -137,9 +137,13 @@ ssd_anchors = ssd_net.anchors(net_shape)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("experiment_name")
+
 parser.add_argument("-novis", action='store_true', default=False)
 arguments = parser.parse_args()
-experiment_name = arguments.experiment_name
+full_name = arguments.experiment_name.split('/')
+experiment_name = full_name.pop()
+experiment_group = full_name.pop() if len(full_name) > 0 else ''
+
 novis = arguments.novis
 # experiment_name = 'bigger_network'
 
@@ -150,7 +154,7 @@ codebook, dataset = factory.build_codebook_from_name(experiment_name, True)
 all_var_list = set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
 ae_var_list = all_var_list.symmetric_difference(start_var_list)
 saver = tf.train.Saver(ae_var_list)
-factory.restore_checkpoint(isess, saver, experiment_name)
+factory.restore_checkpoint(isess, saver, experiment_name, experiment_group)
 
 # Main image processing routine.
 def process_image(img, select_threshold=0.6, nms_threshold=.05, net_shape=(300, 300)):
@@ -159,9 +163,6 @@ def process_image(img, select_threshold=0.6, nms_threshold=.05, net_shape=(300, 
     rimg, rpredictions, rlocalisations, rbbox_img = isess.run([image_4d, predictions, localisations, bbox_img],
                                                               feed_dict={img_input: img})
 
-    ###print rbbox_img
-
-    
     # Get classes and bboxes from the net outputs.
     rclasses, rscores, rbboxes = np_methods.ssd_bboxes_select(
             rpredictions, rlocalisations, ssd_anchors,
@@ -174,15 +175,11 @@ def process_image(img, select_threshold=0.6, nms_threshold=.05, net_shape=(300, 
     rbboxes = np_methods.bboxes_resize(rbbox_img, rbboxes)
     return rclasses, rscores, rbboxes
 
-##print "start"
-
-scene_list = []
 
 time_buf = np.zeros((20,))
 time_buf_i = 0
 flag = False
 thread_based = False
-m = 0
 
 
 def initializeWebcam(width, height):
@@ -199,8 +196,8 @@ def initializeWebcam(width, height):
     return cam
 
 
-width = 720/2#480
-height = 1280/2#640
+width = 720#480
+height = 1280#640
 
 
 if thread_based:
@@ -249,7 +246,10 @@ while True:
 
     t0 = time.time()
     rclasses, rscores, rbboxes =  process_image(img)
+
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
     time_buf[time_buf_i] = time.time() - t0
 
     ssd_time = time.time()
@@ -327,17 +327,11 @@ while True:
         cv2.rectangle(img, (xmin,ymin),(xmax,ymax), tuple([255*x for x in tab20[i]]), 2)
         cv2.putText(img, '%1.3f' % score, (xmin, ymax+20), cv2.FONT_ITALIC, .6, tuple([255*x for x in tab20[i]]), 2)
 
-    # if len(rbboxes) > 0:
-    #     cv2.putText(vis_img, '%1.2f %1.2f %1.2f' % tuple(Rs[0,0,:].reshape(-1)), (10,10), cv2.FONT_ITALIC, .6, tuple([x for x in tab20[5]]), 2)
-    #     cv2.putText(vis_img, '%1.2f %1.2f %1.2f' % tuple(Rs[0,1,:].reshape(-1)), (10,50), cv2.FONT_ITALIC, .6, tuple([x for x in tab20[5]]), 2)
-    #     cv2.putText(vis_img, '%1.2f %1.2f %1.2f' % tuple(Rs[0,2,:].reshape(-1)), (10,90), cv2.FONT_ITALIC, .6, tuple([x for x in tab20[5]]), 2)
+
     cv2.imshow('preds', vis_img)
     cv2.imshow('img', img)
     cv2.waitKey(1)
         
-
-    m += 1
-
 
     time_buf_i = (time_buf_i + 1) % len(time_buf)
 

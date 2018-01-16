@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 from dataset import Dataset
 from queue import Queue
 from ae import AE
@@ -7,14 +8,14 @@ from encoder import Encoder
 from decoder import Decoder
 from codebook import Codebook
 
-def build_dataset(train_mode, dataset_path, args):
+def build_dataset(dataset_path, args):
     dataset_args = { k:v for k,v in 
         args.items('Dataset') + 
         args.items('Paths') + 
         args.items('Augmentation')+ 
         args.items('Queue') +
         args.items('Embedding')}
-    dataset = Dataset(train_mode, dataset_path, **dataset_args)
+    dataset = Dataset(dataset_path, **dataset_args)
     return dataset
 
 def build_queue(dataset, args):
@@ -71,11 +72,12 @@ def build_optimizer(ae, args):
     )
     return optim
 
-def build_codebook(encoder, dataset):
-    codebook = Codebook(encoder, dataset)
+def build_codebook(encoder, dataset, args):
+    embed_bb = args.getboolean('Embedding', 'EMBED_BB')
+    codebook = Codebook(encoder, dataset, embed_bb)
     return codebook
 
-def build_codebook_from_name(experiment_name, return_dataset=False):
+def build_codebook_from_name(experiment_name, experiment_group='', return_dataset=False, return_decoder = False):
     import os
     import ConfigParser
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
@@ -88,25 +90,39 @@ def build_codebook_from_name(experiment_name, return_dataset=False):
     import utils as u
     import tensorflow as tf
 
-    checkpoint_file = u.get_checkpoint_basefilename(workspace_path, experiment_name)
+    checkpoint_file = u.get_checkpoint_basefilename(workspace_path, experiment_name, experiment_group)
+    cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     dataset_path = u.get_dataset_path(workspace_path)
-    cfg_file_path = u.get_config_file_path(workspace_path, experiment_name)
-    args = ConfigParser.ConfigParser()
-    args.read(cfg_file_path)
+
+    if os.path.exists(cfg_file_path):
+        args = ConfigParser.ConfigParser()
+        args.read(cfg_file_path)
+    else:
+        print 'ERROR: Config File not found: ', cfg_file_path
+
 
     with tf.variable_scope(experiment_name):
-        dataset = build_dataset(False, dataset_path, args)
+        dataset = build_dataset(dataset_path, args)
         x = tf.placeholder(tf.float32, [None,] + list(dataset.shape))
         encoder = build_encoder(x, args)
-        codebook = build_codebook(encoder, dataset)
+        codebook = build_codebook(encoder, dataset, args)
+        if return_decoder:
+            reconst_target = tf.placeholder(tf.float32, [None,] + list(dataset.shape))
+            decoder = build_decoder(reconst_target, encoder, args)
+
 
     if return_dataset:
-        return codebook, dataset
+        if return_decoder:
+            return codebook, dataset, decoder
+        else:
+            return codebook, dataset
     else:
         return codebook
 
 
-def restore_checkpoint(session, saver, experiment_name):
+
+
+def restore_checkpoint(session, saver, experiment_name, experiment_group=''):
     import os
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
@@ -118,8 +134,9 @@ def restore_checkpoint(session, saver, experiment_name):
     import utils as u
     import tensorflow as tf
 
-    log_dir = u.get_log_dir(workspace_path, experiment_name)
+    log_dir = u.get_checkpoint_dir(workspace_path, experiment_name, experiment_group)
     
     chkpt = tf.train.get_checkpoint_state(log_dir)
+
     if chkpt and chkpt.model_checkpoint_path:
         saver.restore(session, chkpt.model_checkpoint_path)
