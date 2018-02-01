@@ -50,9 +50,10 @@ r'''
 
 class Report(object):
 
-    def __init__(self, eval_dir):
+    def __init__(self, eval_dir, log_dir):
         self.latex = []
         self.eval_dir = eval_dir
+        self.log_dir = log_dir
 
     def write_configuration(self, train_cfg_file_path, eval_cfg_file_path):
         names = self.eval_dir.replace('_','\_').split('/')
@@ -101,12 +102,14 @@ r'''
 
     def include_all_figures(self):
         pdf_files = glob.glob(os.path.join(self.eval_dir,'figures','*.pdf'))
-        for file in pdf_files:
+        png_files_eval = glob.glob(os.path.join(self.eval_dir,'figures','*.png'))
+        png_files = glob.glob(os.path.join(self.log_dir,'train_figures','*29999.png'))
+        for file in pdf_files+png_files+png_files_eval:
             self.latex.append(
 r'''
 \begin{figure}
 \centering
-\includegraphics[height=0.45\textheight]{%s}
+\includegraphics[width=1.\textwidth,height=0.45\textheight,keepaspectratio]{%s}
 \end{figure}
 
 ''' % file)
@@ -122,4 +125,4 @@ r'''
         if pdf:
             from subprocess import check_output, Popen
             check_output(['pdflatex', filename], cwd=os.path.dirname(full_filename))
-            check_output(['okular', filename.split('.')[0] + '.pdf'], cwd=os.path.dirname(full_filename))
+            Popen(['okular', filename.split('.')[0] + '.pdf'], cwd=os.path.dirname(full_filename))

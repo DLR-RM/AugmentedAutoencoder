@@ -34,8 +34,12 @@ experiment_group = full_name.pop() if len(full_name) > 0 else ''
 
 codebook = factory.build_codebook_from_name(experiment_name)
 
+workspace_path = os.environ.get('AE_WORKSPACE_PATH')
+log_dir = u.get_log_dir(workspace_path,experiment_name,experiment_group)
+ckpt_dir = u.get_checkpoint_dir(log_dir)
+
 with tf.Session() as sess:
-    factory.restore_checkpoint(sess, tf.train.Saver(), experiment_name, experiment_group)
+    factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir)
 
 
     width = 1280/2

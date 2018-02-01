@@ -8,17 +8,20 @@ from utils import lazy_property
 
 class Decoder(object):
 
-    def __init__(self, reconstruction_target, latent_code, num_filters, kernel_size, strides):
+    def __init__(self, reconstruction_target, latent_code, num_filters, kernel_size, strides, loss, bootstrap_ratio):
         self._reconstruction_target = reconstruction_target
         self._latent_code = latent_code
         self._num_filters = num_filters
         self._kernel_size = kernel_size
         self._strides = strides
+        self._loss = loss
+        self._bootstrap_ratio = bootstrap_ratio
         self.reconstr_loss
 
     @property
     def reconstruction_target(self):
         return self._reconstruction_target
+
 
     @lazy_property
     def x(self):
@@ -65,8 +68,29 @@ class Decoder(object):
     def reconstr_loss(self):
         print self.x.shape
         print self._reconstruction_target.shape
-        return tf.losses.mean_squared_error (
-            self._reconstruction_target,
-            self.x,
-            reduction=tf.losses.Reduction.MEAN
-        )
+        if self._loss == 'L2':
+            return tf.losses.mean_squared_error (
+                self._reconstruction_target,
+                self.x,
+                reduction=tf.losses.Reduction.MEAN
+            )
+        elif self._loss == 'L2_bootstrapped':
+
+            x_flat = tf.contrib.layers.flatten(self.x)
+            reconstruction_target_flat = tf.contrib.layers.flatten(self._reconstruction_target)
+
+            l2 = tf.losses.mean_squared_error (
+                reconstruction_target_flat,
+                x_flat,
+                reduction=tf.losses.Reduction.NONE
+            )
+
+            l2_val,_ = tf.nn.top_k(l2,k=l2.shape[1]/self._bootstrap_ratio)
+
+            l2_bootstrapped = tf.reduce_mean(l2_val)
+
+            return l2_bootstrapped
+        else:
+            print 'ERROR: UNKNOWN LOSS ', self._loss
+            exit()
+

@@ -13,7 +13,6 @@ from pysixd_stuff import view_sampler
 
 import cv2
 
-
 from meshrenderer import meshrenderer, meshrenderer_phong
 from utils import lazy_property
 
@@ -23,7 +22,7 @@ class Dataset(object):
 
     def __init__(self, dataset_path, **kw):
         
-        self.shape = (int(kw['h']), int(kw['w']), 3)
+        self.shape = (int(kw['h']), int(kw['w']), int(kw['c']))
         self.noof_training_imgs = int(kw['noof_training_imgs'])
         self.dataset_path = dataset_path
 
@@ -96,6 +95,42 @@ class Dataset(object):
             self.render_training_images()
             np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
         print 'loaded %s training images' % len(self.train_x)
+
+    def get_sprite_training_images(self, train_args):
+        
+        dataset_path= train_args.get('Paths','MODEL_PATH')
+        dataset_zip = np.load(dataset_path)
+
+        # print('Keys in the dataset:', dataset_zip.keys())
+        imgs = dataset_zip['imgs']
+        latents_values = dataset_zip['latents_values']
+        latents_classes = dataset_zip['latents_classes']
+        metadata = dataset_zip['metadata'][()]
+
+        latents_sizes = metadata['latents_sizes']
+        latents_bases = np.concatenate((latents_sizes[::-1].cumprod()[::-1][1:],
+                                        np.array([1,])))
+
+        latents_classes_heart = latents_classes[-245760:]
+        latents_classes_heart_rot = latents_classes_heart.copy()
+
+        latents_classes_heart_rot[:, 0] = 0
+        latents_classes_heart_rot[:, 1] = 2
+        latents_classes_heart_rot[:, 2] = 5
+        latents_classes_heart_rot[:, 4] = 16
+        latents_classes_heart_rot[:, 5] = 16
+
+        def latent_to_index(latents):
+          return np.dot(latents, latents_bases).astype(int)
+
+        indices_sampled = latent_to_index(latents_classes_heart_rot)
+        imgs_sampled_rot = imgs[indices_sampled]
+        indices_sampled = latent_to_index(latents_classes_heart)
+        imgs_sampled_all = imgs[indices_sampled]
+
+        self.train_x = np.expand_dims(imgs_sampled_all, 3)*255
+        self.train_y = np.expand_dims(imgs_sampled_rot, 3)*255
+
 
     # def get_embedding_images(self, dataset_path, args):
 
@@ -219,7 +254,10 @@ class Dataset(object):
                 random_light=False
             )
             # render_time = time.time() - start_time
-
+            # cv2.imshow('bgr_x',bgr_x)
+            # cv2.imshow('bgr_y',bgr_y)
+            # cv2.waitKey(0)
+            
             ys, xs = np.nonzero(depth_x > 0)
             try:
                 obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
@@ -309,12 +347,15 @@ class Dataset(object):
 
             bgr_y = bgr_y[top:bottom, left:right]
             batch[i] = cv2.resize(bgr_y, self.shape[:2], interpolation = cv2.INTER_NEAREST) / 255.
-
         return (batch, obj_bbs)
 
     @property
     def embedding_size(self):
-        return len(self.viewsphere_for_embedding)
+        if self.noof_bg_imgs > 0:
+            return len(self.viewsphere_for_embedding)
+        else:
+            kw = self._kw
+            return int(kw['min_n_views'])
 
     def batch(self, batch_size):
 
@@ -323,23 +364,29 @@ class Dataset(object):
         # batch_y = np.empty( (batch_size,) + self.shape, dtype=np.uint8 )
         
         rand_idcs = np.random.choice(self.noof_training_imgs, batch_size, replace=False)
-        rand_idcs_bg = np.random.choice(self.noof_bg_imgs, batch_size, replace=False)
         
-        batch_x, masks, batch_y = self.train_x[rand_idcs], self.mask_x[rand_idcs], self.train_y[rand_idcs]
-        rand_vocs = self.bg_imgs[rand_idcs_bg]
+        if self.noof_bg_imgs > 0:
+            rand_idcs_bg = np.random.choice(self.noof_bg_imgs, batch_size, replace=False)
+            batch_x, masks, batch_y = self.train_x[rand_idcs], self.mask_x[rand_idcs], self.train_y[rand_idcs]
+            rand_vocs = self.bg_imgs[rand_idcs_bg]
+            batch_x[masks] = rand_vocs[masks]
+        else:
+            batch_x, batch_y = self.train_x[rand_idcs], self.train_y[rand_idcs]
 
-        batch_x[masks] = rand_vocs[masks]
+            for i in xrange(batch_size):
+              rot_angle= np.random.rand()*360
+              cent = int(self.shape[0]/2)
+              M = cv2.getRotationMatrix2D((cent,cent),rot_angle,1)
+              batch_x[i] = cv2.warpAffine(batch_x[i],M,self.shape[:2])[:,:,np.newaxis]
+              batch_y[i] = cv2.warpAffine(batch_y[i],M,self.shape[:2])[:,:,np.newaxis]
 
-        # augm_time = time.time()
-        # print 'rendering: ', time.time()-start_time
 
+        #needs uint8
         batch_x = self._aug.augment_images(batch_x)
-        # print 'augmentation:', time.time()-augm_time 
 
         #slow...
         batch_x = batch_x / 255.
         batch_y = batch_y / 255.
         
-        # print 'float conversion:', time.time()-augm_time 
 
         return (batch_x, batch_y)

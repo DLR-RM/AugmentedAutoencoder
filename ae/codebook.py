@@ -29,6 +29,7 @@ class Codebook(object):
 
         self.embedding = tf.placeholder(tf.float32, shape=[embedding_size, J])
         self.embedding_assign_op = tf.assign(self.embedding_normalized, self.embedding)
+        
 
         if embed_bb:
             self.embed_obj_bbs_var = tf.Variable(
@@ -62,15 +63,15 @@ class Codebook(object):
         
         if x.dtype == 'uint8':
             x = x/255.
-            print 'converted uint8 to float type'
+            # print 'converted uint8 to float type'
 
         K_train = np.array(eval(train_args.get('Dataset','K'))).reshape(3,3)
         render_radius = train_args.getfloat('Dataset','RADIUS')
 
         if x.ndim == 3:
             x = np.expand_dims(x, 0)
-
-        cosine_similarity, normalized_code = session.run([self.cos_similarity,self.normalized_embedding_query], {self._encoder.x: x})
+        # print np.max(x)
+        cosine_similarity, normalized_test_code = session.run([self.cos_similarity,self.normalized_embedding_query], {self._encoder.x: x})
         embed_obj_bbs = session.run(self.embed_obj_bbs_var)
 
         if top_n > 1:
@@ -79,8 +80,9 @@ class Codebook(object):
         else:
             idcs = np.argmax(cosine_similarity, axis=1)
         
+        nearest_train_codes = session.run(self.embedding_normalized)[idcs]
         Rs_est = self._dataset.viewsphere_for_embedding[idcs]
-        
+
         # test_depth = f_test / f_train * render_radius * diag_bb_ratio
         K00_ratio = K_test[0,0] / K_train[0,0]  
         K11_ratio = K_test[1,1] / K_train[1,1]  
@@ -102,7 +104,7 @@ class Codebook(object):
             t_est = np.array([center_mm_tx, center_mm_ty, depth_pred])
             ts_est[i] = t_est
 
-        return (Rs_est, ts_est, normalized_code.squeeze())
+        return (Rs_est, ts_est, normalized_test_code.squeeze(),nearest_train_codes.squeeze())
         
 
 
@@ -138,6 +140,29 @@ class Codebook(object):
     #         cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
     #         idcs = np.argmax(cosine_similarity, axis=1)
     #         return self._dataset.viewsphere_for_embedding[idcs]
+
+    def update_embedding_dsprites(self, session, train_args):
+        batch_size = train_args.getint('Training', 'BATCH_SIZE')
+        embedding_size = train_args.getint('Embedding', 'MIN_N_VIEWS')
+
+        J = self._encoder.latent_space_size
+        embedding_z = np.empty( (embedding_size, J) )
+
+        print 'Creating embedding ..'
+
+        self._dataset.get_sprite_training_images(train_args)
+
+        emb_imgs = self._dataset.train_y[::1024][40:80]
+
+
+        embedding_z = session.run(self._encoder.z, feed_dict={self._encoder.x: emb_imgs})
+
+
+
+        # embedding_z = embedding_z.T
+        normalized_embedding = embedding_z / np.linalg.norm( embedding_z, axis=1, keepdims=True )
+
+        session.run(self.embedding_assign_op, {self.embedding: normalized_embedding})
 
 
 

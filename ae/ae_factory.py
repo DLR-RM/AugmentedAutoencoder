@@ -44,21 +44,28 @@ def build_encoder(x, args):
     )
     return encoder
 
-def build_decoder(reconstruction_target, encoder, args):
+def build_decoder(reconstruction_target, encoder, args, is_training=True):
     NUM_FILTER = eval(args.get('Network', 'NUM_FILTER'))
     KERNEL_SIZE_DECODER = args.getint('Network', 'KERNEL_SIZE_DECODER')
     STRIDES = eval(args.get('Network', 'STRIDES'))
+    LOSS = args.get('Network', 'LOSS')
+    BOOTSTRAP_RATIO = args.getint('Network', 'BOOTSTRAP_RATIO')
+    VARIATIONAL = args.getfloat('Network', 'VARIATIONAL') if is_training else False
     decoder = Decoder(
         reconstruction_target,
-        encoder.z,
+        encoder.sampled_z if VARIATIONAL else encoder.z,
         list( reversed(NUM_FILTER) ),
         KERNEL_SIZE_DECODER,
         list( reversed(STRIDES) ),
+        LOSS,
+        BOOTSTRAP_RATIO
     )
     return decoder
 
-def build_ae(encoder, decoder):
-    ae = AE(encoder, decoder)
+def build_ae(encoder, decoder, args):
+    NORM_REGULARIZE = args.getfloat('Network', 'NORM_REGULARIZE')
+    VARIATIONAL = args.getfloat('Network', 'VARIATIONAL')
+    ae = AE(encoder, decoder, NORM_REGULARIZE, VARIATIONAL)
     return ae
 
 def build_optimizer(ae, args):
@@ -90,7 +97,8 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
     import utils as u
     import tensorflow as tf
 
-    checkpoint_file = u.get_checkpoint_basefilename(workspace_path, experiment_name, experiment_group)
+    log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
+    checkpoint_file = u.get_checkpoint_basefilename(log_dir)
     cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     dataset_path = u.get_dataset_path(workspace_path)
 
@@ -99,7 +107,7 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
         args.read(cfg_file_path)
     else:
         print 'ERROR: Config File not found: ', cfg_file_path
-
+        exit()
 
     with tf.variable_scope(experiment_name):
         dataset = build_dataset(dataset_path, args)
@@ -108,7 +116,7 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
         codebook = build_codebook(encoder, dataset, args)
         if return_decoder:
             reconst_target = tf.placeholder(tf.float32, [None,] + list(dataset.shape))
-            decoder = build_decoder(reconst_target, encoder, args)
+            decoder = build_decoder(reconst_target, encoder, args, is_training=True)
 
 
     if return_dataset:
@@ -122,21 +130,12 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
 
 
 
-def restore_checkpoint(session, saver, experiment_name, experiment_group=''):
-    import os
-    workspace_path = os.environ.get('AE_WORKSPACE_PATH')
+def restore_checkpoint(session, saver, ckpt_dir):
 
-    if workspace_path == None:
-        print 'Please define a workspace path:\n'
-        print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
-        exit(-1)
-
-    import utils as u
     import tensorflow as tf
 
-    log_dir = u.get_checkpoint_dir(workspace_path, experiment_name, experiment_group)
-    
-    chkpt = tf.train.get_checkpoint_state(log_dir)
+    chkpt = tf.train.get_checkpoint_state(ckpt_dir)
 
     if chkpt and chkpt.model_checkpoint_path:
         saver.restore(session, chkpt.model_checkpoint_path)
+        

@@ -154,7 +154,16 @@ codebook, dataset = factory.build_codebook_from_name(experiment_name, True)
 all_var_list = set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
 ae_var_list = all_var_list.symmetric_difference(start_var_list)
 saver = tf.train.Saver(ae_var_list)
-factory.restore_checkpoint(isess, saver, experiment_name, experiment_group)
+
+workspace_path = os.environ.get('AE_WORKSPACE_PATH')
+
+if workspace_path == None:
+    print 'Please define a workspace path:\n'
+    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    exit(-1)
+log_dir = u.get_log_dir(workspace_path,experiment_name,experiment_group)
+ckpt_dir = u.get_checkpoint_dir(log_dir)
+factory.restore_checkpoint(isess, saver, ckpt_dir)
 
 # Main image processing routine.
 def process_image(img, select_threshold=0.6, nms_threshold=.05, net_shape=(300, 300)):

@@ -6,6 +6,7 @@ import numpy as np
 import signal
 import shutil
 import time
+import cv2
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
@@ -13,6 +14,7 @@ import progressbar
 
 import ae_factory as factory
 import utils as u
+import gl_utils as gu
 
 def main():
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
@@ -43,10 +45,19 @@ def main():
     generate_data = arguments.gen
 
     cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
-    checkpoint_file = u.get_checkpoint_basefilename(workspace_path, experiment_name, experiment_group)
-    ckpt_dir = u.get_checkpoint_dir(workspace_path, experiment_name, experiment_group)
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
+    checkpoint_file = u.get_checkpoint_basefilename(log_dir)
+    ckpt_dir = u.get_checkpoint_dir(log_dir)
+    train_fig_dir = u.get_train_fig_dir(log_dir)
     dataset_path = u.get_dataset_path(workspace_path)
+
+    if not os.path.exists(ckpt_dir):
+        os.makedirs(ckpt_dir)
+    if not os.path.exists(train_fig_dir):
+        os.makedirs(train_fig_dir)
+    if not os.path.exists(dataset_path):
+        os.makedirs(dataset_path)
+        
 
     if not os.path.exists(cfg_file_path):
         print 'Could not find config file:\n'
@@ -56,11 +67,6 @@ def main():
     args = ConfigParser.ConfigParser()
     args.read(cfg_file_path)
 
-
-    if not os.path.exists(ckpt_dir):
-        os.makedirs(ckpt_dir)
-    if not os.path.exists(dataset_path):
-        os.makedirs(dataset_path)
         
     shutil.copy2(cfg_file_path, log_dir)
 
@@ -69,21 +75,25 @@ def main():
         queue = factory.build_queue(dataset, args)
         encoder = factory.build_encoder(queue.x, args)
         decoder = factory.build_decoder(queue.y, encoder, args)
-        ae = factory.build_ae(encoder, decoder)
+        ae = factory.build_ae(encoder, decoder, args)
         optimize = factory.build_optimizer(ae, args)
         codebook = factory.build_codebook(encoder, dataset, args)
         saver = tf.train.Saver()
 
-    dataset.get_training_images(dataset_path, args)
-    dataset.load_bg_images(dataset_path)
+    num_iter = args.getint('Training', 'NUM_ITER') if not debug_mode else np.iinfo(np.int32).max
+    save_interval = args.getint('Training', 'SAVE_INTERVAL')
+    model_type = args.get('Dataset', 'MODEL')
+
+    if model_type=='dsprites':
+        dataset.get_sprite_training_images(args)
+    else:
+        dataset.get_training_images(dataset_path, args)
+        dataset.load_bg_images(dataset_path)
 
     if generate_data:
         print 'finished generating synthetic training data for ' + experiment_name
         print 'exiting...'
         exit()
-
-    num_iter = args.getint('Training', 'NUM_ITER')
-    save_interval = args.getint('Training', 'SAVE_INTERVAL')
 
     bar = progressbar.ProgressBar(
         maxval=num_iter, 
@@ -91,6 +101,7 @@ def main():
         progressbar.Bar(), 
         ' (', progressbar.ETA(), ') ']
     )
+
 
     with tf.Session() as sess:
 
@@ -100,7 +111,10 @@ def main():
         else:
             sess.run(tf.global_variables_initializer())
 
-        writer = tf.summary.FileWriter(ckpt_dir, sess.graph)
+        merged_loss_summary = tf.summary.merge_all()
+        summary_writer = tf.summary.FileWriter(ckpt_dir, sess.graph)
+        
+        
 
         
         if not debug_mode:
@@ -108,20 +122,31 @@ def main():
             bar.start()
             
         queue.start(sess)
+
         for i in xrange(ae.global_step.eval(), num_iter):
             if not debug_mode:
                 
-                #b=time.time()
                 sess.run(optimize)
-                #print 'forward backward time ', time.time()-b
+                if i % 10 == 0:
+                    loss = sess.run(merged_loss_summary)
+                    summary_writer.add_summary(loss, i)
 
                 bar.update(i)
                 if (i+1) % save_interval == 0:
                     saver.save(sess, checkpoint_file, global_step=ae.global_step)
+
+                    this_x, this_y = sess.run([queue.x, queue.y])
+                    reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
+                    train_imgs = np.hstack(( gu.tiles(this_x, 4, 4), gu.tiles(this_y, 4, 4), gu.tiles(reconstr_train, 4,4)))
+                    cv2.imwrite(os.path.join(train_fig_dir,'training_images_%s.png' % i), train_imgs*255)
             else:
+
                 this_x, this_y = sess.run([queue.x, queue.y])
-                import cv2; import gl_utils as gu
-                cv2.imshow('sample batch', np.hstack( (gu.tiles(this_x, 5, 5), gu.tiles(this_y, 5, 5))) )
+                reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
+                print np.min(this_x), np.max(this_x)
+                print np.min(this_y), np.max(this_y)
+                print np.min(reconstr_train), np.max(reconstr_train)
+                cv2.imshow('sample batch', np.hstack(( gu.tiles(this_x, 4, 4), gu.tiles(this_y, 4, 4), gu.tiles(reconstr_train, 4,4))) )
                 k = cv2.waitKey(0)
                 if k == 27:
                     break

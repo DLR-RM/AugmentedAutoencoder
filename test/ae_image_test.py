@@ -6,7 +6,8 @@ import imageio
 import os
 import ConfigParser
 
-from ae import factory, utils
+from ae import factory
+from ae import utils
 from eval import eval_utils
 
 import argparse
@@ -78,49 +79,47 @@ eval_args.read(eval_cfg_file_path)
 
 codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
 
+
+log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
+ckpt_dir = utils.get_checkpoint_dir(log_dir)
+
 with tf.Session() as sess:
-    factory.restore_checkpoint(sess, tf.train.Saver(), experiment_name, experiment_group)
 
-    files = glob.glob(os.path.join(str(file_str),'*'))
+    factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir)
 
-    p = dataset_params.get_dataset_params('tless')
-    bb_gt = inout.load_gt(p['scene_gt_mpath'].format(2))
+    files = glob.glob(os.path.join(str(file_str),'*.png'))
+
+    # p = dataset_params.get_dataset_params('tless')
+    # bb_gt = inout.load_gt(p['scene_gt_mpath'].format(2))
 
 
-    test_img_crops, bbs, bb_scores, visibilities = eval_utils.get_gt_scene_crops(2, eval_args, train_args)
+    # test_img_crops, bbs, bb_scores, visibilities = eval_utils.get_gt_scene_crops(2, eval_args, train_args)
 
 
     # for i,img_path in enumerate(files):
-    noof_scene_views = eval_utils.noof_scene_views(2, eval_args)
-    obj_id = eval(eval_args.get('DATA','OBJECTS'))[0]
+    # noof_scene_views = eval_utils.noof_scene_views(2, eval_args)
+    # obj_id = eval(eval_args.get('DATA','OBJECTS'))[0]
 
-    for view in xrange(noof_scene_views):
-        print '#'*100
-        test_crops, test_bbs, test_scores = eval_utils.select_img_crops(test_img_crops[view][obj_id], bbs[view][obj_id],
-                                                                        bb_scores[view][obj_id], visibilities[view][obj_id], eval_args)
+    # for view in xrange(noof_scene_views):
+    #     print '#'*100
+    #     test_crops, test_bbs, test_scores = eval_utils.select_img_crops(test_img_crops[view][obj_id], bbs[view][obj_id],
+    #                                                                     bb_scores[view][obj_id], visibilities[view][obj_id], eval_args)
 
 
-        for test_crop, test_bb, test_score in zip(test_crops, test_bbs, test_scores):
-            # img = cv2.imread(img_path)
-            # if gt_bb:
-            #     img = cv2.resize(img[5][0],(128,128))
-            # else:
-            #     h,w = img.shape[:2]
-            #     short = np.min([h,w])
-            #     img = cv2.resize(img[int(h/2-short/2):int(h/2+short/2),int(w/2-short/2):int(w/2+short/2)],(128,128))
+    for file in files:
 
-            R = codebook.nearest_rotation(sess, test_crop)
-            R2 = codebook.nearest_rotation(sess, test_crop/255.)
+        im = cv2.imread(file)
+        im = cv2.resize(im,(128,128))
 
-            pred_view = dataset.render_rot( R ,downSample = 1)
-            pred_view2 = dataset.render_rot( R2 ,downSample = 1)
-            
-            
-            cv2.imshow('resized img', test_crop/255.)
-            cv2.imshow('pred_view', pred_view)
-            cv2.imshow('pred_view2', pred_view2)
-            print R
-            cv2.waitKey(1)
+        R = codebook.nearest_rotation(sess, im/255.)
+
+        pred_view = dataset.render_rot( R ,downSample = 1)
+        
+        
+        cv2.imshow('resized img', cv2.resize(im/255.,(256,256)))
+        cv2.imshow('pred_view', cv2.resize(pred_view,(256,256)))
+        print R
+        cv2.waitKey(0)
 
 if __name__ == '__main__':
     main()

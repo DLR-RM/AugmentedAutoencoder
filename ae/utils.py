@@ -31,12 +31,9 @@ def get_dataset_path(workspace_path):
         'dataset',
     )
 
-def get_checkpoint_dir(workspace_path, experiment_name, experiment_group=''):
+def get_checkpoint_dir(log_dir):
     return os.path.join(
-        workspace_path, 
-        'experiments',
-        experiment_group,
-        experiment_name, 
+        log_dir, 
         'checkpoints'
     )
 
@@ -48,17 +45,18 @@ def get_log_dir(workspace_path, experiment_name, experiment_group=''):
         experiment_name
     )
 
-def get_checkpoint_basefilename(workspace_path, experiment_name, experiment_group=''):
+def get_train_fig_dir(log_dir):
     return os.path.join(
-        workspace_path, 
-        'experiments', 
-        experiment_group,
-        experiment_name, 
+        log_dir, 
+        'train_figures'
+    )
+
+def get_checkpoint_basefilename(log_dir):
+    return os.path.join(
+        log_dir,
         'checkpoints',
         'chkpt'
     )
-
-
 
 def get_config_file_path(workspace_path, experiment_name, experiment_group=''):
     return os.path.join(
@@ -68,22 +66,19 @@ def get_config_file_path(workspace_path, experiment_name, experiment_group=''):
         '{}.cfg'.format(experiment_name)
     )
 
-def get_eval_config_file_path(workspace_path):
+def get_eval_config_file_path(workspace_path, eval_cfg='eval.cfg'):
     return os.path.join(
         workspace_path, 
         'cfg_eval',
-        'eval.cfg'
+        eval_cfg
     )
 
-def get_eval_dir(workspace_path, experiment_group, experiment_name, evaluation_name, dataset_name, cam_type):
+def get_eval_dir(log_dir, evaluation_name, data):
     return os.path.join(
-        workspace_path, 
-        'experiments',
-        experiment_group,
-        experiment_name,
+        log_dir,
         'eval',
         evaluation_name,
-        dataset_name + '_' + cam_type
+        data
     )
 
 
