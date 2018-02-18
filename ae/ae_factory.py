@@ -118,7 +118,6 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
             reconst_target = tf.placeholder(tf.float32, [None,] + list(dataset.shape))
             decoder = build_decoder(reconst_target, encoder, args, is_training=True)
 
-
     if return_dataset:
         if return_decoder:
             return codebook, dataset, decoder
@@ -128,14 +127,25 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
         return codebook
 
 
-
-
-def restore_checkpoint(session, saver, ckpt_dir):
+def restore_checkpoint(session, saver, ckpt_dir, at_step=None):
 
     import tensorflow as tf
+    import os
 
     chkpt = tf.train.get_checkpoint_state(ckpt_dir)
 
     if chkpt and chkpt.model_checkpoint_path:
-        saver.restore(session, chkpt.model_checkpoint_path)
+        if at_step is None:
+            saver.restore(session, chkpt.model_checkpoint_path)
+        else:
+            for ckpt_path in chkpt.all_model_checkpoint_paths:
+                
+                if str(at_step) in str(ckpt_path):
+                    saver.restore(session, ckpt_path)
+                    print 'restoring' , os.path.basename(ckpt_path)
+    else:
+        print 'No checkpoint found. Expected one in:\n'
+        print '{}\n'.format(ckpt_dir)
+        exit(-1)
+
         

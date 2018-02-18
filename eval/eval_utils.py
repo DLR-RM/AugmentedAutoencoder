@@ -71,7 +71,7 @@ def generate_scene_crops(test_imgs, test_depth_imgs, bboxes, eval_args, train_ar
 
 
     scenes = eval(eval_args.get('DATA','SCENES'))
-    objects = eval(eval_args.get('DATA','OBJECTS'))
+    obj_id = eval_args.getint('DATA','OBJ_ID')
     estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
     pad_factor = eval_args.getfloat('BBOXES','PAD_FACTOR')
     icp = eval_args.getboolean('EVALUATION','ICP')
@@ -91,7 +91,7 @@ def generate_scene_crops(test_imgs, test_depth_imgs, bboxes, eval_args, train_ar
         test_img_crops[view], bb_scores[view], bb_vis[view], bbs[view] = {}, {}, {}, {}
         if len(bboxes[view]) > 0:
             for bbox_idx,bbox in enumerate(bboxes[view]):
-                if bbox['obj_id'] in objects:
+                if bbox['obj_id'] == obj_id:
                     bb = np.array(bbox['obj_bb'])
                     obj_id = bbox['obj_id']
                     bb_score = bbox['score'] if estimate_bbs else 1.0
@@ -122,7 +122,7 @@ def generate_depth_scene_crops(test_depth_imgs, scene_id, eval_args, train_args)
 
     dataset_name = eval_args.get('DATA','DATASET')
     cam_type = eval_args.get('DATA','CAM_TYPE')
-    objects = eval(eval_args.get('DATA','OBJECTS'))[0]
+    obj_id = eval_args.getint('DATA','OBJ_ID')
     estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
 
     p = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
@@ -169,12 +169,13 @@ def load_scenes(scene_id, eval_args, depth=False):
     cam_type = eval_args.get('DATA','CAM_TYPE')
 
     p = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
+    cam_p = inout.load_cam_params(p['cam_params_path'])
     noof_imgs = noof_scene_views(scene_id, eval_args)
     if depth:
         imgs = np.empty((noof_imgs,) + p['test_im_size'][::-1], dtype=np.float32)
         for view_id in xrange(noof_imgs):
             depth_path = p['test_depth_mpath'].format(scene_id, view_id)
-            imgs[view_id,...] = inout.load_depth(depth_path)/10.
+            imgs[view_id,...] = inout.load_depth2(depth_path) * cam_p['depth_scale']
     else:    
         print (noof_imgs,) + p['test_im_size'][::-1] + (3,)
         imgs = np.empty((noof_imgs,) + p['test_im_size'][::-1] + (3,), dtype=np.uint8)
@@ -184,6 +185,46 @@ def load_scenes(scene_id, eval_args, depth=False):
 
     return imgs
 
+def get_all_scenes_for_obj(eval_args):
+    workspace_path = os.environ.get('AE_WORKSPACE_PATH')
+    dataset_path = u.get_dataset_path(workspace_path)
+
+    dataset_name = eval_args.get('DATA','DATASET')
+    cam_type = eval_args.get('DATA','CAM_TYPE')
+    try:
+        obj_id = eval_args.getint('DATA', 'OBJ_ID')
+    except:
+        obj_id = eval(eval_args.get('DATA', 'OBJECTS'))[0]
+    
+
+    cfg_string = str(dataset_name)
+    current_config_hash = hashlib.md5(cfg_string).hexdigest()
+    current_file_name = os.path.join(dataset_path, current_config_hash + '.npy')
+
+    if os.path.exists(current_file_name):
+        obj_scene_dict = np.load(current_file_name).item()
+    else:    
+        p = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
+        
+        obj_scene_dict = {}
+        scene_gts = []
+        for scene_id in xrange(1,p['scene_count']+1):
+            print scene_id
+            scene_gts.append(inout.load_yaml(p['scene_gt_mpath'].format(scene_id)))
+
+        for obj in xrange(1,p['obj_count']+1):
+            eval_scenes = set()
+            for scene_i,scene_gt in enumerate(scene_gts):
+                for view_gt in scene_gt[0]:
+                    if view_gt['obj_id'] == obj:
+                        eval_scenes.add(scene_i+1)
+            obj_scene_dict[obj] = list(eval_scenes)
+        np.save(current_file_name,obj_scene_dict)
+    print obj_scene_dict
+
+    eval_scenes = obj_scene_dict[obj_id]
+
+    return eval_scenes
 
 
 def select_img_crops(crop_candidates, bbs, bb_scores, visibs, eval_args):

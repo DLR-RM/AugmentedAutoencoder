@@ -9,10 +9,10 @@ import tensorflow as tf
 from gl_utils import tiles
 from sklearn.decomposition import PCA
 
-from sixd_toolkit.pysixd import inout
+from sixd_toolkit.pysixd import inout,pose_error
 
 
-def plot_reconstruction_test(sess, encoder, decoder, x, save=False, eval_dir=None):
+def plot_reconstruction_test(sess, encoder, decoder, x):
 
     if x.dtype == 'uint8':
         x = x/255.
@@ -22,22 +22,39 @@ def plot_reconstruction_test(sess, encoder, decoder, x, save=False, eval_dir=Non
         x = np.expand_dims(x, 0)
 
     reconst = sess.run(decoder.x, feed_dict={encoder.x: x})
+    cv2.imshow('reconst_test',cv2.resize(reconst[0],(256,256)))
+    
 
-    print x.shape, reconst.shape
-    if save:
-        reconstruction_imgs = np.hstack(( tiles(x, 4, 4), tiles(reconst, 4, 4)))
-        cv2.imwrite(os.path.join(eval_dir,'figures','reconstruction_imgs.png'), reconstruction_imgs*255)
-    else:
-        cv2.imshow('reconst_test',cv2.resize(reconst[0],(256,256)))
-        cv2.waitKey(1)
+def plot_reconstruction_test_batch(sess, encoder, decoder, test_img_crops, noof_scene_views, obj_id, eval_dir=None):
+    
+    sample_views = np.random.choice(noof_scene_views, np.min([100,noof_scene_views]), replace=False)
+    
+    sample_batch = []
+    i=0
+    j=0
+    while i < 16:
+        if test_img_crops[sample_views[j]].has_key(obj_id):
+            sample_batch.append(test_img_crops[sample_views[j]][obj_id][0])
+            i += 1
+        j += 1
+            
+    x = np.array(sample_batch).squeeze()
+    
+    if x.dtype == 'uint8':
+        x = x/255.
+        print 'converted uint8 to float type'
+    
+    reconst = sess.run(decoder.x, feed_dict={encoder.x: x})
 
+    reconstruction_imgs = np.hstack(( tiles(x, 4, 4), tiles(reconst, 4, 4)))
+    cv2.imwrite(os.path.join(eval_dir,'figures','reconstruction_imgs.png'), reconstruction_imgs*255)
 
 def plot_reconstruction_train(sess, decoder, train_code):
     if train_code.ndim == 1:
         train_code = np.expand_dims(train_code, 0)
     reconst = sess.run(decoder.x, feed_dict={decoder._latent_code: train_code})
     cv2.imshow('reconst_train',cv2.resize(reconst[0],(256,256)))
-    cv2.waitKey(1)
+    
 
 
 def show_nearest_rotation(pred_views, test_crop):
@@ -45,7 +62,39 @@ def show_nearest_rotation(pred_views, test_crop):
     nearest_views = tiles(np.array(pred_views),1,len(pred_views),10,10)
     cv2.imshow('nearest_views',cv2.resize(nearest_views/255.,(256,len(pred_views)*256)))
     cv2.imshow('test_crop',cv2.resize(test_crop,(256,256)))
-    cv2.waitKey(1)
+    
+
+def plot_scene_with_estimate(test_img,icp_renderer,K_test, R_est_old, t_est_old,R_est_ref, t_est_ref, test_bb, test_score, obj_id, gts=[]):   
+
+    xmin = int(test_bb[0])
+    ymin = int(test_bb[1])
+    xmax = int(test_bb[0]+test_bb[2])
+    ymax = int(test_bb[1]+test_bb[3])
+
+    print ymin, xmin, ymax, xmax
+
+    obj_in_scene = icp_renderer.render_trafo(K_test.copy(), R_est_old, t_est_old, test_img.shape)
+    scene_view = test_img.copy()
+    scene_view[obj_in_scene > 0] = obj_in_scene[obj_in_scene > 0]
+    cv2.rectangle(scene_view, (xmin,ymin),(xmax,ymax), (0,255,0), 2)
+    cv2.putText(scene_view, '%s: %1.3f' % (obj_id,test_score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,255,0), 2)
+    cv2.imshow('scene_estimation',scene_view)
+    
+    obj_in_scene_ref = icp_renderer.render_trafo(K_test.copy(), R_est_ref, t_est_ref,test_img.shape)
+    scene_view_refined = test_img.copy()
+    scene_view_refined[obj_in_scene_ref > 0] = obj_in_scene_ref[obj_in_scene_ref > 0]
+    cv2.rectangle(scene_view_refined, (xmin,ymin),(xmax,ymax), (0,255,0), 2)
+    cv2.putText(scene_view_refined,'%s: %1.3f' % (obj_id,test_score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,255,0), 2)
+    cv2.imshow('scene_estimation_refined',scene_view_refined)
+
+    for gt in gts:
+        if gt['obj_id'] == obj_id:
+            obj_in_scene = icp_renderer.render_trafo(K_test.copy(), gt['cam_R_m2c'], gt['cam_t_m2c'],test_img.shape)
+            scene_view = test_img.copy()
+            scene_view[obj_in_scene > 0] = obj_in_scene[obj_in_scene > 0]
+            cv2.imshow('ground truth scene_estimation',scene_view)
+
+    
 
 def compute_pca_plot_embedding(eval_dir, z_train, z_test=None, save=True):
     sklearn_pca = PCA(n_components=3)
@@ -153,7 +202,39 @@ def plot_R_err_hist(top_n, eval_dir, scene_ids):
     plt.legend(legend)
     tikz_save(os.path.join(eval_dir,'latex','R_err_hist.tex'), figurewidth ='0.45\\textheight', figureheight='0.45\\textheight', show_info=False)
 
+def print_trans_rot_errors(gts, obj_id, ts_est, ts_est_old, Rs_est, Rs_est_old):      
 
+    t_errs = []
+    obj_gts = []
+
+    for gt in gts:
+        if gt['obj_id'] == obj_id:
+            t_errs.append(ts_est[0]-gt['cam_t_m2c'].squeeze())
+            obj_gts.append(gt)
+
+    min_t_err_idx = np.argmin(np.linalg.norm(np.array(t_errs),axis=1))
+    print min_t_err_idx
+    print np.array(t_errs).shape
+    print len(obj_gts)
+    gt = obj_gts[min_t_err_idx].copy()   
+
+    try:
+        print 'Translation Error before refinement'
+        print ts_est_old[0]-gt['cam_t_m2c'].squeeze()
+        print 'Translation Error after refinement'
+        print t_errs[min_t_err_idx]
+        print 'Rotation Error before refinement'
+        print pose_error.re(Rs_est_old[0],gt['cam_R_m2c'])
+        print 'Rotation Error after refinement'
+        print pose_error.re(Rs_est[0],gt['cam_R_m2c'])
+    except:
+        pass
+
+
+        
+
+    return t_errs[min_t_err_idx]
+        
 def plot_vsd_err_hist(eval_args, eval_dir, scene_ids):
     top_n = eval_args.getint('METRIC','TOP_N')
     delta = eval_args.getint('METRIC','VSD_DELTA')

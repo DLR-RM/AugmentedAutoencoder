@@ -12,13 +12,14 @@ from sixd_toolkit.pysixd import transform, misc, inout, pose_error
 from sixd_toolkit.params import dataset_params
 
 # Constants
-N = 2000                                 # number of random points in the dataset
+N = 3000                                 # number of random points in the dataset
 dim = 3                                     # number of dimensions of the points
 verbose = False
-max_mean_dist_factor = 1.5
+max_mean_dist_factor = 2.0
+angle_change_limit = 0.35 # = 20 deg #0.5236=30 deg
 
 
-def best_fit_transform(A, B):
+def best_fit_transform(A, B, depth_only=False, rot_only=False):
     '''
     Calculates the least-squares best-fit transform that maps corresponding points A to B in m spatial dimensions
     Input:
@@ -41,18 +42,31 @@ def best_fit_transform(A, B):
     AA = A - centroid_A
     BB = B - centroid_B
 
-    # rotation matrix
-    H = np.dot(AA.T, BB)
-    U, S, Vt = np.linalg.svd(H)
-    R = np.dot(Vt.T, U.T)
 
-    # special reflection case
-    if np.linalg.det(R) < 0:
-       Vt[m-1,:] *= -1
-       R = np.dot(Vt.T, U.T)
+    if depth_only:
+        R=np.eye(3)
+        t = centroid_B.T - centroid_A.T
+        t = np.array([0,0,t[2]])
 
-    # translation
-    t = centroid_B.T - np.dot(R,centroid_A.T)
+    else:
+        # rotation matrix
+        H = np.dot(AA.T, BB)
+        U, S, Vt = np.linalg.svd(H)
+        R = np.dot(Vt.T, U.T)
+
+        # special reflection case
+        if np.linalg.det(R) < 0:
+           Vt[m-1,:] *= -1
+           R = np.dot(Vt.T, U.T)
+        
+        t = centroid_B.T - np.dot(R,centroid_A.T)
+        t = np.array([t[0],t[1],0])
+        # translation
+        # if rot_only:
+        #     t=np.zeros((3,))
+        # else:
+
+
 
     # homogeneous transformation
     T = np.identity(m+1)
@@ -81,7 +95,7 @@ def nearest_neighbor(src, dst):
     return distances.ravel(), indices.ravel()
 
 
-def icp(A, B, init_pose=None, max_iterations=100, tolerance=0.001, verbose=False):
+def icp(A, B, init_pose=None, max_iterations=100, tolerance=0.001, verbose=False, depth_only=False,rot_only=False):
     '''
     The Iterative Closest Point method: finds best-fit transform that maps points A on to points B
     Input:
@@ -129,14 +143,16 @@ def icp(A, B, init_pose=None, max_iterations=100, tolerance=0.001, verbose=False
         distances, indices = nearest_neighbor(src[:m,:].T, dst[:m,:].T)
 
         # compute the transformation between the current source and nearest destination points
-        T,_,_ = best_fit_transform(src[:m,:].T, dst[:m,indices].T)
+        T,_,_ = best_fit_transform(src[:m,:].T, dst[:m,indices].T, depth_only=depth_only, rot_only=rot_only)
 
-        if verbose:
-            anim = ax.scatter(src[0,:],src[1,:],src[2,:], label='estimated',marker='.',c='red')
-            plt.legend()
-            plt.draw()
-            plt.pause(0.001)
-            anim.remove()
+
+        # if verbose:
+        #     anim = ax.scatter(src[0,:],src[1,:],src[2,:], label='estimated',marker='.',c='red')
+        #     plt.legend()
+        #     plt.draw()
+        #     plt.pause(0.001)
+        #     anim.remove()
+
         # update the current source
         src = np.dot(T, src)
 
@@ -149,10 +165,12 @@ def icp(A, B, init_pose=None, max_iterations=100, tolerance=0.001, verbose=False
         prev_error = mean_error
 
     # calculate final transformation
-    T,_,_ = best_fit_transform(A, src[:m,:].T)
+    T,_,_ = best_fit_transform(A, src[:m,:].T, depth_only=depth_only, rot_only=rot_only)
 
     if verbose:
         anim = ax.scatter(src[0,:],src[1,:],src[2,:], label='estimated',marker='.',c='red')
+        # final_trafo = np.dot(T, orig_src)
+        # anim2 = ax.scatter(final_trafo[0,:],final_trafo[1,:],final_trafo[2,:], label='final_trafo',marker='.',c='black')
         plt.legend()
         plt.show()
 
@@ -160,71 +178,128 @@ def icp(A, B, init_pose=None, max_iterations=100, tolerance=0.001, verbose=False
 
 
 class SynRenderer(object):
-	def __init__(self,train_args):
-		MODEL_PATH = train_args.get('Paths','MODEL_PATH')
-		self.model_path = MODEL_PATH
-		self.W, self.H = eval(train_args.get('Dataset','RENDER_DIMS'))
-		self.renderer
+    def __init__(self,train_args):
+        MODEL_PATH = train_args.get('Paths','MODEL_PATH')
+        self.model = train_args.get('Dataset','MODEL')
+        
+        self.model_path = MODEL_PATH.replace(self.model,'cad')
+        self.renderer
 
-	@lazy_property
-	def renderer(self):
-		return meshrenderer.Renderer([self.model_path],1,'.',1)
-
-	def generate_synthetic_depth(self,K_test, R_est, t_est):
-
-	    # renderer = meshrenderer.Renderer(['/net/rmc-lx0050/home_local/sund_ma/data/SLC_precise_blue.ply'],1,'.',1)
-	    # R = transform.random_rotation_matrix()[:3,:3]
-
-	    _, depth_x = self.renderer.render( 
-	                    obj_id=0,
-	                    W=self.W, 
-	                    H=self.H,
-	                    K=K_test, 
-	                    R=R_est, 
-	                    t=np.array([0,0,t_est[2]]),
-	                    near=10,
-	                    far=10000,
-	                    random_light=False
-	                )
-	    # import cv2
-	    # cv2.imshow('bgr_x',bgr_x)
-	    # scene_mi = cv2.imread('/home_local/sund_ma/data/t-less/t-less_v2/test_primesense/02/rgb/0250.png')
-	    # cv2.imshow('scene_mi',scene_mi)
-	    # cv2.waitKey(0)
-
-	    pts = misc.rgbd_to_point_cloud(K_test,depth_x)[0]
-
-	    return pts
+    @lazy_property
+    def renderer(self):
+        return meshrenderer.Renderer([self.model_path],1,'.',1)
+        # if self.model == 'cad':
+        # if self.model == 'reconst':
+        #   return meshrenderer_phong.Renderer([self.model_path],1,'.',1)
 
 
-def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test):
+    def generate_synthetic_depth(self,K_test, R_est, t_est, test_shape):
 
-	synthetic_pts = icp_renderer.generate_synthetic_depth(K_test, R_est,t_est)
-	centroid_synthetic_pts = np.mean(synthetic_pts, axis=0)
-	max_mean_dist = np.max(np.linalg.norm(synthetic_pts - centroid_synthetic_pts,axis=1))
-	# print 'max_mean_dist', max_mean_dist
-	
-	K_test[0,2] = depth_crop.shape[0]/2
-	K_test[1,2] = depth_crop.shape[1]/2
-	real_depth_pts = misc.rgbd_to_point_cloud(K_test,depth_crop)[0]
+        # renderer = meshrenderer.Renderer(['/net/rmc-lx0050/home_local/sund_ma/data/SLC_precise_blue.ply'],1,'.',1)
+        # R = transform.random_rotation_matrix()[:3,:3]
+        H_test,W_test = test_shape[:2]
+        _, depth_x = self.renderer.render( 
+                        obj_id=0,
+                        W=W_test, 
+                        H=H_test,
+                        K=K_test, 
+                        R=R_est, 
+                        t=np.array([0,0,t_est[2]]),
+                        near=10,
+                        far=10000,
+                        random_light=False
+                    )
+        # import cv2
+        # cv2.imshow('bgr_x',bgr_x)
+        # scene_mi = cv2.imread('/home_local/sund_ma/data/t-less/t-less_v2/test_primesense/02/rgb/0000.png')
+        # cv2.imshow('scene_mi',scene_mi)
+        # cv2.waitKey(0)
 
-	real_synmean_dist = np.linalg.norm(real_depth_pts-centroid_synthetic_pts,axis=1)
-	real_depth_pts = real_depth_pts[real_synmean_dist < max_mean_dist_factor*max_mean_dist]
+        pts = misc.rgbd_to_point_cloud(K_test,depth_x)[0]
 
-	print len(real_depth_pts)
-	if len(real_depth_pts) < 500:
-		print 'not enough visible points'
-		R_refined = R_est
-		t_refined = t_est
-	else:
-		sub_idcs_real = np.random.choice(len(real_depth_pts),np.min([len(real_depth_pts),len(synthetic_pts),N]))
-		sub_idcs_syn = np.random.choice(len(synthetic_pts),np.min([len(real_depth_pts),len(synthetic_pts),N]))
+        return pts
 
-		T, distances, iterations = icp(synthetic_pts[sub_idcs_syn], real_depth_pts[sub_idcs_real], tolerance=0.000001, verbose=verbose)
+    def render_trafo(self, K_test, R_est, t_est, test_shape, downSample = 1):
+        H_test,W_test = test_shape[:2]
 
-		t_est_hom = np.ones((4,1))
-		t_est_hom[:3] = t_est.reshape(3,1)
-		R_refined = np.dot(T[:3,:3],R_est).squeeze()
-		t_refined = np.dot(T,t_est_hom)[:3].squeeze()
+        bgr, depth_x = self.renderer.render( 
+                        obj_id=0,
+                        W=W_test,#/downSample, 
+                        H=H_test,#/downSample,
+                        K=K_test, 
+                        R=R_est, 
+                        t=np.array(t_est),
+                        near=10,
+                        far=10000,
+                        random_light=False
+                    )
+        return bgr
 
-	return (R_refined, t_refined)
+        # ys, xs = np.nonzero(depth_y > 0)
+        # obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
+        # x, y, w, h = obj_bb
+
+        # size = int(np.maximum(h, w) * pad_factor)
+        # left = x+w/2-size/2
+        # right = x+w/2+size/2
+        # top = y+h/2-size/2
+        # bottom = y+h/2+size/2
+
+        # bgr_y = bgr_y[top:bottom, left:right]
+
+def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_dims=(1080,1920), depth_only=False,rot_only=False):
+    synthetic_pts = icp_renderer.generate_synthetic_depth(K_test, R_est,t_est,test_render_dims)
+    print synthetic_pts
+    centroid_synthetic_pts = np.mean(synthetic_pts, axis=0)
+    max_mean_dist = np.max(np.linalg.norm(synthetic_pts - centroid_synthetic_pts,axis=1))
+    # print 'max_mean_dist', max_mean_dist
+    
+    K_test[0,2] = depth_crop.shape[0]/2
+    K_test[1,2] = depth_crop.shape[1]/2
+    real_depth_pts = misc.rgbd_to_point_cloud(K_test,depth_crop)[0]
+
+    real_synmean_dist = np.linalg.norm(real_depth_pts-centroid_synthetic_pts,axis=1)
+    real_depth_pts = real_depth_pts[real_synmean_dist < max_mean_dist_factor*max_mean_dist]
+    print depth_crop.max()
+    print len(real_depth_pts), len(synthetic_pts)
+    if len(real_depth_pts) < len(synthetic_pts)/8.:
+        print 'not enough visible points'
+        R_refined = R_est
+        t_refined = t_est
+    else:
+        sub_idcs_real = np.random.choice(len(real_depth_pts),np.min([len(real_depth_pts),len(synthetic_pts),N]))
+        sub_idcs_syn = np.random.choice(len(synthetic_pts),np.min([len(real_depth_pts),len(synthetic_pts),N]))
+
+        T, distances, iterations = icp(synthetic_pts[sub_idcs_syn], real_depth_pts[sub_idcs_real], 
+                                        tolerance=0.000001, verbose=verbose, depth_only=depth_only, rot_only=rot_only)
+
+
+        # t_est_hom = np.ones((4,1))
+        # t_est_hom[:3] = t_est.reshape(3,1)
+        # R_refined = np.dot(T[:3,:3],R_est).squeeze()
+        # t_refined = np.dot(T,t_est_hom)[:3].squeeze()
+
+        # print T
+        # print R_est
+
+
+        # t_est_hom = np.ones((4,))
+        # t_est_hom[:3] = t_est
+
+        # reject big angle changes
+        if rot_only:
+            angle,_,_ = transform.rotation_from_matrix(T)
+            if np.abs(angle) > angle_change_limit:
+                T = np.eye(4)
+
+        H_est = np.zeros((4,4))
+        # R_est, t_est is from model to camera
+        H_est[3,3] = 1
+        H_est[:3,3] = t_est 
+        H_est[:3,:3] = R_est
+        H_est_refined = np.dot(T,H_est)
+
+        R_refined = H_est_refined[:3,:3]
+        t_refined = H_est_refined[:3,3]
+
+    return (R_refined, t_refined)

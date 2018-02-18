@@ -6,6 +6,7 @@ import time
 import hashlib
 import glob
 import os
+import bitarray
 
 import progressbar
 from pysixd_stuff import transform
@@ -36,7 +37,7 @@ class Dataset(object):
         self.mask_x = np.empty( (self.noof_training_imgs,) + self.shape[:2], dtype= bool)
         self.train_y = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.bg_imgs = np.empty( (self.noof_bg_imgs,) + self.shape, dtype=np.uint8 )
-
+        self.random_syn_masks
 
 
     @lazy_property
@@ -356,6 +357,44 @@ class Dataset(object):
         else:
             kw = self._kw
             return int(kw['min_n_views'])
+    
+    @lazy_property
+    def random_syn_masks(self):
+        random_syn_masks = bitarray.bitarray()
+        with open("/home_local2/sund_ma/src/vae/bin_syn_masks_6deg/arbitrary_syn_masks_1000.bin", 'r') as fh:
+            random_syn_masks.fromfile(fh)
+        occlusion_masks = np.fromstring(random_syn_masks.unpack(), dtype=np.bool)
+        occlusion_masks = occlusion_masks.reshape(-1,224,224,1).astype(np.float32)
+        print occlusion_masks.shape
+
+        occlusion_masks = np.array([cv2.resize(mask,(self.shape[0],self.shape[1]), interpolation = cv2.INTER_NEAREST) for mask in occlusion_masks])           
+        return occlusion_masks
+
+
+    def augment_occlusion(self, masks, verbose=False, min_trans = 0.2, max_trans=0.7, max_occl = 0.25,min_occl = 0.0):
+
+        
+        new_masks = np.zeros_like(masks,dtype=np.bool)
+        occl_masks_batch = self.random_syn_masks[np.random.choice(len(self.random_syn_masks),len(masks))]
+        for idx,mask in enumerate(masks):
+            occl_mask = occl_masks_batch[idx]
+            while True:
+                trans_x = int(np.random.choice([-1,1])*(np.random.rand()*(max_trans-min_trans) + min_trans)*occl_mask.shape[0])
+                trans_y = int(np.random.choice([-1,1])*(np.random.rand()*(max_trans-min_trans) + min_trans)*occl_mask.shape[1])
+                M = np.float32([[1,0,trans_x],[0,1,trans_y]])
+
+                transl_occl_mask = cv2.warpAffine(occl_mask,M,(occl_mask.shape[0],occl_mask.shape[1]))
+
+                overlap_matrix = np.invert(mask.astype(np.bool)) * transl_occl_mask.astype(np.bool)
+                overlap = len(overlap_matrix[overlap_matrix==True])/float(len(mask[mask==0]))
+
+                if overlap < max_occl and overlap > min_occl:
+                    new_masks[idx,...] = np.logical_xor(mask.astype(np.bool), overlap_matrix)
+                    if verbose:
+                        print 'overlap is ', overlap    
+                    break
+
+        return new_masks
 
     def batch(self, batch_size):
 
@@ -367,8 +406,16 @@ class Dataset(object):
         
         if self.noof_bg_imgs > 0:
             rand_idcs_bg = np.random.choice(self.noof_bg_imgs, batch_size, replace=False)
+            
             batch_x, masks, batch_y = self.train_x[rand_idcs], self.mask_x[rand_idcs], self.train_y[rand_idcs]
             rand_vocs = self.bg_imgs[rand_idcs_bg]
+
+            if np.float(self._kw['realistic_occlusion']):
+                masks = self.augment_occlusion(masks.copy(),max_occl=np.float(self._kw['realistic_occlusion']))
+
+
+            # masks
+            
             batch_x[masks] = rand_vocs[masks]
         else:
             batch_x, batch_y = self.train_x[rand_idcs], self.train_y[rand_idcs]

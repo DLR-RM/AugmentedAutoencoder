@@ -14,6 +14,7 @@ import rmcssd.bin.detector as detector
 
 parser = argparse.ArgumentParser()
 parser.add_argument("experiment_name")
+parser.add_argument("ssd_name")
 parser.add_argument("-f", "--folder_str", required=True)
 # parser.add_argument("-gt_bb", action='store_true', default=False)
 arguments = parser.parse_args()
@@ -22,8 +23,8 @@ experiment_name = full_name.pop()
 experiment_group = full_name.pop() if len(full_name) > 0 else ''
 
 folder_str = arguments.folder_str
-
-ssd = detector.Detector('/home_local/sund_ma/ssd_ws/checkpoints/slc_xml2/',num_classes=2)
+ssd_name = arguments.ssd_name
+ssd = detector.Detector(os.path.join('/home_local/sund_ma/ssd_ws/checkpoints', ssd_name))
 
 start_var_list =set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
 
@@ -33,8 +34,6 @@ codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment
 all_var_list = set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
 ae_var_list = all_var_list.symmetric_difference(start_var_list)
 saver = tf.train.Saver(ae_var_list)
-
-
 
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
@@ -54,6 +53,16 @@ for file in files:
     rclasses, rscores, rbboxes = ssd.process(img)
 
     H, W = img.shape[:2]
+    for i in xrange(len(rscores)):
+        score = rscores[i]
+        ymin = int(rbboxes[i, 0] * H)
+        xmin = int(rbboxes[i, 1] * W)
+        ymax = int(rbboxes[i, 2] * H)
+        xmax = int(rbboxes[i, 3] * W)
+        cv2.rectangle(img, (xmin,ymin),(xmax,ymax), (255,0,0), 2)
+        cv2.putText(img, '%1.3f' % score, (xmin, ymax+20), cv2.FONT_ITALIC, .6, (255,0,0), 2)
+    cv2.imshow()
+    continue
 
     ssd_boxes = [ (int(rbboxes[i][0]*H), int(rbboxes[i][1]*W), int(rbboxes[i][2]*H), int(rbboxes[i][3]*W)) for i in xrange(len(rbboxes)) if rclasses[i] == 1 ]
     ssd_imgs = np.empty((len(rbboxes),) + dataset.shape)
@@ -92,14 +101,6 @@ for file in files:
         vis_img[:ssd_rot_imgs.shape[0],dataset.shape[1]:,:] = ssd_rot_imgs
 
 
-    for i in xrange(len(rscores)):
-        score = rscores[i]
-        ymin = int(rbboxes[i, 0] * H)
-        xmin = int(rbboxes[i, 1] * W)
-        ymax = int(rbboxes[i, 2] * H)
-        xmax = int(rbboxes[i, 3] * W)
-        cv2.rectangle(img, (xmin,ymin),(xmax,ymax), (255,0,0), 2)
-        cv2.putText(img, '%1.3f' % score, (xmin, ymax+20), cv2.FONT_ITALIC, .6, (255,0,0), 2)
 
 
     cv2.imshow('preds', vis_img)

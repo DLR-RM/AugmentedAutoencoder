@@ -14,7 +14,6 @@ class Codebook(object):
         self._encoder = encoder
         self._dataset = dataset
         self.embed_bb = embed_bb
-
         
         J = encoder.latent_space_size
         embedding_size = self._dataset.embedding_size
@@ -59,20 +58,16 @@ class Codebook(object):
             idcs = np.argmax(cosine_similarity, axis=1)
             return self._dataset.viewsphere_for_embedding[idcs]
 
-    def nearest_rotation_with_bb_depth(self, session, x, predicted_bb, K_test, top_n, train_args):
+    def nearest_rotation_with_bb_depth(self, session, x, predicted_bb, K_test, top_n, train_args, depth_pred=None):
         
         if x.dtype == 'uint8':
             x = x/255.
             # print 'converted uint8 to float type'
 
-        K_train = np.array(eval(train_args.get('Dataset','K'))).reshape(3,3)
-        render_radius = train_args.getfloat('Dataset','RADIUS')
-
         if x.ndim == 3:
             x = np.expand_dims(x, 0)
         # print np.max(x)
         cosine_similarity, normalized_test_code = session.run([self.cos_similarity,self.normalized_embedding_query], {self._encoder.x: x})
-        embed_obj_bbs = session.run(self.embed_obj_bbs_var)
 
         if top_n > 1:
             unsorted_max_idcs = np.argpartition(-cosine_similarity.squeeze(), top_n)[:top_n]
@@ -83,18 +78,25 @@ class Codebook(object):
         nearest_train_codes = session.run(self.embedding_normalized)[idcs]
         Rs_est = self._dataset.viewsphere_for_embedding[idcs]
 
+        
         # test_depth = f_test / f_train * render_radius * diag_bb_ratio
+
+        K_train = np.array(eval(train_args.get('Dataset','K'))).reshape(3,3)
+        render_radius = train_args.getfloat('Dataset','RADIUS')
+
         K00_ratio = K_test[0,0] / K_train[0,0]  
         K11_ratio = K_test[1,1] / K_train[1,1]  
         mean_K_ratio = np.mean([K00_ratio,K11_ratio])
         
+        embed_obj_bbs = session.run(self.embed_obj_bbs_var) if depth_pred is None else None
+        
         ts_est = np.empty((top_n,3))
         for i,idx in enumerate(idcs):
-            rendered_bb = embed_obj_bbs[idx].squeeze()
+            if depth_pred is None:
+                rendered_bb = embed_obj_bbs[idx].squeeze()
+                diag_bb_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
+                depth_pred = diag_bb_ratio * render_radius * mean_K_ratio
 
-            diag_bb_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
-
-            depth_pred = diag_bb_ratio * render_radius * mean_K_ratio
             center_bb_x = (predicted_bb[0] + predicted_bb[2]/2)
             center_bb_y = (predicted_bb[1] + predicted_bb[3]/2)
 
@@ -106,6 +108,7 @@ class Codebook(object):
 
         return (Rs_est, ts_est, normalized_test_code.squeeze(),nearest_train_codes.squeeze())
         
+
 
 
     def nearest_rotation_batch(self, session, x):

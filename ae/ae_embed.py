@@ -22,11 +22,13 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_name")
+    parser.add_argument('--at_step', default=None, required=False)
     arguments = parser.parse_args()
     full_name = arguments.experiment_name.split('/')
     
     experiment_name = full_name.pop()
     experiment_group = full_name.pop() if len(full_name) > 0 else ''
+    at_step = arguments.at_step
 
     cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
@@ -66,14 +68,17 @@ def main():
 
         print ckpt_dir
         print '#'*20
-        chkpt = tf.train.get_checkpoint_state(ckpt_dir)
-        if chkpt and chkpt.model_checkpoint_path:
-            print chkpt.model_checkpoint_path
-            saver.restore(sess, chkpt.model_checkpoint_path)
-        else:
-            print 'No checkpoint found. Expected one in:\n'
-            print '{}\n'.format(ckpt_dir)
-            exit(-1)
+
+        factory.restore_checkpoint(sess, saver, ckpt_dir, at_step=at_step)
+
+        # chkpt = tf.train.get_checkpoint_state(ckpt_dir)
+        # if chkpt and chkpt.model_checkpoint_path:
+        #     print chkpt.model_checkpoint_path
+        #     saver.restore(sess, chkpt.model_checkpoint_path)
+        # else:
+        #     print 'No checkpoint found. Expected one in:\n'
+        #     print '{}\n'.format(ckpt_dir)
+        #     exit(-1)
 
         if model=='dsprites':
             codebook.update_embedding_dsprites(sess, args)
@@ -81,7 +86,9 @@ def main():
             codebook.update_embedding(sess, batch_size)
 
         print 'Saving new checkoint ..',
+
         saver.save(sess, checkpoint_file, global_step=ae.global_step)
+
         print 'done',
 
 if __name__ == '__main__':

@@ -46,22 +46,25 @@ def main():
         if model_type=='dsprites':
             y_codes=sess.run(codebook._encoder.z, {codebook._encoder.x: dataset.train_y[::1024][40:80]/255.})
             test_codes=sess.run(codebook._encoder.z, {codebook._encoder.x: dataset.train_x[::1024][:160]/255.})
+            y_codes_normed=sess.run(codebook.embedding_normalized, {codebook._encoder.x: dataset.train_y[::1024][:160]/255.})
         else:
             test_codes=sess.run(codebook._encoder.z, {codebook._encoder.x: dataset.train_y[:256]/255.})
+            test_codes_normed=sess.run(codebook.embedding_normalized, {codebook._encoder.x: dataset.train_y[:256]/255.})
         # train_embedding = sess.run(codebook.embedding_normalized)
         print test_codes.shape
         # print train_embedding.shape
 
     # plt.figure()
-    # norm = np.linalg.norm(test_codes,axis=1)
+    norm = np.linalg.norm(y_codes,axis=1)
 
-
+    c = np.linspace(0,1,40)
     if model_type=='dsprites':
-        plt.plot(y_codes[:,0],y_codes[:,1],c='red')
+        plt.scatter(y_codes[:,0]/norm,y_codes[:,1]/norm,c=c,marker='o')
         for i in xrange(4):
-            plt.plot(test_codes[i*40:(i+1)*40,0],test_codes[i*40:(i+1)*40,1],c='green')
+            plt.scatter(y_codes_normed[i*40:(i+1)*40,0],y_codes_normed[i*40:(i+1)*40,1],c=c,marker='triangle_up')
     else:
-        eval_plots.compute_pca_plot_embedding('',y_codes,save=False)
+        eval_plots.compute_pca_plot_embedding('',test_codes,save=False)
+        eval_plots.compute_pca_plot_embedding('',test_codes_normed[:256],save=False)
     # plt.figure()
     # plt.plot(train_embedding[:,0],train_embedding[:,1])
 

@@ -54,20 +54,24 @@ r'''
 from ae import utils as u#
 from sixd_toolkit.pysixd import inout
 import ConfigParser
+from eval import eval_utils
 
 
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('experiment_group')
+	parser.add_argument('--eval_name', default='*', required=False)
 	args = parser.parse_args()
 
 	experiment_group = args.experiment_group
+	eval_name = args.eval_name
+	print eval_name
 
 	workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
 	exp_group_path = os.path.join(workspace_path, 'experiments', experiment_group)
-	error_score_files = glob.glob(os.path.join(exp_group_path, '*/eval/*/*/error*/scores*'))
-
+	error_score_files = glob.glob(os.path.join(exp_group_path, '*/eval',eval_name,'*/error*/scores*'))
+	print error_score_files
 	data_re = []
 	data_te = []
 	data_vsd = []
@@ -81,29 +85,46 @@ def main():
 		error_type = split_path[-2].split('_')[0].split('=')[1]
 		topn = split_path[-2].split('=')[2].split('_')[0]
 		
-
 		eval_cfg_file_path = os.path.join(workspace_path, 'experiments', experiment_group, 
-			exp_name, 'eval', eval_name, test_data, 'eval.cfg')
+			exp_name, 'eval', eval_name, test_data, '*.cfg')
+		eval_cfg_file_pathes = glob.glob(eval_cfg_file_path)
+		if len(eval_cfg_file_pathes) == 0:
+			continue
+		else:
+			eval_cfg_file_path = eval_cfg_file_pathes[0]
+
 		eval_args = ConfigParser.ConfigParser()
 		eval_args.read(eval_cfg_file_path)
+		print eval_cfg_file_path
 		estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
-		obj_id = eval(eval_args.get('DATA', 'OBJECTS'))[0]
-		data = [item[1] for item in eval_args.items('DATA')]
-		print str(data)
+		try:
+			obj_id = eval_args.getint('DATA', 'OBJ_ID')
+		except:
+			obj_id = eval(eval_args.get('DATA', 'OBJECTS'))[0]
 
+		scenes = eval_utils.get_all_scenes_for_obj(eval_args)
+
+
+		data = [item[1] for item in eval_args.items('DATA')]
+		data[2] = scenes
+
+		print str(data)
 
 		error_score_dict = inout.load_yaml(error_score_file)
 		sixd_recall = error_score_dict['obj_recalls'][obj_id]
 
 		if error_type=='re':
 			data_re.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 
-				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data)})
+				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]),
+				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
 		elif error_type=='te':
 			data_te.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 
-				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data)})
+				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]),
+				'eval_scenes': str(data[2]), 'eval_obj': str(data[3])})
 		elif error_type=='vsd':
 			data_vsd.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 
-				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data)})
+				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]),
+				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
 		else:
 			print 'error not known: ', error_type
 
@@ -119,10 +140,12 @@ def main():
 		latex_content.append(df_re.to_latex(index=False, multirow=True))
 		latex_content.append('\\end{adjustbox}')
 		latex_content.append('\n')
+		latex_content.append('\n')
 	if len(df_te) > 0:
 		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
 		latex_content.append(df_te.to_latex(index=False, multirow=True))
 		latex_content.append('\\end{adjustbox}')
+		latex_content.append('\n')
 		latex_content.append('\n')
 	if len(df_vsd) > 0:
 		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
@@ -145,6 +168,8 @@ def main():
 	from subprocess import check_output, Popen
 	check_output(['pdflatex', 'report.tex'], cwd=os.path.dirname(full_filename))
 	Popen(['okular', 'report.pdf'], cwd=os.path.dirname(full_filename))
+
+	print 'finished'
 
 
 

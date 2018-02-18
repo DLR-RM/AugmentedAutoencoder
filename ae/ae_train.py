@@ -102,8 +102,10 @@ def main():
         ' (', progressbar.ETA(), ') ']
     )
 
+    gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.9)
+    config = tf.ConfigProto(gpu_options=gpu_options)
 
-    with tf.Session() as sess:
+    with tf.Session(config=config) as sess:
 
         chkpt = tf.train.get_checkpoint_state(ckpt_dir)
         if chkpt and chkpt.model_checkpoint_path:
@@ -120,13 +122,15 @@ def main():
         if not debug_mode:
             print 'Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))
             bar.start()
-            
+        
+        # print 'before starting queue'
         queue.start(sess)
-
+        # print 'after starting queue'
         for i in xrange(ae.global_step.eval(), num_iter):
             if not debug_mode:
-                
+                # print 'before optimize'
                 sess.run(optimize)
+                # print 'after optimize'
                 if i % 10 == 0:
                     loss = sess.run(merged_loss_summary)
                     summary_writer.add_summary(loss, i)
@@ -137,16 +141,16 @@ def main():
 
                     this_x, this_y = sess.run([queue.x, queue.y])
                     reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
-                    train_imgs = np.hstack(( gu.tiles(this_x, 4, 4), gu.tiles(this_y, 4, 4), gu.tiles(reconstr_train, 4,4)))
+                    train_imgs = np.hstack(( gu.tiles(this_x, 4, 4), gu.tiles(reconstr_train, 4,4),gu.tiles(this_y, 4, 4)))
                     cv2.imwrite(os.path.join(train_fig_dir,'training_images_%s.png' % i), train_imgs*255)
             else:
 
                 this_x, this_y = sess.run([queue.x, queue.y])
                 reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
-                print np.min(this_x), np.max(this_x)
-                print np.min(this_y), np.max(this_y)
-                print np.min(reconstr_train), np.max(reconstr_train)
-                cv2.imshow('sample batch', np.hstack(( gu.tiles(this_x, 4, 4), gu.tiles(this_y, 4, 4), gu.tiles(reconstr_train, 4,4))) )
+                # print np.min(this_x), np.max(this_x)
+                # print np.min(this_y), np.max(this_y)
+                # print np.min(reconstr_train), np.max(reconstr_train)
+                cv2.imshow('sample batch', np.hstack(( gu.tiles(this_x, 3, 3), gu.tiles(reconstr_train, 3,3),gu.tiles(this_y, 3, 3))) )
                 k = cv2.waitKey(0)
                 if k == 27:
                     break

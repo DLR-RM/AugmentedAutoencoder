@@ -1,0 +1,151 @@
+
+\documentclass[a4paper,table]{article}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+\usepackage[a4paper]{geometry}
+\usepackage{hyperref}
+\usepackage{pdflscape}
+\usepackage{booktabs}
+\usepackage{nameref}
+\usepackage{xcolor}
+\usepackage{adjustbox}
+\usepackage{gensymb}
+\usepackage[parfill]{parskip}
+\usepackage[utf8]{inputenc}
+\usepackage{pgfplots}
+
+\usepackage{pifont}
+\hypersetup{
+    colorlinks=true, 
+    linktoc=all,     
+    linkcolor=blue,
+}
+\pagestyle{fancy}
+
+\newcommand*\rot{\rotatebox{90}}
+\newcommand*\OK{\ding{51}}
+
+\begin{document}
+\begin{center}
+{\Huge Experimental Protocol}\\
+\textbf{Tue Feb  6 15:06:18 2018}\\
+\textbf{tless\_new}\\
+\end{center}
+\begin{adjustbox}{max width=\textwidth}\begin{tabular}{lllllllrl}
+\toprule
+ EST\_BBS & error\_type &                eval\_data &   eval\_name & eval\_obj &            eval\_scenes & exp\_name &  sixd\_recall & top \\
+\midrule
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &        2 &         [1, 12, 20, 9] &     obj2 &     0.003018 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &        1 &  [5, 7, 9, 17, 18, 20] &     obj1 &     0.005730 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       14 &            [16, 19, 7] &    obj14 &     0.008820 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &        3 &         [9, 12, 20, 7] &     obj3 &     0.009005 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       13 &            [16, 19, 7] &    obj13 &     0.010519 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &        4 &     [9, 18, 20, 5, 17] &     obj4 &     0.010830 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       24 &        [8, 10, 19, 14] &    obj24 &     0.023711 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       15 &            [16, 19, 7] &    obj15 &     0.028782 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       16 &            [16, 19, 7] &    obj16 &     0.032389 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       30 &            [1, 19, 15] &    obj30 &     0.044399 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       27 &                [5, 15] &    obj27 &     0.047423 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       20 &        [8, 10, 13, 14] &    obj20 &     0.071820 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       23 &        [8, 10, 13, 14] &    obj23 &     0.078490 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       19 &        [8, 10, 13, 14] &    obj19 &     0.082602 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       17 &            [16, 19, 7] &    obj17 &     0.093792 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       11 &             [16, 3, 6] &    obj11 &     0.127402 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       21 &            [8, 10, 13] &    obj21 &     0.139706 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       22 &            [8, 10, 14] &    obj22 &     0.149864 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       12 &             [16, 3, 6] &    obj12 &     0.158078 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       10 &            [16, 11, 5] &    obj10 &     0.159352 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       28 &            [4, 13, 15] &    obj28 &     0.209287 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       25 &                [1, 15] &    obj25 &     0.227181 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       29 &                [1, 15] &    obj29 &     0.317635 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &        8 &             [11, 3, 4] &     obj8 &     0.329801 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       18 &             [19, 3, 7] &    obj18 &     0.331518 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &       26 &                [4, 15] &    obj26 &     0.355865 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &        9 &    [17, 18, 11, 12, 5] &     obj9 &     0.363709 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &        5 &          [11, 2, 3, 4] &     obj5 &     0.393908 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &        7 &     [17, 2, 12, 18, 6] &     obj7 &     0.420927 &   1 \\
+   False &         re &  ['tless', 'primesense'] &  5\_2\_18\_icp &        6 &                 [2, 6] &     obj6 &     0.478958 &   1 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+
+\begin{adjustbox}{max width=\textwidth}\begin{tabular}{lllllllrl}
+\toprule
+ EST\_BBS & error\_type &                eval\_data &   eval\_name & eval\_obj &            eval\_scenes & exp\_name &  sixd\_recall & top \\
+\midrule
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       23 &        [8, 10, 13, 14] &    obj23 &     0.037258 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       20 &        [8, 10, 13, 14] &    obj20 &     0.046883 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       19 &        [8, 10, 13, 14] &    obj19 &     0.055240 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       22 &            [8, 10, 14] &    obj22 &     0.083787 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       21 &            [8, 10, 13] &    obj21 &     0.106952 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &        3 &         [9, 12, 20, 7] &     obj3 &     0.213107 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       17 &            [16, 19, 7] &    obj17 &     0.219298 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       26 &                [4, 15] &    obj26 &     0.239563 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       25 &                [1, 15] &    obj25 &     0.242394 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &        8 &             [11, 3, 4] &     obj8 &     0.268212 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &        2 &         [1, 12, 20, 9] &     obj2 &     0.271127 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &        4 &     [9, 18, 20, 5, 17] &     obj4 &     0.291215 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &        7 &     [17, 2, 12, 18, 6] &     obj7 &     0.300319 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &        1 &  [5, 7, 9, 17, 18, 20] &     obj1 &     0.405123 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       27 &                [5, 15] &    obj27 &     0.426804 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       12 &             [16, 3, 6] &    obj12 &     0.492340 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       11 &             [16, 3, 6] &    obj11 &     0.530961 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       14 &            [16, 19, 7] &    obj14 &     0.573270 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       24 &        [8, 10, 19, 14] &    obj24 &     0.591237 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       28 &            [4, 13, 15] &    obj28 &     0.635262 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       13 &            [16, 19, 7] &    obj13 &     0.639551 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       10 &            [16, 11, 5] &    obj10 &     0.678596 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       18 &             [19, 3, 7] &    obj18 &     0.687543 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &        9 &    [17, 18, 11, 12, 5] &     obj9 &     0.702128 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &        6 &                 [2, 6] &     obj6 &     0.715431 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &        5 &          [11, 2, 3, 4] &     obj5 &     0.728446 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       29 &                [1, 15] &    obj29 &     0.736473 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       16 &            [16, 19, 7] &    obj16 &     0.774629 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       15 &            [16, 19, 7] &    obj15 &     0.784471 &   1 \\
+   False &         te &  ['tless', 'primesense'] &  5\_2\_18\_icp &       30 &            [1, 19, 15] &    obj30 &     0.802596 &   1 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+
+\begin{adjustbox}{max width=\textwidth}\begin{tabular}{lllllllrl}
+\toprule
+ EST\_BBS & error\_type &                eval\_data &   eval\_name & eval\_obj &            eval\_scenes & exp\_name &  sixd\_recall & top \\
+\midrule
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       20 &        [8, 10, 13, 14] &    obj20 &     0.177057 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       23 &        [8, 10, 13, 14] &    obj23 &     0.191754 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       19 &        [8, 10, 13, 14] &    obj19 &     0.217346 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       22 &            [8, 10, 14] &    obj22 &     0.258174 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       21 &            [8, 10, 13] &    obj21 &     0.336230 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &        3 &         [9, 12, 20, 7] &     obj3 &     0.553777 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &        4 &     [9, 18, 20, 5, 17] &     obj4 &     0.560770 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &        1 &  [5, 7, 9, 17, 18, 20] &     obj1 &     0.583418 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       11 &             [16, 3, 6] &    obj11 &     0.656228 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &        8 &             [11, 3, 4] &     obj8 &     0.656291 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &        2 &         [1, 12, 20, 9] &     obj2 &     0.658954 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       14 &            [16, 19, 7] &    obj14 &     0.680461 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       13 &            [16, 19, 7] &    obj13 &     0.685835 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       12 &             [16, 3, 6] &    obj12 &     0.694290 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       17 &            [16, 19, 7] &    obj17 &     0.781377 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       28 &            [4, 13, 15] &    obj28 &     0.783311 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       24 &        [8, 10, 19, 14] &    obj24 &     0.791753 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       10 &            [16, 11, 5] &    obj10 &     0.792032 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       27 &                [5, 15] &    obj27 &     0.792784 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &        7 &     [17, 2, 12, 18, 6] &     obj7 &     0.793930 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       26 &                [4, 15] &    obj26 &     0.832008 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &        9 &    [17, 18, 11, 12, 5] &     obj9 &     0.832597 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       18 &             [19, 3, 7] &    obj18 &     0.844112 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       16 &            [16, 19, 7] &    obj16 &     0.844130 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       25 &                [1, 15] &    obj25 &     0.869168 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       29 &                [1, 15] &    obj29 &     0.886774 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       15 &            [16, 19, 7] &    obj15 &     0.904284 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &        5 &          [11, 2, 3, 4] &     obj5 &     0.905008 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &        6 &                 [2, 6] &     obj6 &     0.908818 &   1 \\
+   False &        vsd &  ['tless', 'primesense'] &  5\_2\_18\_icp &       30 &            [1, 19, 15] &    obj30 &     0.962432 &   1 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{document}

@@ -1,0 +1,195 @@
+
+\documentclass[a4paper,table]{article}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+\usepackage[a4paper]{geometry}
+\usepackage{hyperref}
+\usepackage{pdflscape}
+\usepackage{nameref}
+\usepackage{xcolor}
+\usepackage{adjustbox}
+\usepackage{gensymb}
+\usepackage[parfill]{parskip}
+\usepackage[utf8]{inputenc}
+\usepackage{pgfplots}
+
+\usepackage{pifont}
+\hypersetup{
+    colorlinks=true, 
+    linktoc=all,     
+    linkcolor=blue,
+}
+\pagestyle{fancy}
+
+\newcommand*\rot{\rotatebox{90}}
+\newcommand*\OK{\ding{51}}
+
+\begin{document}
+\begin{center}
+{\Huge Experimental Protocol}\\
+\textbf{Mon Feb  5 23:05:43 2018}\\
+\end{center}
+
+\begin{table}[H]
+    \centering
+    \begin{adjustbox}{max width=\textwidth}
+        \begin{tabular}{c|c}
+            \textbf{experiment group:}& tless\_new\\
+            \textbf{experiment name} & obj5  \\
+            \textbf{evaluation name} & 5\_2\_18\_icp \\
+            \textbf{test dataset} & tless\_primesense \\
+        \end{tabular}
+    \end{adjustbox}
+\end{table}
+
+\chapter{{\Large Train Config}}
+
+[Paths]
+MODEL\_PATH: /net/rmc-lx0050/home\_local/sund\_ma/data/t-less/models\_reconst/obj\_05.ply
+BACKGROUND\_IMAGES\_GLOB: /net/rmc-lx0050/home\_local/sund\_ma/data/VOCdevkit/VOC2012/JPEGImages/*.jpg
+
+[Dataset]
+MODEL: reconst
+H: 128
+W: 128
+C: 3
+RADIUS: 700
+RENDER\_DIMS: (720, 540)
+K: [1075.65, 0, 720/2, 0, 1073.90, 540/2, 0, 0, 1]
+% Scale vertices to mm
+VERTEX\_SCALE: 1
+ANTIALIASING: 8
+PAD\_FACTOR: 1.2
+CLIP\_NEAR: 10
+CLIP\_FAR: 10000
+NOOF\_TRAINING\_IMGS: 10000
+NOOF\_BG\_IMGS: 10000
+
+[Augmentation]
+CROP\_OFFSET\_SIGMA: 20
+CODE: Sequential([
+	%Sometimes(0.5, PerspectiveTransform(0.05)),
+	%Sometimes(0.5, CropAndPad(percent=(-0.05, 0.1))),
+	Sometimes(0.5, Affine(scale=(1.0, 1.2))),
+	Sometimes(0.5, CoarseDropout( p=0.2, size\_percent=0.05) ),
+	Sometimes(0.5, GaussianBlur(1.2*np.random.rand())),
+    Sometimes(0.5, Add((-25, 25), per\_channel=0.3)),
+    Sometimes(0.3, Invert(0.2, per\_channel=True)),
+    Sometimes(0.5, Multiply((0.6, 1.4), per\_channel=0.5)),
+    Sometimes(0.5, Multiply((0.6, 1.4))),
+    Sometimes(0.5, ContrastNormalization((0.5, 2.2), per\_channel=0.3))
+	], random\_order=False)
+
+[Embedding]
+EMBED\_BB: True
+MIN\_N\_VIEWS: 1000
+NUM\_CYCLO: 36
+
+[Network]
+VARIATIONAL: 0
+LOSS: L2\_bootstrapped
+BOOTSTRAP\_RATIO: 4
+NORM\_REGULARIZE: 0
+LATENT\_SPACE\_SIZE: 128
+NUM\_FILTER: [128, 256, 512, 512]
+STRIDES: [2, 2, 2, 2]
+KERNEL\_SIZE\_ENCODER: 5
+KERNEL\_SIZE\_DECODER: 5
+
+
+[Training]
+OPTIMIZER: Adam
+NUM\_ITER: 40000
+BATCH\_SIZE: 64
+LEARNING\_RATE: 1e-4
+SAVE\_INTERVAL: 5000
+
+[Queue]
+% OPENGL\_RENDER\_QUEUE\_SIZE: 500
+NUM\_THREADS: 10
+QUEUE\_SIZE: 50
+
+\chapter{{\Large Evaluation Config}}
+
+[METHOD]
+method = ae
+
+[DATA]
+dataset = tless
+cam\_type = primesense
+scenes = []
+obj\_id = 5
+
+[BBOXES]
+estimate\_bbs = False
+pad\_factor = 1.2
+single\_instance = True
+
+[EVALUATION]
+icp = True
+compute\_errors = True
+evaluate\_errors = True
+
+[METRIC]
+error\_type = ['re','te','vsd']
+top\_n = 1
+vsd\_delta = 15
+vsd\_tau = 20
+vsd\_cost = step
+
+[PLOT]
+nearest\_neighbors = False
+scene\_with\_estimate = False
+reconstruction = False
+cum\_t\_error\_hist = True
+cum\_r\_error\_hist = True
+cum\_vsd\_error\_hist = True
+vsd\_occlusion = True
+r\_error\_occlusion = True
+embedding\_pca = True
+animate\_embedding\_pca = False
+viewsphere = True
+reconstruction\_test\_batch = True
+
+
+
+\begin{center}
+\input{/net/rmc-lx0050/home_local2/sund_ma/autoencoder_ws/experiments/tless_new/obj5/eval/5_2_18_icp/tless_primesense/latex/t_err_hist.tex}\end{center}
+\begin{center}
+\input{/net/rmc-lx0050/home_local2/sund_ma/autoencoder_ws/experiments/tless_new/obj5/eval/5_2_18_icp/tless_primesense/latex/R_err_hist.tex}\end{center}
+\begin{center}
+\input{/net/rmc-lx0050/home_local2/sund_ma/autoencoder_ws/experiments/tless_new/obj5/eval/5_2_18_icp/tless_primesense/latex/vsd_err_hist.tex}\end{center}
+\begin{center}
+\input{/net/rmc-lx0050/home_local2/sund_ma/autoencoder_ws/experiments/tless_new/obj5/eval/5_2_18_icp/tless_primesense/latex/vsd_occlusion.tex}\end{center}
+\begin{center}
+\input{/net/rmc-lx0050/home_local2/sund_ma/autoencoder_ws/experiments/tless_new/obj5/eval/5_2_18_icp/tless_primesense/latex/R_err_occlusion.tex}\end{center}
+
+\begin{figure}
+\centering
+\includegraphics[width=1.\textwidth,height=0.45\textheight,keepaspectratio]{/net/rmc-lx0050/home_local2/sund_ma/autoencoder_ws/experiments/tless_new/obj5/eval/5_2_18_icp/tless_primesense/figures/pca_embedding.pdf}
+\end{figure}
+
+
+\begin{figure}
+\centering
+\includegraphics[width=1.\textwidth,height=0.45\textheight,keepaspectratio]{/net/rmc-lx0050/home_local2/sund_ma/autoencoder_ws/experiments/tless_new/obj5/eval/5_2_18_icp/tless_primesense/figures/embedding_viewpoints.pdf}
+\end{figure}
+
+
+\begin{figure}
+\centering
+\includegraphics[width=1.\textwidth,height=0.45\textheight,keepaspectratio]{/net/rmc-lx0050/home_local2/sund_ma/autoencoder_ws/experiments/tless_new/obj5/train_figures/training_images_29999.png}
+\end{figure}
+
+
+\begin{figure}
+\centering
+\includegraphics[width=1.\textwidth,height=0.45\textheight,keepaspectratio]{/net/rmc-lx0050/home_local2/sund_ma/autoencoder_ws/experiments/tless_new/obj5/eval/5_2_18_icp/tless_primesense/figures/reconstruction_imgs.png}
+\end{figure}
+
+
+\end{document}

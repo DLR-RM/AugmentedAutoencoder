@@ -114,7 +114,7 @@ r'''
 
 ''' % file)
 
-    def save(self, pdf=True, filename = 'report.tex'):
+    def save(self, pdf=True, filename = 'report.tex',open_pdf=True):
         data = ''.join(self.latex)
         full_filename = os.path.join(self.eval_dir,'latex','report.tex')
         with open(full_filename, 'w+') as f:
@@ -125,4 +125,5 @@ r'''
         if pdf:
             from subprocess import check_output, Popen
             check_output(['pdflatex', filename], cwd=os.path.dirname(full_filename))
-            Popen(['okular', filename.split('.')[0] + '.pdf'], cwd=os.path.dirname(full_filename))
+            if open_pdf:
+                Popen(['okular', filename.split('.')[0] + '.pdf'], cwd=os.path.dirname(full_filename))

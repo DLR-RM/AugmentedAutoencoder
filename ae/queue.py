@@ -57,12 +57,15 @@ class Queue(object):
     def __run__(self, session):
         while not self._coordinator.should_stop():        
             # a= time.time()
+            # print 'batching...'
             batch = self._dataset.batch(self._batch_size)
             # print 'batch creation time ', time.time()-a
             
             feed_dict = { k:v for k,v in zip( self._placeholders, batch ) }
             try:
                 session.run(self.enqueue_op, feed_dict)
+                # print 'enqueued something'
             except tf.errors.CancelledError as e:
+                print 'worker was cancelled'
                 pass
             
