@@ -60,14 +60,14 @@ from sixd_toolkit.pysixd import inout
 parser = argparse.ArgumentParser()
 parser.add_argument("experiment_name")
 parser.add_argument("-f", "--file_str", required=True)
-parser.add_argument("-gt_bb", action='store_true', default=False)
+# parser.add_argument("-gt_bb", action='store_true', default=False)
 arguments = parser.parse_args()
 full_name = arguments.experiment_name.split('/')
 experiment_name = full_name.pop()
 experiment_group = full_name.pop() if len(full_name) > 0 else ''
 
 file_str = arguments.file_str
-gt_bb = arguments.gt_bb
+# gt_bb = arguments.gt_bb
 
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 train_cfg_file_path = utils.get_config_file_path(workspace_path, experiment_name, experiment_group)
@@ -110,6 +110,8 @@ with tf.Session() as sess:
 
         im = cv2.imread(file)
         im = cv2.resize(im,(128,128))
+        if train_args.getint('Dataset','C')==1:
+            im=cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)[:,:,None]
 
         R = codebook.nearest_rotation(sess, im/255.)
 

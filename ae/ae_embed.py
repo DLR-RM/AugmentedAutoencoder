@@ -61,7 +61,7 @@ def main():
     batch_size = args.getint('Training', 'BATCH_SIZE')
     model = args.get('Dataset', 'MODEL')
 
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.8)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
     config = tf.ConfigProto(gpu_options=gpu_options)
 
     with tf.Session(config=config) as sess:

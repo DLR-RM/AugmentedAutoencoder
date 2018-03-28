@@ -8,8 +8,12 @@ import numpy as np
 import tensorflow as tf
 from gl_utils import tiles
 from sklearn.decomposition import PCA
+import glob
 
+from meshrenderer import box3d_renderer
 from sixd_toolkit.pysixd import inout,pose_error
+from sixd_toolkit.params import dataset_params
+
 
 
 def plot_reconstruction_test(sess, encoder, decoder, x):
@@ -64,7 +68,117 @@ def show_nearest_rotation(pred_views, test_crop):
     cv2.imshow('test_crop',cv2.resize(test_crop,(256,256)))
     
 
-def plot_scene_with_estimate(test_img,icp_renderer,K_test, R_est_old, t_est_old,R_est_ref, t_est_ref, test_bb, test_score, obj_id, gts=[]):   
+
+def plot_scene_with_3DBoxes(scene_res_dirs,dataset_name='tless',scene_id=1,save=False):
+
+    # sixd_img_path = '/home_local/sund_ma/data/linemod_dataset/test'
+    # model_path = '/home_local/sund_ma/data/linemod_dataset/models'
+    
+
+
+
+    # inout.save_results_sixd17(res_path, preds, run_time=run_time)
+
+
+    # obj_gts = []
+    # obj_infos = []
+    # for object_id in xrange(1,noofobjects+1):
+    #     obj_gts.append(inout.load_gt(os.path.join(sixd_img_path,'{:02d}'.format(object_id),'gt.yml')))
+    #     obj_infos.append(inout.load_info(os.path.join(sixd_img_path,'{:02d}'.format(object_id),'info.yml')))
+    #     print len(obj_gts)
+
+    # dataset_name = eval_args.get('DATA','DATASET')
+    # cam_type = eval_args.get('DATA','CAM_TYPE')
+
+    # data_params = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type='primesense', cam_type='primesense')
+    data_params = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='')
+
+
+    models_cad_files = sorted(glob.glob(os.path.join(os.path.dirname(data_params['model_mpath']),'*.ply')))
+    W,H = data_params['test_im_size']
+
+    renderer_line = box3d_renderer.Renderer(
+        models_cad_files, 
+        1,
+        W,
+        H
+    )
+
+    scene_result_dirs = sorted(glob.glob(scene_res_dirs))
+    print data_params['test_rgb_mpath']
+    print data_params['scene_gt_mpath']
+
+    # for scene_id in xrange(1,21):
+        # sixd_img_path = data_params['test_rgb_mpath'].format(scene_id)
+    scene_gts = inout.load_gt(data_params['scene_gt_mpath'].format(scene_id))
+    scene_infos = inout.load_info(data_params['scene_info_mpath'].format(scene_id))
+
+    scene_dirs = [d for d in scene_result_dirs if '%02d' % scene_id == d.split('/')[-1]]
+    print scene_dirs
+
+    for view in xrange(len(scene_infos)):
+        sixd_img_path = data_params['test_rgb_mpath'].format(scene_id,view)
+        img = cv2.imread(sixd_img_path)
+        # cv2.imshow('',img)
+        # cv2.waitKey(0)
+        K = scene_infos[view]['cam_K']
+        for gt in scene_gts[view]:
+            if gt['obj_id'] not in [1,8,9]:
+                lines_gt = renderer_line.render(gt['obj_id']-1,K,gt['cam_R_m2c'],gt['cam_t_m2c'],10,5000)
+                lines_gt_mask = (np.sum(lines_gt,axis=2) < 20)[:,:,None]
+                print lines_gt.shape
+                lines_gt = lines_gt[:,:,[1,0,2]]
+                img = lines_gt_mask*img + lines_gt
+        for scene_dir in scene_dirs: 
+            try:
+                res_path = glob.glob(os.path.join(scene_dir,'%04d_*.yml' % (view)))
+                print res_path
+                res_path = res_path[0]
+                # print 'here', res_path
+                obj_id = int(res_path.split('_')[-1].split('.')[0])
+                results = inout.load_results_sixd17(res_path)
+                # print results
+                e = results['ests'][0]
+                R_est = e['R']
+                t_est = e['t']
+                K = scene_infos[view]['cam_K']
+                lines = renderer_line.render(obj_id-1,K,R_est,t_est,10,5000)
+                lines_mask = (np.sum(lines,axis=2) < 20)[:,:,None]
+                # img[lines>0] = lines[lines>0]
+                img = lines_mask*img + lines
+            except:
+                print 'undeteceted obj: ', scene_dir
+        cv2.imshow('',img)
+        if cv2.waitKey(1) == 32:
+            cv2.waitKey(0)
+        if save:
+            if not os.path.exists('%02d' % scene_id):
+                os.makedirs('%02d' % scene_id)
+            cv2.imwrite(os.path.join('%02d' % scene_id,'%04d.png' % view), img)
+
+
+
+def plot_scene_with_estimate(test_img,icp_renderer,K_test, R_est_old, t_est_old,R_est_ref, t_est_ref, test_bb, test_score, obj_id, gts=[], bb_pred=None):   
+
+    if bb_pred is not None:
+        scene_detect = test_img.copy()
+        for bb in bb_pred:
+            try:
+                xmin = int(bb['obj_bb'][0])
+                ymin = int(bb['obj_bb'][1])
+                xmax = int(bb['obj_bb'][0]+bb['obj_bb'][2])
+                ymax = int(bb['obj_bb'][1]+bb['obj_bb'][3])
+                if obj_id == bb['obj_id']:
+                    cv2.rectangle(scene_detect, (xmin,ymin),(xmax,ymax), (0,255,0), 2)
+                    cv2.putText(scene_detect, '%s: %1.3f' % (bb['obj_id'],bb['score']), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,255,0), 2)
+                else:
+                    cv2.rectangle(scene_detect, (xmin,ymin),(xmax,ymax), (0,0,255), 2)
+                    # cv2.putText(scene_detect, '%s: %1.3f' % (bb['obj_id'],bb['score']), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,0,255), 2)
+            except:
+                pass
+            #cv2.putText(scene_detect, '%s: %1.3f' % (obj_id,test_score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,255,0), 2)
+        cv2.imshow('scene_detect',scene_detect)
+        
 
     xmin = int(test_bb[0])
     ymin = int(test_bb[1])
@@ -72,7 +186,6 @@ def plot_scene_with_estimate(test_img,icp_renderer,K_test, R_est_old, t_est_old,
     ymax = int(test_bb[1]+test_bb[3])
 
     print ymin, xmin, ymax, xmax
-
     obj_in_scene = icp_renderer.render_trafo(K_test.copy(), R_est_old, t_est_old, test_img.shape)
     scene_view = test_img.copy()
     scene_view[obj_in_scene > 0] = obj_in_scene[obj_in_scene > 0]
@@ -94,7 +207,6 @@ def plot_scene_with_estimate(test_img,icp_renderer,K_test, R_est_old, t_est_old,
             scene_view[obj_in_scene > 0] = obj_in_scene[obj_in_scene > 0]
             cv2.imshow('ground truth scene_estimation',scene_view)
 
-    
 
 def compute_pca_plot_embedding(eval_dir, z_train, z_test=None, save=True):
     sklearn_pca = PCA(n_components=3)
@@ -110,8 +222,11 @@ def compute_pca_plot_embedding(eval_dir, z_train, z_test=None, save=True):
     if z_test is not None:
         ax.scatter(full_z_pca_test[:,0],full_z_pca_test[:,1],full_z_pca_test[:,2], c='red', marker='.', label='test_z')
 
-    plt.title('Embedding Principal Components')
-    plt.legend()
+    # plt.title('Embedding Principal Components')
+    ax.set_xlabel('pc1')
+    ax.set_ylabel('pc2')
+    ax.set_zlabel('pc3')
+    # plt.legend()
     if save:
         plt.savefig(os.path.join(eval_dir,'figures','pca_embedding.pdf'))
 
@@ -144,16 +259,32 @@ def plot_t_err_hist(t_errors, eval_dir):
     plt.legend(['cum x error','cum y error','cum z error'])
     tikz_save(os.path.join(eval_dir,'latex','t_err_hist.tex'), figurewidth ='0.45\\textheight', figureheight='0.45\\textheight', show_info=False)
 
-def plot_R_err_hist(top_n, eval_dir, scene_ids):
-    
+def plot_R_err_hist(top_n, eval_args, eval_dir, scene_ids):
+
+    cam_type = eval_args.get('DATA','cam_type')
+    dataset_name = eval_args.get('DATA','dataset')
+    obj_id = eval_args.getint('DATA','obj_id')
+
+    data_params = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
+
     angle_errs = []
     for scene_id in scene_ids:
-        if not os.path.exists(os.path.join(eval_dir,'error=re_ntop=%s' % top_n,'errors_{:02d}.yml'.format(scene_id))):
-            print 'WARNING: ' + os.path.join(eval_dir,'error=re_ntop=%s' % top_n,'errors_{:02d}.yml'.format(scene_id)) + ' not found'
+        error_file_path = os.path.join(eval_dir,'error=re_ntop=%s' % top_n,'errors_{:02d}.yml'.format(scene_id))
+        if not os.path.exists(error_file_path):
+            print 'WARNING: ' + error_file_path + ' not found'
             continue
-        angle_errs_dict = inout.load_yaml(os.path.join(eval_dir,'error=re_ntop=%s' % top_n,'errors_{:02d}.yml'.format(scene_id)))
-        angle_errs += [angle_e['errors'].values()[0] for angle_e in angle_errs_dict]
+        # angle_errs_dict = inout.load_yaml(error_file_path)
+        # angle_errs += [angle_e['errors'].values()[0] for angle_e in angle_errs_dict]
+        
+        gts = inout.load_gt(data_params['scene_gt_mpath'].format(scene_id))
+        visib_gts = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, 15))
+        re_dict = inout.load_yaml(error_file_path)
 
+        for view,re_e in enumerate(re_dict):
+            for gt,visib_gt in zip(gts[view],visib_gts[view]):
+                if gt['obj_id'] == obj_id:
+                    if visib_gt['visib_fract'] > 0.1:
+                        angle_errs += [re_e['errors'].values()[0]]
 
     if len(angle_errs) == 0:
         return
@@ -240,8 +371,13 @@ def plot_vsd_err_hist(eval_args, eval_dir, scene_ids):
     delta = eval_args.getint('METRIC','VSD_DELTA')
     tau = eval_args.getint('METRIC','VSD_TAU')
     cost = eval_args.get('METRIC','VSD_COST')
+    cam_type = eval_args.get('DATA','cam_type')
+    dataset_name = eval_args.get('DATA','dataset')
+    obj_id = eval_args.getint('DATA','obj_id')
 
 
+    data_params = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
+    
     vsd_errs = []
     for scene_id in scene_ids:
         error_file_path = os.path.join(eval_dir,'error=vsd_ntop=%s_delta=%s_tau=%s_cost=%s' % (top_n, delta, tau, cost), 'errors_{:02d}.yml'.format(scene_id))
@@ -249,13 +385,19 @@ def plot_vsd_err_hist(eval_args, eval_dir, scene_ids):
         if not os.path.exists(error_file_path):
             print 'WARNING: ' + error_file_path + ' not found'
             continue
-
+        gts = inout.load_gt(data_params['scene_gt_mpath'].format(scene_id))
+        visib_gts = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, 15))
         vsd_dict = inout.load_yaml(error_file_path)
-        vsd_errs += [vsd_e['errors'].values()[0] for vsd_e in vsd_dict]
+        for view,vsd_e in enumerate(vsd_dict):
+            for gt,visib_gt in zip(gts[view],visib_gts[view]):
+                if gt['obj_id'] == obj_id:
+                    if visib_gt['visib_fract'] > 0.1:
+                        vsd_errs += [vsd_e['errors'].values()[0]]
 
     if len(vsd_errs) == 0:
         return
     vsd_errs = np.array(vsd_errs)
+    print len(vsd_errs)
 
     fig = plt.figure()
     ax = plt.gca()
@@ -278,13 +420,13 @@ def plot_vsd_err_hist(eval_args, eval_dir, scene_ids):
             min_vsd_errs[view] = np.min(top_n_errors)
 
         min_vsd_errs_sorted = np.sort(min_vsd_errs)
-        recall = (np.arange(total_views)+1.)/total_views
+        recall = np.float32(np.arange(total_views)+1.)/total_views
 
         # fill curve
         min_vsd_errs_sorted = np.hstack((min_vsd_errs_sorted, np.array([1.])))
         recall = np.hstack((recall,np.array([1.])))
 
-        AUC_vsd = np.trapz(recall,min_vsd_errs_sorted)
+        AUC_vsd = np.trapz(recall, min_vsd_errs_sorted)
         plt.plot(min_vsd_errs_sorted,recall)
         
         legend += ['top {0} vsd err, AUC = {1:.4f}'.format(n,AUC_vsd)]

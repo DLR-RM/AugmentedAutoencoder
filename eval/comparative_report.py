@@ -75,15 +75,22 @@ def main():
 	data_re = []
 	data_te = []
 	data_vsd = []
+	data_cou = []
+	data_add = []
+	data_adi = []
+	data_paper = {}
 	latex_content = []
 
 	for error_score_file in error_score_files:
 		split_path = error_score_file.split('/')
 		exp_name = split_path[-6]
 		eval_name = split_path[-4]
+		occl = 'occlusion' if 'occlusion' in error_score_file else ''
 		test_data = split_path[-3]
 		error_type = split_path[-2].split('_')[0].split('=')[1]
+		print error_type
 		topn = split_path[-2].split('=')[2].split('_')[0]
+		error_thres = split_path[-1].split('=')[1].split('_')[0]
 		
 		eval_cfg_file_path = os.path.join(workspace_path, 'experiments', experiment_group, 
 			exp_name, 'eval', eval_name, test_data, '*.cfg')
@@ -106,48 +113,102 @@ def main():
 
 
 		data = [item[1] for item in eval_args.items('DATA')]
-		data[2] = scenes
+		data[2] = eval(eval_args.get('DATA','SCENES')) if len(eval(eval_args.get('DATA','SCENES'))) > 0 else eval_utils.get_all_scenes_for_obj(eval_args)
 
-		print str(data)
+		# print str(data)
 
 		error_score_dict = inout.load_yaml(error_score_file)
-		sixd_recall = error_score_dict['obj_recalls'][obj_id]
+		try:
+			sixd_recall = error_score_dict['obj_recalls'][obj_id]
+		except:
+			continue
+		
+		if error_type=='vsd':
+			if not data_paper.has_key(int(data[3])):
+				data_paper[int(data[3])] = {}
+				data_paper[int(data[3])]['eval_obj'] = int(data[3])
+			data_paper[int(data[3])][eval_name+'_'+error_type] = float(sixd_recall)*100
+
 
 		if error_type=='re':
-			data_re.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 
-				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]),
+			data_re.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
+				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
 		elif error_type=='te':
-			data_te.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 
-				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]),
+			data_te.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
+				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2] + [occl]),
 				'eval_scenes': str(data[2]), 'eval_obj': str(data[3])})
 		elif error_type=='vsd':
-			data_vsd.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 
-				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]),
+			data_vsd.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
+				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
+				'eval_scenes': str(data[2]),'eval_obj': int(data[3]) if '[' not in data[3] else eval(data[3])[0]})
+		elif error_type=='cou':
+			data_cou.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
+				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
+				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
+		elif error_type=='add':
+			data_add.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
+				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
+				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
+		elif error_type=='adi':
+			data_adi.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
+				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
 		else:
 			print 'error not known: ', error_type
 
 
+	
 
-	df_re = pd.DataFrame(data_re).sort_values(by=['eval_name','sixd_recall'])
-	df_te = pd.DataFrame(data_te).sort_values(by=['eval_name','sixd_recall'])
-	df_vsd = pd.DataFrame(data_vsd).sort_values(by=['eval_name','sixd_recall'])
-
-
+	
 	if len(data_re) > 0:
+		df_re = pd.DataFrame(data_re).sort_values(by=['eval_name','eval_data','sixd_recall'])
 		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
 		latex_content.append(df_re.to_latex(index=False, multirow=True))
 		latex_content.append('\\end{adjustbox}')
 		latex_content.append('\n')
 		latex_content.append('\n')
-	if len(df_te) > 0:
+	if len(data_te) > 0:
+		df_te = pd.DataFrame(data_te).sort_values(by=['eval_name','eval_data','sixd_recall'])
 		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
 		latex_content.append(df_te.to_latex(index=False, multirow=True))
 		latex_content.append('\\end{adjustbox}')
 		latex_content.append('\n')
 		latex_content.append('\n')
-	if len(df_vsd) > 0:
+	if len(data_cou) > 0:
+		df_cou = pd.DataFrame(data_cou).sort_values(by=['eval_name','eval_data','sixd_recall'])
+		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
+		latex_content.append(df_cou.to_latex(index=False, multirow=True))
+		latex_content.append('\\end{adjustbox}')
+		latex_content.append('\n')
+		latex_content.append('\n')
+	if len(data_add) > 0:
+		df_add = pd.DataFrame(data_add).sort_values(by=['eval_name','eval_data','sixd_recall'])
+		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
+		latex_content.append(df_add.to_latex(index=False, multirow=True))
+		latex_content.append('\\end{adjustbox}')
+		latex_content.append('\n')
+		latex_content.append('\n')
+	if len(data_adi) > 0:
+		df_adi = pd.DataFrame(data_adi).sort_values(by=['eval_name','eval_data','sixd_recall'])
+		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
+		latex_content.append(df_adi.to_latex(index=False, multirow=True))
+		latex_content.append('\\end{adjustbox}')
+		latex_content.append('\n')
+		latex_content.append('\n')
+	if len(data_paper) > 0:
+		df_paper = pd.DataFrame.from_dict(data_paper, orient='index')
+		cols = ['eval_obj']  + [col for col in df_paper if col != 'eval_obj']
+		df_paper = df_paper[cols]
+
+		df_paper.loc['mean'] = df_paper.mean(axis=0)
+		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
+		latex_content.append(df_paper.to_latex(index=False, multirow=True, float_format='%.2f'))
+		latex_content.append('\\end{adjustbox}')
+		latex_content.append('\n')
+		latex_content.append('\n')
+	if len(data_vsd) > 0:
+		df_vsd = pd.DataFrame(data_vsd).sort_values(by=['eval_name','eval_data','sixd_recall'])
 		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
 		latex_content.append(df_vsd.to_latex(index=False, multirow=True))
 		latex_content.append('\\end{adjustbox}')

@@ -27,7 +27,7 @@ class Dataset(object):
         self.noof_training_imgs = int(kw['noof_training_imgs'])
         self.dataset_path = dataset_path
 
-        self.bg_img_paths = glob.glob( kw['background_images_glob'] )
+        self.bg_img_paths = glob.glob(kw['background_images_glob'])
         self.noof_bg_imgs = min(int(kw['noof_bg_imgs']), len(self.bg_img_paths))
         
         self._aug = eval(kw['code'])
@@ -37,7 +37,8 @@ class Dataset(object):
         self.mask_x = np.empty( (self.noof_training_imgs,) + self.shape[:2], dtype= bool)
         self.train_y = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.bg_imgs = np.empty( (self.noof_bg_imgs,) + self.shape, dtype=np.uint8 )
-        self.random_syn_masks
+        if np.float(eval(self._kw['realistic_occlusion'])):
+            self.random_syn_masks
 
 
     @lazy_property
@@ -112,11 +113,11 @@ class Dataset(object):
         latents_bases = np.concatenate((latents_sizes[::-1].cumprod()[::-1][1:],
                                         np.array([1,])))
 
-        latents_classes_heart = latents_classes[-245760:]
+        latents_classes_heart = latents_classes[:245760]
         latents_classes_heart_rot = latents_classes_heart.copy()
 
         latents_classes_heart_rot[:, 0] = 0
-        latents_classes_heart_rot[:, 1] = 2
+        latents_classes_heart_rot[:, 1] = 0
         latents_classes_heart_rot[:, 2] = 5
         latents_classes_heart_rot[:, 4] = 16
         latents_classes_heart_rot[:, 5] = 16
@@ -148,19 +149,32 @@ class Dataset(object):
 
     def load_bg_images(self, dataset_path):
         current_config_hash = hashlib.md5(str(self.shape) + str(self.bg_img_paths)).hexdigest()
-        current_file_name = os.path.join(dataset_path, current_config_hash + '.npy')
+        current_file_name = os.path.join(dataset_path, current_config_hash +'.npy')
         if os.path.exists(current_file_name):
             self.bg_imgs = np.load(current_file_name)
         else:
             file_list = self.bg_img_paths[:self.noof_bg_imgs]
+            from random import shuffle
+            shuffle(file_list)
+
 
             for j,fname in enumerate(file_list):
                 print 'loading bg img %s/%s' % (j,self.noof_bg_imgs)
                 bgr = cv2.imread(fname)
-                bgr = cv2.resize(bgr, self.shape[:2])
-
+                H,W = bgr.shape[:2]
+                y_anchor = int(np.random.rand() * (H-self.shape[0]))
+                x_anchor = int(np.random.rand() * (W-self.shape[1]))
+                # bgr = cv2.resize(bgr, self.shape[:2])                    
+                bgr = bgr[y_anchor:y_anchor+self.shape[0],x_anchor:x_anchor+self.shape[1],:]
+                if bgr.shape[0]!=self.shape[0] or bgr.shape[1]!=self.shape[1]:
+                    continue
+                if self.shape[2] == 1:
+                    bgr = cv2.cvtColor(np.uint8(bgr), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
                 self.bg_imgs[j] = bgr
             np.save(current_file_name,self.bg_imgs)
+
+
+
         print 'loaded %s bg images' % self.noof_bg_imgs
 
 
@@ -297,6 +311,10 @@ class Dataset(object):
             bgr_y = bgr_y[top:bottom, left:right]
             bgr_y = cv2.resize(bgr_y, (W, H), interpolation = cv2.INTER_NEAREST)
 
+            if self.shape[2] == 1:
+                bgr_x = cv2.cvtColor(np.uint8(bgr_x), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
+                bgr_y = cv2.cvtColor(np.uint8(bgr_y), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
+
             self.train_x[i] = bgr_x.astype(np.uint8)
             self.mask_x[i] = mask_x
             self.train_y[i] = bgr_y.astype(np.uint8)
@@ -347,7 +365,10 @@ class Dataset(object):
             bottom = y+h/2+size/2
 
             bgr_y = bgr_y[top:bottom, left:right]
-            batch[i] = cv2.resize(bgr_y, self.shape[:2], interpolation = cv2.INTER_NEAREST) / 255.
+            resized_bgr_y = cv2.resize(bgr_y, self.shape[:2], interpolation = cv2.INTER_NEAREST)
+            if self.shape[2] == 1:
+                resized_bgr_y = cv2.cvtColor(resized_bgr_y, cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
+            batch[i] = resized_bgr_y / 255.
         return (batch, obj_bbs)
 
     @property
@@ -360,8 +381,10 @@ class Dataset(object):
     
     @lazy_property
     def random_syn_masks(self):
+        workspace_path = os.environ.get('AE_WORKSPACE_PATH')
+
         random_syn_masks = bitarray.bitarray()
-        with open("/home_local2/sund_ma/src/vae/bin_syn_masks_6deg/arbitrary_syn_masks_1000.bin", 'r') as fh:
+        with open(os.path.join(workspace_path,'random_tless_masks/arbitrary_syn_masks_1000.bin'), 'r') as fh:
             random_syn_masks.fromfile(fh)
         occlusion_masks = np.fromstring(random_syn_masks.unpack(), dtype=np.bool)
         occlusion_masks = occlusion_masks.reshape(-1,224,224,1).astype(np.float32)
@@ -410,7 +433,7 @@ class Dataset(object):
             batch_x, masks, batch_y = self.train_x[rand_idcs], self.mask_x[rand_idcs], self.train_y[rand_idcs]
             rand_vocs = self.bg_imgs[rand_idcs_bg]
 
-            if np.float(self._kw['realistic_occlusion']):
+            if eval(self._kw['realistic_occlusion']):
                 masks = self.augment_occlusion(masks.copy(),max_occl=np.float(self._kw['realistic_occlusion']))
 
 
