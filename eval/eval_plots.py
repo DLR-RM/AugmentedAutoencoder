@@ -29,8 +29,11 @@ def plot_reconstruction_test(sess, encoder, decoder, x):
     cv2.imshow('reconst_test',cv2.resize(reconst[0],(256,256)))
     
 
-def plot_reconstruction_test_batch(sess, encoder, decoder, test_img_crops, noof_scene_views, obj_id, eval_dir=None):
+def plot_reconstruction_test_batch(sess, codebook, decoder, test_img_crops, noof_scene_views, obj_id, eval_dir=None):
     
+    encoder = codebook._encoder
+    dataset = codebook._dataset
+
     sample_views = np.random.choice(noof_scene_views, np.min([100,noof_scene_views]), replace=False)
     
     sample_batch = []
@@ -49,9 +52,20 @@ def plot_reconstruction_test_batch(sess, encoder, decoder, test_img_crops, noof_
         print 'converted uint8 to float type'
     
     reconst = sess.run(decoder.x, feed_dict={encoder.x: x})
+    nearest_neighbors = []
+    for xi in x:
+        Rs_est = codebook.nearest_rotation(sess, xi, top_n=8)
+        pred_views = []
+        pred_views.append(xi*255)
+        for R_est in Rs_est:
+            pred_views.append(dataset.render_rot( R_est ,downSample = 1))
+        nearest_neighbors.append(tiles(np.array(pred_views),1,len(pred_views),10,10))
+
+    all_nns_img = tiles(np.array(nearest_neighbors),len(nearest_neighbors),1,10,10)
 
     reconstruction_imgs = np.hstack(( tiles(x, 4, 4), tiles(reconst, 4, 4)))
     cv2.imwrite(os.path.join(eval_dir,'figures','reconstruction_imgs.png'), reconstruction_imgs*255)
+    cv2.imwrite(os.path.join(eval_dir,'figures','nearest_neighbors_imgs.png'), all_nns_img)
 
 def plot_reconstruction_train(sess, decoder, train_code):
     if train_code.ndim == 1:
@@ -61,13 +75,14 @@ def plot_reconstruction_train(sess, decoder, train_code):
     
 
 
-def show_nearest_rotation(pred_views, test_crop):
-
+def show_nearest_rotation(pred_views, test_crop, view):
+    print np.array(pred_views).shape 
     nearest_views = tiles(np.array(pred_views),1,len(pred_views),10,10)
-    cv2.imshow('nearest_views',cv2.resize(nearest_views/255.,(256,len(pred_views)*256)))
+    cv2.imshow('nearest_views',cv2.resize(nearest_views/255.,(len(pred_views)*256,256)))
     cv2.imshow('test_crop',cv2.resize(test_crop,(256,256)))
-    
 
+    # cv2.imwrite('/home_local2/sund_ma/autoencoder_ws/aae_imgs/nearest_views_%s.png' % view,nearest_views)
+    
 
 def plot_scene_with_3DBoxes(scene_res_dirs,dataset_name='tless',scene_id=1,save=False):
 
@@ -200,12 +215,12 @@ def plot_scene_with_estimate(test_img,icp_renderer,K_test, R_est_old, t_est_old,
     cv2.putText(scene_view_refined,'%s: %1.3f' % (obj_id,test_score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,255,0), 2)
     cv2.imshow('scene_estimation_refined',scene_view_refined)
 
-    for gt in gts:
-        if gt['obj_id'] == obj_id:
-            obj_in_scene = icp_renderer.render_trafo(K_test.copy(), gt['cam_R_m2c'], gt['cam_t_m2c'],test_img.shape)
-            scene_view = test_img.copy()
-            scene_view[obj_in_scene > 0] = obj_in_scene[obj_in_scene > 0]
-            cv2.imshow('ground truth scene_estimation',scene_view)
+    # for gt in gts:
+    #     if gt['obj_id'] == obj_id:
+    #         obj_in_scene = icp_renderer.render_trafo(K_test.copy(), gt['cam_R_m2c'], gt['cam_t_m2c'],test_img.shape)
+    #         scene_view = test_img.copy()
+    #         scene_view[obj_in_scene > 0] = obj_in_scene[obj_in_scene > 0]
+    #         cv2.imshow('ground truth scene_estimation',scene_view)
 
 
 def compute_pca_plot_embedding(eval_dir, z_train, z_test=None, save=True):
@@ -240,6 +255,8 @@ def plot_viewsphere_for_embedding(Rs_viewpoints, eval_dir):
     plt.legend()
     plt.savefig(os.path.join(eval_dir,'figures','embedding_viewpoints.pdf'))
 
+
+
 def plot_t_err_hist(t_errors, eval_dir):
 
     x = np.sort(np.abs(t_errors[:,0]))
@@ -259,11 +276,48 @@ def plot_t_err_hist(t_errors, eval_dir):
     plt.legend(['cum x error','cum y error','cum z error'])
     tikz_save(os.path.join(eval_dir,'latex','t_err_hist.tex'), figurewidth ='0.45\\textheight', figureheight='0.45\\textheight', show_info=False)
 
-def plot_R_err_hist(top_n, eval_args, eval_dir, scene_ids):
+def plot_t_err_hist2(t_errors, eval_dir, bins=15):
+    fig = plt.figure()
+    plt.title('Translation Error Histogram')
+    plt.xlabel('translation err [mm]')
+    plt.ylabel('views')
+    bounds = np.linspace(0,100,bins+1)
+    bin_count = []
+    eucl_terr = np.linalg.norm(t_errors,axis=1)
+    for idx in xrange(bins):
+        bin_idcs = np.where((eucl_terr>bounds[idx]) & (eucl_terr<bounds[idx+1]))
+        bin_count.append(len(bin_idcs[0]))
+    middle_bin = bounds[:-1] + (bounds[1]-bounds[0])/2.
+    plt.bar(middle_bin,bin_count,100*0.5/bins)
+    tikz_save(os.path.join(eval_dir,'latex','t_err_hist2.tex'), figurewidth ='0.45\\textheight', figureheight='0.45\\textheight', show_info=False)
 
+def plot_R_err_hist2(R_errors, eval_dir, bins=15):
+
+    fig = plt.figure()
+    plt.title('Rotation Error Histogram')
+    plt.xlabel('Rotation err [deg]')
+    plt.ylabel('views')
+    bounds = np.linspace(0,180,bins+1)
+    bin_count = []
+    for idx in xrange(bins):
+        bin_idcs = np.where((R_errors>bounds[idx]) & (R_errors<bounds[idx+1]))
+        bin_count.append(len(bin_idcs[0]))
+    middle_bin = bounds[:-1] + (bounds[1]-bounds[0])/2.
+    plt.bar(middle_bin,bin_count,180*0.5/bins)
+    tikz_save(os.path.join(eval_dir,'latex','R_err_hist2.tex'), figurewidth ='0.45\\textheight', figureheight='0.45\\textheight', show_info=False)
+
+
+def plot_R_err_hist(eval_args, eval_dir, scene_ids):
+    
+    top_n_eval = eval_args.getint('EVALUATION','TOP_N_EVAL')
+    top_n = eval_args.getint('METRIC','TOP_N')
     cam_type = eval_args.get('DATA','cam_type')
     dataset_name = eval_args.get('DATA','dataset')
     obj_id = eval_args.getint('DATA','obj_id')
+
+
+    if top_n_eval < 1:
+        return
 
     data_params = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
 
@@ -280,18 +334,18 @@ def plot_R_err_hist(top_n, eval_args, eval_dir, scene_ids):
         visib_gts = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, 15))
         re_dict = inout.load_yaml(error_file_path)
 
-        for view,re_e in enumerate(re_dict):
+        for view in xrange(len(gts)):
+            res = re_dict[view*top_n:(view+1)*top_n]
             for gt,visib_gt in zip(gts[view],visib_gts[view]):
                 if gt['obj_id'] == obj_id:
                     if visib_gt['visib_fract'] > 0.1:
-                        angle_errs += [re_e['errors'].values()[0]]
+                        for re_e in res:
+                            angle_errs += [re_e['errors'].values()[0]]
 
     if len(angle_errs) == 0:
         return
         
     angle_errs = np.array(angle_errs)
-
-
 
     fig = plt.figure()
     plt.grid()
@@ -357,16 +411,18 @@ def print_trans_rot_errors(gts, obj_id, ts_est, ts_est_old, Rs_est, Rs_est_old):
         print 'Rotation Error before refinement'
         print pose_error.re(Rs_est_old[0],gt['cam_R_m2c'])
         print 'Rotation Error after refinement'
-        print pose_error.re(Rs_est[0],gt['cam_R_m2c'])
+        R_err = pose_error.re(Rs_est[0],gt['cam_R_m2c'])
+        print R_err
     except:
         pass
 
 
         
 
-    return t_errs[min_t_err_idx]
+    return (t_errs[min_t_err_idx], R_err)
         
 def plot_vsd_err_hist(eval_args, eval_dir, scene_ids):
+    top_n_eval = eval_args.getint('EVALUATION','TOP_N_EVAL')
     top_n = eval_args.getint('METRIC','TOP_N')
     delta = eval_args.getint('METRIC','VSD_DELTA')
     tau = eval_args.getint('METRIC','VSD_TAU')
@@ -375,6 +431,8 @@ def plot_vsd_err_hist(eval_args, eval_dir, scene_ids):
     dataset_name = eval_args.get('DATA','dataset')
     obj_id = eval_args.getint('DATA','obj_id')
 
+    if top_n_eval < 1:
+        return
 
     data_params = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
     
@@ -389,10 +447,13 @@ def plot_vsd_err_hist(eval_args, eval_dir, scene_ids):
         visib_gts = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, 15))
         vsd_dict = inout.load_yaml(error_file_path)
         for view,vsd_e in enumerate(vsd_dict):
+            vsds = vsd_dict[view*top_n:(view+1)*top_n]
             for gt,visib_gt in zip(gts[view],visib_gts[view]):
                 if gt['obj_id'] == obj_id:
                     if visib_gt['visib_fract'] > 0.1:
-                        vsd_errs += [vsd_e['errors'].values()[0]]
+                        for vsd_e in vsds:
+                            vsd_errs += [vsd_e['errors'].values()[0]]
+
 
     if len(vsd_errs) == 0:
         return
@@ -435,10 +496,14 @@ def plot_vsd_err_hist(eval_args, eval_dir, scene_ids):
 
 def plot_vsd_occlusion(eval_args, eval_dir, scene_ids, all_test_visibs, bins = 10):
 
+    top_n_eval = eval_args.getint('EVALUATION','TOP_N_EVAL')
     top_n = eval_args.getint('METRIC','TOP_N')
     delta = eval_args.getint('METRIC','VSD_DELTA')
     tau = eval_args.getint('METRIC','VSD_TAU')
     cost = eval_args.get('METRIC','VSD_COST')
+
+    if top_n_eval < 1:
+        return
 
     all_vsd_errs = []
     for scene_id in scene_ids:
@@ -498,8 +563,11 @@ def plot_vsd_occlusion(eval_args, eval_dir, scene_ids, all_test_visibs, bins = 1
     
 def plot_re_rect_occlusion(eval_args, eval_dir, scene_ids, all_test_visibs, bins = 10):
 
+    top_n_eval = eval_args.getint('EVALUATION','TOP_N_EVAL')
     top_n = eval_args.getint('METRIC','TOP_N')
-    
+    if top_n_eval < 1:
+        return
+        
     all_angle_errs = []
     for scene_id in scene_ids:
 

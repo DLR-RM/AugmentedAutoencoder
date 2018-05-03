@@ -51,6 +51,7 @@ def build_decoder(reconstruction_target, encoder, args, is_training=True):
     LOSS = args.get('Network', 'LOSS')
     BOOTSTRAP_RATIO = args.getint('Network', 'BOOTSTRAP_RATIO')
     VARIATIONAL = args.getfloat('Network', 'VARIATIONAL') if is_training else False
+    AUXILIARY_MASK = args.getboolean('Network', 'AUXILIARY_MASK')
     decoder = Decoder(
         reconstruction_target,
         encoder.sampled_z if VARIATIONAL else encoder.z,
@@ -58,7 +59,8 @@ def build_decoder(reconstruction_target, encoder, args, is_training=True):
         KERNEL_SIZE_DECODER,
         list( reversed(STRIDES) ),
         LOSS,
-        BOOTSTRAP_RATIO
+        BOOTSTRAP_RATIO,
+        AUXILIARY_MASK
     )
     return decoder
 

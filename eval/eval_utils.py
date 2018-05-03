@@ -15,7 +15,7 @@ def get_gt_scene_crops(scene_id, eval_args, train_args):
 
     dataset_name = eval_args.get('DATA','DATASET')
     cam_type = eval_args.get('DATA','CAM_TYPE')
-    icp = eval_args.get('EVALUATION','ICP')
+    icp = eval_args.getboolean('EVALUATION','ICP')
 
     delta = eval_args.get('METRIC', 'VSD_DELTA')
 
@@ -33,16 +33,11 @@ def get_gt_scene_crops(scene_id, eval_args, train_args):
     if os.path.exists(current_file_name):
         data = np.load(current_file_name)
         test_img_crops = data['test_img_crops'].item()
-        try:
-            test_img_depth_crops = data['test_img_depth_crops'].item()
-        except:
-            test_img_depth_crops = {}
-
+        test_img_depth_crops = data['test_img_depth_crops'].item()
         bb_scores = data['bb_scores'].item()
         bb_vis = data['visib_gt'].item()
         bbs = data['bbs'].item()
-        print 'loaded previously generated ground truth crops!'
-    else:
+    if not os.path.exists(current_file_name) or len(test_img_crops) == 0 or len(test_img_depth_crops) == 0:
         test_imgs = load_scenes(scene_id, eval_args)
         test_imgs_depth = load_scenes(scene_id, eval_args, depth=True) if icp else None
 
@@ -62,6 +57,10 @@ def get_gt_scene_crops(scene_id, eval_args, train_args):
         with open(current_cfg_file_name, 'w') as f:
             f.write(cfg_string)
         print 'created new ground truth crops!'
+    else:
+        print 'loaded previously generated ground truth crops!'
+        print len(test_img_crops), len(test_img_depth_crops)
+
 
 
     return (test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis)
@@ -96,15 +95,15 @@ def generate_scene_crops(test_imgs, test_depth_imgs, bboxes, eval_args, train_ar
                     obj_id = bbox['obj_id']
                     bb_score = bbox['score'] if estimate_bbs else 1.0
                     vis_frac = None if estimate_bbs else visib_gt[view][bbox_idx]['visib_fract']
-
+                    print bb
                     x, y, w, h = bb
                     size = int(np.maximum(h,w) * pad_factor)
-                    left = np.max([x+w/2-size/2, 0])
-                    right = np.min([x+w/2+size/2, W])
-                    top = np.max([y+h/2-size/2, 0])
-                    bottom = np.min([y+h/2+size/2, H])
+                    left = int(np.max([x+w/2-size/2, 0]))
+                    right = int(np.min([x+w/2+size/2, W]))
+                    top = int(np.max([y+h/2-size/2, 0]))
+                    bottom = int(np.min([y+h/2+size/2, H]))
 
-                    crop = img[top:bottom, left:right]
+                    crop = img[top:bottom, left:right].copy()
                     # print 'Original Crop Size: ', crop.shape
                     resized_crop = cv2.resize(crop, (H_AE,W_AE))
 
@@ -175,13 +174,21 @@ def load_scenes(scene_id, eval_args, depth=False):
         imgs = np.empty((noof_imgs,) + p['test_im_size'][::-1], dtype=np.float32)
         for view_id in xrange(noof_imgs):
             depth_path = p['test_depth_mpath'].format(scene_id, view_id)
-            imgs[view_id,...] = inout.load_depth2(depth_path) * cam_p['depth_scale']
+            try:
+                imgs[view_id,...] = inout.load_depth2(depth_path) * cam_p['depth_scale']
+            except:
+                print depth_path,' not found'
+    
     else:    
         print (noof_imgs,) + p['test_im_size'][::-1] + (3,)
         imgs = np.empty((noof_imgs,) + p['test_im_size'][::-1] + (3,), dtype=np.uint8)
+        print noof_imgs
         for view_id in xrange(noof_imgs):
             img_path = p['test_rgb_mpath'].format(scene_id, view_id)
-            imgs[view_id,...] = cv2.imread(img_path)
+            try:
+                imgs[view_id,...] = cv2.imread(img_path)
+            except:
+                print img_path,' not found'
 
     return imgs
 
@@ -227,18 +234,22 @@ def get_all_scenes_for_obj(eval_args):
     return eval_scenes
 
 
-def select_img_crops(crop_candidates, bbs, bb_scores, visibs, eval_args):
+def select_img_crops(crop_candidates, test_crops_depth, bbs, bb_scores, visibs, eval_args):
 
     estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
     single_instance = eval_args.getboolean('BBOXES', 'SINGLE_INSTANCE')
+    icp = eval_args.getboolean('EVALUATION', 'ICP')
 
     if single_instance and estimate_bbs:
         idcs = np.array([np.argmax(bb_scores)])
     elif single_instance and not estimate_bbs:
         idcs = np.array([np.argmax(visibs)])
     elif not single_instance and estimate_bbs:
-        idcs = np.argsort(-bb_scores)
+        idcs = np.argsort(-np.array(bb_scores))
     else:
-        idcs = np.argsort(-visibs)
+        idcs = np.argsort(-np.array(visibs))
     
-    return (np.array(crop_candidates)[idcs], np.array(bbs)[idcs], np.array(bb_scores)[idcs], np.array(visibs)[idcs])
+    if icp:
+        return (np.array(crop_candidates)[idcs], np.array(test_crops_depth)[idcs], np.array(bbs)[idcs], np.array(bb_scores)[idcs], np.array(visibs)[idcs])
+    else:
+        return (np.array(crop_candidates)[idcs], None, np.array(bbs)[idcs], np.array(bb_scores)[idcs], np.array(visibs)[idcs])

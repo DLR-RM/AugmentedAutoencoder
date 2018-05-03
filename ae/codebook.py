@@ -44,21 +44,40 @@ class Codebook(object):
         self.nearest_neighbor_idx = tf.argmax(self.cos_similarity, axis=1)
 
 
-    def nearest_rotation(self, session, x):
+    def nearest_rotation(self, session, x, top_n=1, upright=False):
         if x.dtype == 'uint8':
             x = x/255.
-
-        if x.ndim == 3:
-            x = np.expand_dims(x, 0)
-            cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
-            idcs = np.argmax(cosine_similarity, axis=1)
-            return self._dataset.viewsphere_for_embedding[idcs][0]      
+        if top_n==1:
+            if x.ndim == 3:
+                x = np.expand_dims(x, 0)
+                cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
+                if upright:
+                    idcs = np.argmax(cosine_similarity[::int(self._dataset._kw['num_cyclo'])], axis=1)*int(self._dataset._kw['num_cyclo'])
+                else:
+                    idcs = np.argmax(cosine_similarity, axis=1)
+                return self._dataset.viewsphere_for_embedding[idcs][0]      
+            else:
+                cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
+                if upright:
+                    idcs = np.argmax(cosine_similarity[:,::int(self._dataset._kw['num_cyclo'])], axis=1)*int(self._dataset._kw['num_cyclo'])
+                else:
+                    idcs = np.argmax(cosine_similarity, axis=1)
+                return self._dataset.viewsphere_for_embedding[idcs]
         else:
-            cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
-            idcs = np.argmax(cosine_similarity, axis=1)
-            return self._dataset.viewsphere_for_embedding[idcs]
+            if x.ndim == 3:
+                x = np.expand_dims(x, 0)
 
-    def nearest_rotation_with_bb_depth(self, session, x, predicted_bb, K_test, top_n, train_args, depth_pred=None):
+                cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
+                unsorted_max_idcs = np.argpartition(-cosine_similarity.squeeze(), top_n)[:top_n]
+                idcs = unsorted_max_idcs[np.argsort(-cosine_similarity.squeeze()[unsorted_max_idcs])]
+
+                return self._dataset.viewsphere_for_embedding[idcs]
+            else:
+                print 'top_n > 1 + Multiple Input Crops is not supported yet'
+                exit()
+
+
+    def nearest_rotation_with_bb_depth(self, session, x, predicted_bb, K_test, top_n, train_args, depth_pred=None, upright=False):
         
         if x.dtype == 'uint8':
             x = x/255.
@@ -74,7 +93,10 @@ class Codebook(object):
             unsorted_max_idcs = np.argpartition(-cosine_similarity.squeeze(), top_n)[:top_n]
             idcs = unsorted_max_idcs[np.argsort(-cosine_similarity.squeeze()[unsorted_max_idcs])]
         else:
-            idcs = np.argmax(cosine_similarity, axis=1)
+            if upright:
+                idcs = np.argmax(cosine_similarity[:,::int(self._dataset._kw['num_cyclo'])], axis=1)*int(self._dataset._kw['num_cyclo'])
+            else:
+                idcs = np.argmax(cosine_similarity, axis=1)
         
         nearest_train_codes = session.run(self.embedding_normalized)[idcs]
         Rs_est = self._dataset.viewsphere_for_embedding[idcs]
