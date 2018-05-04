@@ -137,19 +137,19 @@ ssd_anchors = ssd_net.anchors(net_shape)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("experiment_name")
-
 parser.add_argument("-novis", action='store_true', default=False)
+
 arguments = parser.parse_args()
 full_name = arguments.experiment_name.split('/')
 experiment_name = full_name.pop()
 experiment_group = full_name.pop() if len(full_name) > 0 else ''
-
+print experiment_group, experiment_name
 novis = arguments.novis
 # experiment_name = 'bigger_network'
 
 
 start_var_list =set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
-codebook, dataset = factory.build_codebook_from_name(experiment_name, True)
+codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
 
 all_var_list = set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
 ae_var_list = all_var_list.symmetric_difference(start_var_list)
@@ -243,8 +243,7 @@ while True:
     elif cam.query_image():
         image = cam.get_image()
         arr = pygame.surfarray.array3d(image)
-        img = np.swapaxes(arr,0,1)
-        
+        img = np.swapaxes(arr,0,1)        
     else:
         continue
 
@@ -257,7 +256,7 @@ while True:
     rclasses, rscores, rbboxes =  process_image(img)
 
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     time_buf[time_buf_i] = time.time() - t0
 
@@ -293,6 +292,7 @@ while True:
     if len(rbboxes) > 0:
         t0 = time.time()
         Rs = codebook.nearest_rotation(isess, mug_imgs)
+
         time_buf[time_buf_i] += time.time() - t0
 
         lookup_time = time.time()
@@ -307,7 +307,7 @@ while True:
             print Rs[0]
         else:
             for j,R in enumerate(Rs):
-                mug_rot_imgs[j,:,:,:] = dataset.render_rot( R ,downSample = 4)
+                mug_rot_imgs[j,:,:,:] = dataset.render_rot( R ,downSample = 2)/255.
 
 
         render_time = time.time()

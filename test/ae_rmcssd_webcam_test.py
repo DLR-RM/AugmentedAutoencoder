@@ -5,6 +5,9 @@ import glob
 import imageio
 import os
 import ConfigParser
+import pygame
+import pygame.camera
+
 
 from ae import factory, utils
 from eval import eval_utils
@@ -17,8 +20,7 @@ from sixd_toolkit.pysixd import inout
 parser = argparse.ArgumentParser()
 parser.add_argument("experiment_name")
 parser.add_argument("ssd_name")
-parser.add_argument("-f", "--folder_str", required=True)
-parser.add_argument("-eval", action='store_true',default=False)
+
 # parser.add_argument("-gt_bb", action='store_true', default=False)
 arguments = parser.parse_args()
 full_name = arguments.experiment_name.split('/')
@@ -26,8 +28,23 @@ experiment_name = full_name.pop()
 experiment_group = full_name.pop() if len(full_name) > 0 else ''
 
 
+def initializeWebcam(width, height):
+    #initialise pygame   
+    pygame.init()
+    pygame.camera.init()
+    cam = pygame.camera.Camera("/dev/video0",(width,height))
+    cam.start()
 
-folder_str = arguments.folder_str
+    #setup window
+    windowSurfaceObj = pygame.display.set_mode((width,height),1,16)
+    pygame.display.set_caption('Camera')
+
+    return cam
+
+width = 800
+height = 600
+cam = initializeWebcam(width, height)
+
 ssd_name = arguments.ssd_name
 ssd = detector.Detector(os.path.join('/home_local/sund_ma/ssd_ws/checkpoints', ssd_name))
 
@@ -55,15 +72,22 @@ log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
 ckpt_dir = utils.get_checkpoint_dir(log_dir)
 factory.restore_checkpoint(ssd.isess, saver, ckpt_dir)
 
-K_test = np.array([5.08912781e+002,0.,2.60586884e+002,0.,5.08912781e+002,2.52437561e+002,0.,0.,1.]).reshape(3,3)
+K_test = np.array([(width+height)/2.,0.,width/2.,0.,(width+height)/2.,height/2.,0.,0.,1.]).reshape(3,3)
 
 result_dict = {}
 
-files = glob.glob(os.path.join(str(folder_str),'**/image.png'))
-for file in files:
+while True:
     
+    if cam.query_image():
+        image = cam.get_image()
+        arr = pygame.surfarray.array3d(image)
+        img = np.swapaxes(arr,0,1)        
+    else:
+        continue
 
-    img = cv2.imread(file)
+    # img = cv2.imread(file)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
     H, W = img.shape[:2]
     img_show = img.copy()
 
@@ -95,7 +119,7 @@ for file in files:
         ssd_imgs[j,:,:,:] = ssd_img
 
     if len(rbboxes) > 0:
-        cv2.imshow('ae_input',ssd_imgs[0])
+        # cv2.imshow('ae_input',ssd_imgs[0])
         Rs = []
         ts = []
 
@@ -108,89 +132,59 @@ for file in files:
         ssd_rot_imgs = 0.3*np.ones_like(ssd_imgs)
         print ts
 
-        # idcs = np.argsort(rscores)
-
-        for j,R in enumerate(Rs):
-            rendered_R_est = dataset.render_rot( R ,downSample = 1)
-            if dataset.shape[2]  == 1:
-                rendered_R_est = cv2.cvtColor(rendered_R_est,cv2.COLOR_BGR2GRAY)[:,:,None]
-            ssd_rot_imgs[j,:,:,:] = rendered_R_est/255.
 
 
 
-        ssd_imgs = ssd_imgs.reshape(-1,*ssd_imgs.shape[2:])
-        ssd_rot_imgs = ssd_rot_imgs.reshape(-1,*ssd_rot_imgs.shape[2:])
-        vis_img[:ssd_imgs.shape[0],:dataset.shape[1],:] = ssd_imgs
-        vis_img[:ssd_rot_imgs.shape[0],dataset.shape[1]:,:] = ssd_rot_imgs
+        # for j,R in enumerate(Rs):
+        #     rendered_R_est = dataset.render_rot( R ,downSample = 1)
+        #     if dataset.shape[2]  == 1:
+        #         rendered_R_est = cv2.cvtColor(rendered_R_est,cv2.COLOR_BGR2GRAY)[:,:,None]
+        #     ssd_rot_imgs[j,:,:,:] = rendered_R_est/255.
 
 
-    if arguments.eval:
-        dict_key = ''.join(os.path.basename(os.path.dirname(file)).split('_H')[0])
-        result_dict[dict_key] = {}
+        # ssd_imgs = ssd_imgs.reshape(-1,*ssd_imgs.shape[2:])
+        # ssd_rot_imgs = ssd_rot_imgs.reshape(-1,*ssd_rot_imgs.shape[2:])
+        # vis_img[:ssd_imgs.shape[0],:dataset.shape[1],:] = ssd_imgs
+        # vis_img[:ssd_rot_imgs.shape[0],dataset.shape[1]:,:] = ssd_rot_imgs
+
         Rs_flat = np.zeros((len(Rs),9))
         ts_flat = np.zeros((len(Rs),3))
         for i in xrange(len(Rs)):
             Rs_flat[i]=Rs[i].flatten()
             ts_flat[i]=ts[i].flatten()
 
-        result_dict[dict_key]['cam_R_m2c'] = Rs_flat.tolist()
-        result_dict[dict_key]['cam_t_m2c'] = ts_flat.tolist()
-        print result_dict[dict_key]['cam_R_m2c']
-        print ssd_boxes
-        result_dict[dict_key]['ssd_bboxes'] = np.array(ssd_boxes).tolist()
-        result_dict[dict_key]['ssd_scores'] = rscores.tolist()
+        z_sort = np.argsort(ts_flat[:,2])
+        print z_sort
+        for t,R in zip(ts_flat[z_sort[::-1]],Rs_flat[z_sort[::-1]]):
+            bgr_y, depth_y  = dataset.renderer.render( 
+                obj_id=0,
+                W=width, 
+                H=height,
+                K=K_test, 
+                R=np.array(R).reshape(3,3), 
+                t=t,
+                near=10,
+                far=10000,
+                random_light=False
+            )
 
+            g_y = np.zeros_like(bgr_y)
+            g_y[:,:,1]= bgr_y[:,:,1]
+            img_show[bgr_y > 0] = g_y[bgr_y > 0]*2./3. + img_show[bgr_y > 0]*1./3.
+            # cv2.imshow('render6D',img_show)
+        for i in xrange(len(rscores)):
+            score = rscores[i]
+            ymin = int(rbboxes[i, 0] * H)
+            xmin = int(rbboxes[i, 1] * W)
+            ymax = int(rbboxes[i, 2] * H)
+            xmax = int(rbboxes[i, 3] * W)
+            cv2.putText(img_show, '%1.3f' % score, (xmin, ymax+10), cv2.FONT_ITALIC, .5, (0,255,0), 1)
+            cv2.rectangle(img_show, (xmin,ymin),(xmax,ymax), (0,255,0), 1)
 
-
-
-    z_sort = np.argsort(ts_flat[:,2])
-    print z_sort
-    for t,R in zip(ts_flat[z_sort[::-1]],Rs_flat[z_sort[::-1]]):
-        bgr_y, depth_y  = dataset.renderer.render( 
-            obj_id=0,
-            W=640, 
-            H=512,
-            K=K_test, 
-            R=np.array(R).reshape(3,3), 
-            t=t,
-            near=10,
-            far=10000,
-            random_light=False
-        )
-
-        img_show[bgr_y > 0] = bgr_y[bgr_y > 0]
-        # cv2.imshow('render6D',img_show)
-    for i in xrange(len(rscores)):
-        score = rscores[i]
-        ymin = int(rbboxes[i, 0] * H)
-        xmin = int(rbboxes[i, 1] * W)
-        ymax = int(rbboxes[i, 2] * H)
-        xmax = int(rbboxes[i, 3] * W)
-        cv2.putText(img_show, '%1.3f' % score, (xmin, ymax+10), cv2.FONT_ITALIC, .5, (0,255,0), 1)
-        cv2.rectangle(img_show, (xmin,ymin),(xmax,ymax), (0,255,0), 1)
-
-    cv2.imshow('preds', vis_img)
+    # cv2.imshow('preds', vis_img)
     cv2.imshow('img', img_show)
-    cv2.waitKey(0)
-        
+    cv2.waitKey(1)
+            
 
-
-
-    # print rclasses, rscores, rbboxes
-
-
-    # im = cv2.resize(im,(128,128))
-
-    # R = codebook.nearest_rotation(ssd.isess, im/255.)
-
-    # pred_view = dataset.render_rot( R ,downSample = 1)
-    
-    # cv2.imshow('resized img', cv2.resize(im/255.,(256,256)))
-    # cv2.imshow('pred_view', cv2.resize(pred_view,(256,256)))
-    # print R
-    # cv2.waitKey(0)
-if arguments.eval:
-    # print result_dict
-    inout.save_yaml('/home_local2/sund_ma/data/kuka_results/kuka_results.yaml',result_dict)
 
 

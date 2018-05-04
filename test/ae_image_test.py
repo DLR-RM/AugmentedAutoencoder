@@ -15,7 +15,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("experiment_name")
-parser.add_argument("-f", "--file_str", required=True)
+parser.add_argument("-f", "--file_str", required=True, help='folder or filename to image(s)')
 # parser.add_argument("-gt_bb", action='store_true', default=False)
 arguments = parser.parse_args()
 full_name = arguments.experiment_name.split('/')
@@ -43,7 +43,10 @@ with tf.Session() as sess:
 
     factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir)
 
-    files = glob.glob(os.path.join(str(file_str),'*.png'))
+    if os.path.isdir(file_str):
+        files = glob.glob(os.path.join(str(file_str),'*.png'))+glob.glob(os.path.join(str(file_str),'*.jpg'))
+    else:
+        files = [file_str]
 
     for file in files:
 
@@ -62,5 +65,4 @@ with tf.Session() as sess:
         print R
         cv2.waitKey(0)
 
-if __name__ == '__main__':
-    main()
+

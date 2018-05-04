@@ -352,7 +352,10 @@ class Dataset(object):
                 far=clip_far,
                 random_light=False
             )
-
+            # cv2.imshow('depth',depth_y)
+            # cv2.imshow('bgr',bgr_y)
+            # print depth_y.max()
+            # cv2.waitKey(0)
             ys, xs = np.nonzero(depth_y > 0)
             obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             x, y, w, h = obj_bb
