@@ -59,8 +59,8 @@ factory.restore_checkpoint(ssd.isess, saver, ckpt_dir)
 
 result_dict = {}
 
-files = glob.glob(os.path.join(str(folder_str),'*.png'))
-
+files = glob.glob(os.path.join(str(folder_str),'*.png'))+glob.glob(os.path.join(str(folder_str),'*.jpeg'))
+print files
 width = 640
 height = 480
 
@@ -129,57 +129,57 @@ for file in files:
         vis_img[:ssd_rot_imgs.shape[0],dataset.shape[1]:,:] = ssd_rot_imgs
 
 
-    if arguments.eval:
-        dict_key = ''.join(os.path.basename(os.path.dirname(file)).split('_H')[0])
-        result_dict[dict_key] = {}
+    # if arguments.eval:
+    #     dict_key = ''.join(os.path.basename(os.path.dirname(file)).split('_H')[0])
+    #     result_dict[dict_key] = {}
+    #     Rs_flat = np.zeros((len(Rs),9))
+    #     ts_flat = np.zeros((len(Rs),3))
+    #     for i in xrange(len(Rs)):
+    #         Rs_flat[i]=Rs[i].flatten()
+    #         ts_flat[i]=ts[i].flatten()
+
+    #     result_dict[dict_key]['cam_R_m2c'] = Rs_flat.tolist()
+    #     result_dict[dict_key]['cam_t_m2c'] = ts_flat.tolist()
+    #     print result_dict[dict_key]['cam_R_m2c']
+    #     print ssd_boxes
+    #     result_dict[dict_key]['ssd_bboxes'] = np.array(ssd_boxes).tolist()
+    #     result_dict[dict_key]['ssd_scores'] = rscores.tolist()
+
+
         Rs_flat = np.zeros((len(Rs),9))
         ts_flat = np.zeros((len(Rs),3))
         for i in xrange(len(Rs)):
             Rs_flat[i]=Rs[i].flatten()
             ts_flat[i]=ts[i].flatten()
 
-        result_dict[dict_key]['cam_R_m2c'] = Rs_flat.tolist()
-        result_dict[dict_key]['cam_t_m2c'] = ts_flat.tolist()
-        print result_dict[dict_key]['cam_R_m2c']
-        print ssd_boxes
-        result_dict[dict_key]['ssd_bboxes'] = np.array(ssd_boxes).tolist()
-        result_dict[dict_key]['ssd_scores'] = rscores.tolist()
+        z_sort = np.argsort(ts_flat[:,2])
+        print z_sort
+        for t,R in zip(ts_flat[z_sort[::-1]],Rs_flat[z_sort[::-1]]):
+            bgr_y, depth_y  = dataset.renderer.render( 
+                obj_id=0,
+                W=W, 
+                H=H,
+                K=K_test, 
+                R=np.array(R).reshape(3,3), 
+                t=t,
+                near=10,
+                far=10000,
+                random_light=False
+            )
 
-
-    Rs_flat = np.zeros((len(Rs),9))
-    ts_flat = np.zeros((len(Rs),3))
-    for i in xrange(len(Rs)):
-        Rs_flat[i]=Rs[i].flatten()
-        ts_flat[i]=ts[i].flatten()
-
-    z_sort = np.argsort(ts_flat[:,2])
-    print z_sort
-    for t,R in zip(ts_flat[z_sort[::-1]],Rs_flat[z_sort[::-1]]):
-        bgr_y, depth_y  = dataset.renderer.render( 
-            obj_id=0,
-            W=W, 
-            H=H,
-            K=K_test, 
-            R=np.array(R).reshape(3,3), 
-            t=t,
-            near=10,
-            far=10000,
-            random_light=False
-        )
-
-        g_y = np.zeros_like(bgr_y)
-        g_y[:,:,1]= bgr_y[:,:,1]
-        img_show[bgr_y > 0] = g_y[bgr_y > 0]*2./3. + img_show[bgr_y > 0]*1./3.
-        # cv2.imshow('render6D',img_show)
-    for i in xrange(len(rscores)):
-        score = rscores[i]
-        ymin = int(rbboxes[i, 0] * H)
-        xmin = int(rbboxes[i, 1] * W)
-        ymax = int(rbboxes[i, 2] * H)
-        xmax = int(rbboxes[i, 3] * W)
-        cv2.putText(img_show, '%1.3f' % score, (xmin, ymax+10), cv2.FONT_ITALIC, .5, (0,255,0), 1)
-        cv2.rectangle(img_show, (xmin,ymin),(xmax,ymax), (0,255,0), 1)
-    cv2.putText(img_show, '1x', (0, 0), cv2.FONT_ITALIC, 2., (0,255,0), 1)
+            g_y = np.zeros_like(bgr_y)
+            g_y[:,:,1]= bgr_y[:,:,1]
+            img_show[bgr_y > 0] = g_y[bgr_y > 0]*2./3. + img_show[bgr_y > 0]*1./3.
+            # cv2.imshow('render6D',img_show)
+        for i in xrange(len(rscores)):
+            score = rscores[i]
+            ymin = int(rbboxes[i, 0] * H)
+            xmin = int(rbboxes[i, 1] * W)
+            ymax = int(rbboxes[i, 2] * H)
+            xmax = int(rbboxes[i, 3] * W)
+            cv2.putText(img_show, '%1.3f' % score, (xmin, ymax+10), cv2.FONT_ITALIC, .5, (0,255,0), 1)
+            cv2.rectangle(img_show, (xmin,ymin),(xmax,ymax), (0,255,0), 1)
+        cv2.putText(img_show, '1x', (0, 0), cv2.FONT_ITALIC, 2., (0,255,0), 1)
     # cv2.imshow('preds', vis_img)
     try:
         cv2.imshow('img', img_show)

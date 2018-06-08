@@ -82,4 +82,3 @@ def get_eval_dir(log_dir, evaluation_name, data):
     )
 
 
-

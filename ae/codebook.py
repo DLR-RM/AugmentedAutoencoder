@@ -127,19 +127,16 @@ class Codebook(object):
         ts_est = np.empty((top_n,3))
         for i,idx in enumerate(idcs):
 
-                if depth_pred is None:
-                    rendered_bb = embed_obj_bbs[idx].squeeze()
-                    diag_bb_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
-                    z = diag_bb_ratio * mean_K_ratio * render_radius
-                else:
-                    z = depth_pred
+            if depth_pred is None:
+                rendered_bb = embed_obj_bbs[idx].squeeze()
+                diag_bb_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
+                z = diag_bb_ratio * mean_K_ratio * render_radius
+            else:
+                z = depth_pred
 
-                # object center in image plane (bb center =/= object center)
-                center_bb_x = predicted_bb[0] + predicted_bb[2]/2 - (rendered_bb[0] + rendered_bb[2]/2. - K_train[0,2])
-                center_bb_y = predicted_bb[1] + predicted_bb[3]/2 - (rendered_bb[1] + rendered_bb[3]/2. - K_train[1,2])
-
-
-
+            # object center in image plane (bb center =/= object center)
+            center_bb_x = predicted_bb[0] + predicted_bb[2]/2 - (rendered_bb[0] + rendered_bb[2]/2. - K_train[0,2])
+            center_bb_y = predicted_bb[1] + predicted_bb[3]/2 - (rendered_bb[1] + rendered_bb[3]/2. - K_train[1,2])
 
             # t = K_test_cam_inv * center_bb * depth_pred
             center_mm_tx = (center_bb_x - K_test[0,2]) * z / K_test[0,0]
