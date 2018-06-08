@@ -1,4 +1,11 @@
-# Tensorflow Augmented AutoEncoder for predicting 3D object orientations
+# Tensorflow Augmented AutoEncoder for 6D Object Pose Estimation
+
+# Overview
+
+1.) Train AAE using only a 3D model to predict 3D Object Orientations
+2.) For full RGB-based 6D pose estimation, also train a 2D Object Detector 
+    (https://rmc-github.robotic.dlr.de/moro/single_shot_multibox_detector)
+3.) Optionally use a depth-based ICP to refine the 6D pose (mostly depth)
 
 # Usage
 ### Preparatory Steps
@@ -7,14 +14,15 @@
 make
 ```
 
-*2. Create Workspace, set Environment Variable*
+*2. Set Workspace path, Add executables to path, consider to put this into ~/.bashrc*
 ```bash
 export AE_WORKSPACE_PATH=/home_local/$USER/autoencoder_ws
-mkdir $AE_WORKSPACE_PATH
+export PATH=$HOME/.local/bin:$PATH
 ```
 
-*3. Init Workspace*
+*3. Create Workspace, Init Workspace*
 ```bash
+mkdir $AE_WORKSPACE_PATH
 cd $AE_WORKSPACE_PATH
 ae_init_workspace
 ```
@@ -48,6 +56,9 @@ ae_embed exp_group/my_autoencoder
 ```
 
 ### Use A Model
+
+look at test/
+
 ```python
 import tensorflow as tf
 import os
@@ -71,8 +82,7 @@ codebook, dataset = ae_factory.build_codebook_from_name(experiment_name, experim
 with tf.Session() as sess:
     ae_factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir)
 	img = webcam.snapshot()
-    ## here could be your 2D object detector ##
-	R = codebook.nearest_rotation(session, img)
+    R = codebook.nearest_rotation(session, img)
 	print R
 ```
 Example output:

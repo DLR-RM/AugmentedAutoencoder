@@ -32,7 +32,7 @@ full_name = arguments.experiment_name.split('/')
 experiment_name = full_name.pop()
 experiment_group = full_name.pop() if len(full_name) > 0 else ''
 
-codebook = factory.build_codebook_from_name(experiment_name)
+codebook = factory.build_codebook_from_name(experiment_name,experiment_group)
 
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 log_dir = u.get_log_dir(workspace_path,experiment_name,experiment_group)

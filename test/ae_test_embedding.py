@@ -2,6 +2,7 @@ from eval import eval_plots
 from ae import factory
 from ae import utils as u
 import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib2tikz import save as tikz_save
 
@@ -55,20 +56,21 @@ def main():
 
     print idcs_orig
 
-    im = tiles(dataset.train_x[np.array(idcs_random_trans)[::3]],2,7,3,3)
-    im2 = tiles(dataset.train_x[np.array(idcs_random_scale)[::3]],2,7,3,3)
-    im3 = tiles(dataset.train_x[np.array(idcs_orig)[::3]],2,7,3,3)
-    im4 = tiles(dataset.train_x[np.array(idcs_random)[::3]],2,7,3,3)
-    cv2.imshow('trans',im)
-    cv2.imshow('scale',im2)
-    cv2.imshow('orig',im3)
-    cv2.imshow('orig',im4)
-    cv2.imwrite(os.path.join(log_dir,'train_figures','trans.png'),im)
-    cv2.imwrite(os.path.join(log_dir,'train_figures','scale.png'),im2)
-    cv2.imwrite(os.path.join(log_dir,'train_figures','y.png'),im3)
-    cv2.imwrite(os.path.join(log_dir,'train_figures','rand.png'),im4)
-    cv2.waitKey(0)
-    exit()
+    # im = tiles(dataset.train_x[np.array(idcs_random_trans)[::3]],2,7,3,3)
+    # im2 = tiles(dataset.train_x[np.array(idcs_random_scale)[::3]],2,7,3,3)
+    # im3 = tiles(dataset.train_x[np.array(idcs_orig)[::3]],2,7,3,3)
+    # im4 = tiles(dataset.train_x[np.array(idcs_random)[::3]],2,7,3,3)
+    # cv2.imshow('trans',im)
+    # cv2.imshow('scale',im2)
+    # cv2.imshow('orig',im3)
+    # cv2.imshow('orig',im4)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    # cv2.imwrite(os.path.join(log_dir,'train_figures','trans.png'),im)
+    # cv2.imwrite(os.path.join(log_dir,'train_figures','scale.png'),im2)
+    # cv2.imwrite(os.path.join(log_dir,'train_figures','y.png'),im3)
+    # cv2.imwrite(os.path.join(log_dir,'train_figures','rand.png'),im4)
+
     with tf.Session() as sess:
         factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir)
         if model_type=='dsprites':
@@ -100,7 +102,7 @@ def main():
         plt.plot(x,test_codes_trans[:,0]/norm_test_trans,linestyle='--',linewidth=3,color='blue',label='z1: y @ random translation',dashes=(5, 5),alpha=0.7, markersize = 5)
         # plt.scatter(y_codes[:,0]/norm,y_codes[:,1]/norm,c='red',marker=marker='-.',label=)
         # for i in xrange(4):
-        # plt.legend(fontsize='small',loc=4)
+        plt.legend(fontsize='small',loc=4)
         plt.tight_layout()
         tikz_save(os.path.join(log_dir,'train_figures','z1.tikz'))
         plt.savefig(os.path.join(log_dir,'train_figures','z1.pdf'))
@@ -115,7 +117,7 @@ def main():
         plt.plot(x,test_codes_trans[:,1]/norm_test_trans,linestyle='--',linewidth=3,color='blue',label='z2: y @ random translation',dashes=(5, 5),alpha=0.7, markersize = 5)
 
         # plt.scatter(y_codes[:,0]/norm,y_codes[:,1]/'--',norm,c='red',label=)
-        # plt.legend(fontsize='small', loc=4)
+        plt.legend(fontsize='small', loc=4)
         plt.tight_layout()
         tikz_save(os.path.join(log_dir,'train_figures','z2.tikz'))
         plt.savefig(os.path.join(log_dir,'train_figures','z2.pdf'))

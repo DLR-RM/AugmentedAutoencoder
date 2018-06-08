@@ -8,13 +8,15 @@ import shutil
 import time
 import cv2
 
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-import tensorflow as tf
 import progressbar
+import tensorflow as tf
 
 import ae_factory as factory
 import utils as u
 import gl_utils as gu
+
 
 def main():
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')

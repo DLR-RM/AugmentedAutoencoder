@@ -55,11 +55,18 @@ log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
 ckpt_dir = utils.get_checkpoint_dir(log_dir)
 factory.restore_checkpoint(ssd.isess, saver, ckpt_dir)
 
-K_test = np.array([5.08912781e+002,0.,2.60586884e+002,0.,5.08912781e+002,2.52437561e+002,0.,0.,1.]).reshape(3,3)
+# K_test = np.array([5.08912781e+002,0.,2.60586884e+002,0.,5.08912781e+002,2.52437561e+002,0.,0.,1.]).reshape(3,3)
 
 result_dict = {}
 
-files = glob.glob(os.path.join(str(folder_str),'**/image.png'))
+files = glob.glob(os.path.join(str(folder_str),'*.png'))
+
+width = 640
+height = 480
+
+# K_test = np.array([5.08912781e+002,0.,2.60586884e+002,0.,5.08912781e+002,2.52437561e+002,0.,0.,1.]).reshape(3,3)
+K_test = np.array([(width+height)/2.,0.,width/2.,0.,(width+height)/2.,height/2.,0.,0.,1.]).reshape(3,3)
+
 for file in files:
     
 
@@ -77,9 +84,7 @@ for file in files:
 
     for j,ssd_box in enumerate(ssd_boxes):
         ymin, xmin, ymax, xmax = ssd_box
-
-        ssd_img = img[ymin:ymax,xmin:xmax]
-        h, w = ssd_img.shape[:2]
+        h, w = (ymax-ymin,xmax-xmin)
         size = int(np.maximum(h, w) * 1.25)
         cx = xmin + (xmax - xmin)/2
         cy = ymin + (ymax - ymin)/2
@@ -141,15 +146,19 @@ for file in files:
         result_dict[dict_key]['ssd_scores'] = rscores.tolist()
 
 
-
+    Rs_flat = np.zeros((len(Rs),9))
+    ts_flat = np.zeros((len(Rs),3))
+    for i in xrange(len(Rs)):
+        Rs_flat[i]=Rs[i].flatten()
+        ts_flat[i]=ts[i].flatten()
 
     z_sort = np.argsort(ts_flat[:,2])
     print z_sort
     for t,R in zip(ts_flat[z_sort[::-1]],Rs_flat[z_sort[::-1]]):
         bgr_y, depth_y  = dataset.renderer.render( 
             obj_id=0,
-            W=640, 
-            H=512,
+            W=W, 
+            H=H,
             K=K_test, 
             R=np.array(R).reshape(3,3), 
             t=t,
@@ -158,7 +167,9 @@ for file in files:
             random_light=False
         )
 
-        img_show[bgr_y > 0] = bgr_y[bgr_y > 0]
+        g_y = np.zeros_like(bgr_y)
+        g_y[:,:,1]= bgr_y[:,:,1]
+        img_show[bgr_y > 0] = g_y[bgr_y > 0]*2./3. + img_show[bgr_y > 0]*1./3.
         # cv2.imshow('render6D',img_show)
     for i in xrange(len(rscores)):
         score = rscores[i]
@@ -168,10 +179,44 @@ for file in files:
         xmax = int(rbboxes[i, 3] * W)
         cv2.putText(img_show, '%1.3f' % score, (xmin, ymax+10), cv2.FONT_ITALIC, .5, (0,255,0), 1)
         cv2.rectangle(img_show, (xmin,ymin),(xmax,ymax), (0,255,0), 1)
+    cv2.putText(img_show, '1x', (0, 0), cv2.FONT_ITALIC, 2., (0,255,0), 1)
+    # cv2.imshow('preds', vis_img)
+    try:
+        cv2.imshow('img', img_show)
+        cv2.waitKey(0)
+    except:
+        pass
 
-    cv2.imshow('preds', vis_img)
-    cv2.imshow('img', img_show)
-    cv2.waitKey(0)
+
+    # z_sort = np.argsort(ts_flat[:,2])
+    # print z_sort
+    # for t,R in zip(ts_flat[z_sort[::-1]],Rs_flat[z_sort[::-1]]):
+    #     bgr_y, depth_y  = dataset.renderer.render( 
+    #         obj_id=0,
+    #         W=640, 
+    #         H=512,
+    #         K=K_test, 
+    #         R=np.array(R).reshape(3,3), 
+    #         t=t,
+    #         near=10,
+    #         far=10000,
+    #         random_light=False
+    #     )
+
+    #     img_show[bgr_y > 0] = bgr_y[bgr_y > 0]
+    #     # cv2.imshow('render6D',img_show)
+    # for i in xrange(len(rscores)):
+    #     score = rscores[i]
+    #     ymin = int(rbboxes[i, 0] * H)
+    #     xmin = int(rbboxes[i, 1] * W)
+    #     ymax = int(rbboxes[i, 2] * H)
+    #     xmax = int(rbboxes[i, 3] * W)
+    #     cv2.putText(img_show, '%1.3f' % score, (xmin, ymax+10), cv2.FONT_ITALIC, .5, (0,255,0), 1)
+    #     cv2.rectangle(img_show, (xmin,ymin),(xmax,ymax), (0,255,0), 1)
+
+    # cv2.imshow('preds', vis_img)
+    # cv2.imshow('img', img_show)
+    # cv2.waitKey(0)
         
 
 
@@ -189,8 +234,8 @@ for file in files:
     # cv2.imshow('pred_view', cv2.resize(pred_view,(256,256)))
     # print R
     # cv2.waitKey(0)
-if arguments.eval:
-    # print result_dict
-    inout.save_yaml('/home_local2/sund_ma/data/kuka_results/kuka_results.yaml',result_dict)
+# if arguments.eval:
+#     # print result_dict
+#     inout.save_yaml('/home_local2/sund_ma/data/kuka_results/kuka_results.yaml',result_dict)
 
 

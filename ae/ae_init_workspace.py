@@ -22,14 +22,20 @@ def main():
 	cfg_path = os.path.join(workspace_path, 'cfg' )
 	eval_cfg_path = os.path.join(workspace_path, 'cfg_eval' )
 	experiments_path = os.path.join(workspace_path, 'experiments' )
+	dataset_path = os.path.join(workspace_path, 'dataset' )
 
+
+	this_dir = os.path.dirname(os.path.abspath(__file__))
+	
 	if not os.path.exists(cfg_path):
-		this_dir = os.path.dirname(os.path.abspath(__file__))
 		cfg_template_path = os.path.join(this_dir, 'cfg')
-		eval_cfg_path = os.path.join(this_dir, 'cfg_eval')
 		shutil.copytree(cfg_template_path, cfg_path)
-		shutil.copytree(eval_cfg_path, eval_cfg_path)
+	if not os.path.exists(eval_cfg_path):
+		eval_cfg_template_path = os.path.join(this_dir, 'cfg_eval')
+		shutil.copytree(eval_cfg_template_path, eval_cfg_path)
 		
 	if not os.path.exists(experiments_path):
 		os.makedirs(experiments_path)
 
+	if not os.path.exists(dataset_path):
+		os.makedirs(dataset_path)

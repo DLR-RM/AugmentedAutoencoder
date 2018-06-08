@@ -15,11 +15,13 @@ from eval import eval_utils
 import argparse
 import rmcssd.bin.detector as detector
 from sixd_toolkit.pysixd import inout
+from webcam_video_stream import WebcamVideoStream
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("experiment_name")
 parser.add_argument("ssd_name")
+parser.add_argument("-s", action='store_true', default=False)
 
 # parser.add_argument("-gt_bb", action='store_true', default=False)
 arguments = parser.parse_args()
@@ -27,29 +29,34 @@ full_name = arguments.experiment_name.split('/')
 experiment_name = full_name.pop()
 experiment_group = full_name.pop() if len(full_name) > 0 else ''
 
+width = 960
+height = 720
 
-def initializeWebcam(width, height):
-    #initialise pygame   
-    pygame.init()
-    pygame.camera.init()
-    cam = pygame.camera.Camera("/dev/video0",(width,height))
-    cam.start()
+# def initializeWebcam(width, height):
+#     #initialise pygame   
+#     pygame.init()
+#     pygame.camera.init()
+#     cam = pygame.camera.Camera("/dev/video0",(width,height))
+#     cam.start()
 
-    #setup window
-    windowSurfaceObj = pygame.display.set_mode((width,height),1,16)
-    pygame.display.set_caption('Camera')
+#     #setup window
+#     windowSurfaceObj = pygame.display.set_mode((width,height),1,16)
+#     pygame.display.set_caption('Camera')
 
-    return cam
+#     return cam
 
-width = 800
-height = 600
-cam = initializeWebcam(width, height)
+# cam = initializeWebcam(width, height)
+
+videoStream = WebcamVideoStream(1,width,height).start()
+
+
+if arguments.s:
+    out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (width,height))
 
 ssd_name = arguments.ssd_name
 ssd = detector.Detector(os.path.join('/home_local/sund_ma/ssd_ws/checkpoints', ssd_name))
 
 start_var_list =set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
-
 
 codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
 
@@ -72,21 +79,27 @@ log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
 ckpt_dir = utils.get_checkpoint_dir(log_dir)
 factory.restore_checkpoint(ssd.isess, saver, ckpt_dir)
 
-K_test = np.array([(width+height)/2.,0.,width/2.,0.,(width+height)/2.,height/2.,0.,0.,1.]).reshape(3,3)
+# K_test = np.array([(width+height)/2.,0.,width/2.,0.,(width+height)/2.,height/2.,0.,0.,1.]).reshape(3,3)
+# K_test =  np.array([[797.81194184 ,  0.      ,   496.49721123],[  0.    ,     799.72051992 ,350.63848832],[  0.     ,      0.         ,  1.        ]])
+K_test =  np.array([[810.4968405 ,   0.         ,487.55096072],
+ [  0.        , 810.61326022 ,354.6674888 ],
+ [  0.        ,   0.         ,  1.        ]])
 
 result_dict = {}
 
-while True:
-    
-    if cam.query_image():
-        image = cam.get_image()
-        arr = pygame.surfarray.array3d(image)
-        img = np.swapaxes(arr,0,1)        
-    else:
-        continue
 
-    # img = cv2.imread(file)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+while videoStream.isActive():
+    
+    # if cam.query_image():
+    #     image = cam.get_image()
+    #     arr = pygame.surfarray.array3d(image)
+    #     img = np.swapaxes(arr,0,1)        
+    # else:
+    #     continue
+
+    # img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+    img = videoStream.read()
 
     H, W = img.shape[:2]
     img_show = img.copy()
@@ -102,9 +115,8 @@ while True:
     for j,ssd_box in enumerate(ssd_boxes):
         ymin, xmin, ymax, xmax = ssd_box
 
-        ssd_img = img[ymin:ymax,xmin:xmax]
-        h, w = ssd_img.shape[:2]
-        size = int(np.maximum(h, w) * 1.25)
+        h, w = (ymax-ymin,xmax-xmin)
+        size = int(np.maximum(h, w) * train_args.getfloat('Dataset','PAD_FACTOR'))
         cx = xmin + (xmax - xmin)/2
         cy = ymin + (ymax - ymin)/2
 
@@ -118,6 +130,9 @@ while True:
         ssd_img = ssd_img / 255.
         ssd_imgs[j,:,:,:] = ssd_img
 
+
+
+
     if len(rbboxes) > 0:
         # cv2.imshow('ae_input',ssd_imgs[0])
         Rs = []
@@ -130,9 +145,7 @@ while True:
             ts.append(t.squeeze())
         # Rs = codebook.nearest_rotation(ssd.isess, ssd_imgs)
         ssd_rot_imgs = 0.3*np.ones_like(ssd_imgs)
-        print ts
-
-
+        print ts[0][2]
 
 
         # for j,R in enumerate(Rs):
@@ -180,11 +193,18 @@ while True:
             xmax = int(rbboxes[i, 3] * W)
             cv2.putText(img_show, '%1.3f' % score, (xmin, ymax+10), cv2.FONT_ITALIC, .5, (0,255,0), 1)
             cv2.rectangle(img_show, (xmin,ymin),(xmax,ymax), (0,255,0), 1)
-
+        cv2.putText(img_show, '1x', (0, 0), cv2.FONT_ITALIC, 2., (0,255,0), 1)
     # cv2.imshow('preds', vis_img)
-    cv2.imshow('img', img_show)
-    cv2.waitKey(1)
-            
+    try:
+        if arguments.s:
+            out.write(img_show)
+        cv2.imshow('img', img_show)
+        cv2.waitKey(1)
+    except:
+        print 'no frame'
+if arguments.s:
+    out.release()
+
 
 
 

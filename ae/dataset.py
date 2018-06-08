@@ -6,7 +6,6 @@ import time
 import hashlib
 import glob
 import os
-import bitarray
 
 import progressbar
 from pysixd_stuff import transform
@@ -17,7 +16,6 @@ import cv2
 from meshrenderer import meshrenderer, meshrenderer_phong
 from utils import lazy_property
 
-from imgaug.augmenters import *
 
 class Dataset(object):
 
@@ -30,8 +28,8 @@ class Dataset(object):
         self.bg_img_paths = glob.glob(kw['background_images_glob'])
         self.noof_bg_imgs = min(int(kw['noof_bg_imgs']), len(self.bg_img_paths))
         
-        self._aug = eval(kw['code'])
         self._kw = kw
+        # self._aug = eval(self._kw['code'])
 
         self.train_x = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.mask_x = np.empty( (self.noof_training_imgs,) + self.shape[:2], dtype= bool)
@@ -368,6 +366,7 @@ class Dataset(object):
             bottom = y+h/2+size/2
 
             bgr_y = bgr_y[top:bottom, left:right]
+
             resized_bgr_y = cv2.resize(bgr_y, self.shape[:2], interpolation = cv2.INTER_NEAREST)
             if self.shape[2] == 1:
                 resized_bgr_y = cv2.cvtColor(resized_bgr_y, cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
@@ -376,14 +375,25 @@ class Dataset(object):
 
     @property
     def embedding_size(self):
-        if self.noof_bg_imgs > 0:
-            return len(self.viewsphere_for_embedding)
-        else:
-            kw = self._kw
-            return int(kw['min_n_views'])
+        return len(self.viewsphere_for_embedding)
+
+
+    @lazy_property
+    def _aug(self):
+        from imgaug.augmenters import Sequential,SomeOf,OneOf,Sometimes,WithColorspace,WithChannels, \
+            Noop,Lambda,AssertLambda,AssertShape,Scale,CropAndPad, \
+            Pad,Crop,Fliplr,Flipud,Superpixels,ChangeColorspace, PerspectiveTransform, \
+            Grayscale,GaussianBlur,AverageBlur,MedianBlur,Convolve, \
+            Sharpen,Emboss,EdgeDetect,DirectedEdgeDetect,Add,AddElementwise, \
+            AdditiveGaussianNoise,Multiply,MultiplyElementwise,Dropout, \
+            CoarseDropout,Invert,ContrastNormalization,Affine,PiecewiseAffine, \
+            ElasticTransformation
+        return eval(self._kw['code'])
+
     
     @lazy_property
     def random_syn_masks(self):
+        import bitarray
         workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
         random_syn_masks = bitarray.bitarray()
@@ -423,7 +433,6 @@ class Dataset(object):
         return new_masks
 
     def batch(self, batch_size):
-
 
         # batch_x = np.empty( (batch_size,) + self.shape, dtype=np.uint8 )
         # batch_y = np.empty( (batch_size,) + self.shape, dtype=np.uint8 )

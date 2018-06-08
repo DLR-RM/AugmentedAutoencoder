@@ -171,7 +171,7 @@ def main():
                 start = time.time()
                 if train_args.getint('Dataset','C') == 1:
                     test_crop = cv2.cvtColor(test_crop,cv2.COLOR_BGR2GRAY)[:,:,None]
-                Rs_est, ts_est, normed_test_code, nearest_train_codes = codebook.nearest_rotation_with_bb_depth(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args)
+                Rs_est, ts_est, normed_test_code = codebook.nearest_rotation_with_bb_depth(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args, test_codes=True)
                 ae_time = time.time() - start
                 test_embeddings.append(normed_test_code)
 
@@ -285,7 +285,7 @@ def main():
     report.write_configuration(train_cfg_file_path,eval_cfg_file_path)
     report.merge_all_tex_files()
     report.include_all_figures()
-    report.save(open_pdf=True)
+    report.save(open_pdf=False)
 
 if __name__ == '__main__':
     main()

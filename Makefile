@@ -3,6 +3,7 @@
 all: install
 
 install:
+	#pip install -r requirements.txt --user
 	pip install . --user --upgrade
 
 uninstall:

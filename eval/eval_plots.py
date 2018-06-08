@@ -4,6 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib2tikz import save as tikz_save
 import cv2
 import os
+import time
 import numpy as np
 import tensorflow as tf
 from gl_utils import tiles
@@ -14,7 +15,7 @@ from meshrenderer import box3d_renderer
 from sixd_toolkit.pysixd import inout,pose_error
 from sixd_toolkit.params import dataset_params
 
-
+view_idx = 0
 
 def plot_reconstruction_test(sess, encoder, decoder, x):
 
@@ -174,7 +175,7 @@ def plot_scene_with_3DBoxes(scene_res_dirs,dataset_name='tless',scene_id=1,save=
 
 
 def plot_scene_with_estimate(test_img,icp_renderer,K_test, R_est_old, t_est_old,R_est_ref, t_est_ref, test_bb, test_score, obj_id, gts=[], bb_pred=None):   
-
+    global view_idx
     if bb_pred is not None:
         scene_detect = test_img.copy()
         for bb in bb_pred:
@@ -210,10 +211,17 @@ def plot_scene_with_estimate(test_img,icp_renderer,K_test, R_est_old, t_est_old,
     
     obj_in_scene_ref = icp_renderer.render_trafo(K_test.copy(), R_est_ref, t_est_ref,test_img.shape)
     scene_view_refined = test_img.copy()
-    scene_view_refined[obj_in_scene_ref > 0] = obj_in_scene_ref[obj_in_scene_ref > 0]
+
+    g_y = np.zeros_like(obj_in_scene_ref)
+    g_y[:,:,1]= obj_in_scene_ref[:,:,1]
+    scene_view_refined[obj_in_scene_ref > 0] = g_y[obj_in_scene_ref > 0]*2./3. + scene_view_refined[obj_in_scene_ref > 0]*1./3.
+
+    # scene_view_refined[obj_in_scene_ref > 0] = obj_in_scene_ref[obj_in_scene_ref > 0]
     cv2.rectangle(scene_view_refined, (xmin,ymin),(xmax,ymax), (0,255,0), 2)
     cv2.putText(scene_view_refined,'%s: %1.3f' % (obj_id,test_score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,255,0), 2)
     cv2.imshow('scene_estimation_refined',scene_view_refined)
+    cv2.imwrite('/net/rmc-lx0050/home_local2/sund_ma/autoencoder_ws/bosch/thr_sc2_obj7/%s.png'% view_idx,scene_view_refined)
+    view_idx += 1
 
     # for gt in gts:
     #     if gt['obj_id'] == obj_id:

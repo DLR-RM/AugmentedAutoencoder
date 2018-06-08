@@ -5,7 +5,9 @@ import numpy as np
 import tensorflow as tf
 import progressbar
 
+from utils import lazy_property
 import utils as u
+
 
 class Codebook(object):
 
@@ -44,6 +46,11 @@ class Codebook(object):
         self.nearest_neighbor_idx = tf.argmax(self.cos_similarity, axis=1)
 
 
+
+    @lazy_property
+    def embed_obj_bbs_values(self, session):
+        return session.run(self.embed_obj_bbs_var)
+
     def nearest_rotation(self, session, x, top_n=1, upright=False):
         if x.dtype == 'uint8':
             x = x/255.
@@ -77,7 +84,7 @@ class Codebook(object):
                 exit()
 
 
-    def nearest_rotation_with_bb_depth(self, session, x, predicted_bb, K_test, top_n, train_args, depth_pred=None, upright=False):
+    def nearest_rotation_with_bb_depth(self, session, x, predicted_bb, K_test, top_n, train_args, depth_pred=None, upright=False, test_codes = False):
         
         if x.dtype == 'uint8':
             x = x/255.
@@ -86,8 +93,12 @@ class Codebook(object):
         if x.ndim == 3:
             x = np.expand_dims(x, 0)
         # print np.max(x)
-        cosine_similarity, normalized_test_code = session.run([self.cos_similarity,self.normalized_embedding_query], {self._encoder.x: x})
 
+        if test_codes:
+            cosine_similarity, normalized_test_code = session.run([self.cos_similarity,self.normalized_embedding_query], {self._encoder.x: x})
+        else:
+            cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
+            normalized_test_code = None
 
         if top_n > 1:
             unsorted_max_idcs = np.argpartition(-cosine_similarity.squeeze(), top_n)[:top_n]
@@ -110,22 +121,30 @@ class Codebook(object):
         K11_ratio = K_test[1,1] / K_train[1,1]  
         mean_K_ratio = np.mean([K00_ratio,K11_ratio])
         
-        embed_obj_bbs = session.run(self.embed_obj_bbs_var) if depth_pred is None else None
-        
+        embed_obj_bbs = self.embed_obj_bbs_values(session)
+
+
         ts_est = np.empty((top_n,3))
         for i,idx in enumerate(idcs):
-            if depth_pred is None:
-                rendered_bb = embed_obj_bbs[idx].squeeze()
-                diag_bb_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
-                depth_pred = diag_bb_ratio * render_radius * mean_K_ratio
 
-            center_bb_x = (predicted_bb[0] + predicted_bb[2]/2)
-            center_bb_y = (predicted_bb[1] + predicted_bb[3]/2)
+                if depth_pred is None:
+                    rendered_bb = embed_obj_bbs[idx].squeeze()
+                    diag_bb_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
+                    z = diag_bb_ratio * mean_K_ratio * render_radius
+                else:
+                    z = depth_pred
+
+                # object center in image plane (bb center =/= object center)
+                center_bb_x = predicted_bb[0] + predicted_bb[2]/2 - (rendered_bb[0] + rendered_bb[2]/2. - K_train[0,2])
+                center_bb_y = predicted_bb[1] + predicted_bb[3]/2 - (rendered_bb[1] + rendered_bb[3]/2. - K_train[1,2])
+
+
+
 
             # t = K_test_cam_inv * center_bb * depth_pred
-            center_mm_tx = (center_bb_x - K_test[0,2]) * depth_pred / K_test[0,0]
-            center_mm_ty = (center_bb_y - K_test[1,2]) * depth_pred / K_test[1,1]
-            t_est = np.array([center_mm_tx, center_mm_ty, depth_pred])
+            center_mm_tx = (center_bb_x - K_test[0,2]) * z / K_test[0,0]
+            center_mm_ty = (center_bb_y - K_test[1,2]) * z / K_test[1,1]
+            t_est = np.array([center_mm_tx, center_mm_ty, z])
             ts_est[i] = t_est
         return (Rs_est, ts_est, normalized_test_code.squeeze(),nearest_train_codes.squeeze())
         
