@@ -11,10 +11,10 @@ from eval import eval_utils
 
 import argparse
 import rmcssd.bin.detector as detector
-from mvis_pose_estimator import mvis_pose_estimator
+# from mvis_pose_estimator import mvis_pose_estimator
 
 
-class ae_pose_estimator(mvis_pose_estimator):
+class ae_pose_estimator(object):
     """ """
 
     # Takes a configPath only!
@@ -49,7 +49,7 @@ class ae_pose_estimator(mvis_pose_estimator):
         self.codebook, self.dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
         saver = tf.train.Saver()
         config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.3))
-        self.sess = tf.Interactivesession(config=config)
+        self.sess = tf.InteractiveSession(config=config)
         factory.restore_checkpoint(self.sess, saver, ckpt_dir)
 
 
@@ -77,7 +77,7 @@ class ae_pose_estimator(mvis_pose_estimator):
         det_imgs = np.empty((len(bboxes),) + dataset.shape)
         
         #print vis_img.shape
-
+        all_Rs, all_ts = [],[]
         for j,box in enumerate(bboxes):
             h_box, w_box = (box.ymax-box.ymin)*H, (box.xmax-box.xmin)*W
             cy, cx = int(box.ymin*H + h_box/2), int(box.xmin*W + w_box/2)
@@ -93,7 +93,8 @@ class ae_pose_estimator(mvis_pose_estimator):
             #     det_img = cv2.cvtColor(det_img,cv2.COLOR_BGR2GRAY)[:,:,None]
 
             box_xywh = [int(box.xmin*W),int(box.ymin*H),w_box,h_box]
-            Rs, ts,_,_= codebook.nearest_rotation_with_bb_depth(self.sess, det_img, box_xywh, camK, self._topk, self.train_args, upright=self._upright)
+            R, t,_,_= codebook.nearest_rotation_with_bb_depth(self.sess, det_img, box_xywh, camK, self._topk, self.train_args, upright=self._upright)
+            all_Rs.append(R)
+            all_ts.append(t)
 
-
-        return Rs, ts
+        return all_Rs, all_ts
