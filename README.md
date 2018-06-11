@@ -5,7 +5,7 @@
 1.) Train AAE using only a 3D model to predict 3D Object Orientations \
 2.) For full RGB-based 6D pose estimation, also train a 2D Object Detector \
     (inference pipeline supports https://rmc-github.robotic.dlr.de/moro/single_shot_multibox_detector) \
-3.) Optionally use a depth-based ICP to refine the 6D pose (mostly depth) \
+3.) Optionally use a depth-based ICP to refine the 6D pose (mostly depth)
 
 # Usage
 ### Preparatory Steps
