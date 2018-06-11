@@ -9,12 +9,10 @@ import ConfigParser
 from ae import factory, utils
 from eval import eval_utils
 
-import argparse
-import rmcssd.bin.detector as detector
 # from mvis_pose_estimator import mvis_pose_estimator
+import m3vision
 
-
-class ae_pose_estimator(object):
+class AePoseEstimator(PoseEstInterface):
     """ """
 
     # Takes a configPath only!
@@ -69,10 +67,10 @@ class ae_pose_estimator(object):
 #        pass
     
     # ABS
-    def process(self, bboxes=None, color_img=None, depth_img=None, camK=None, camPose=None, rois3ds=[]):
+    def process(self, bboxes=[], color_img=None, depth_img=None, camK=None, camPose=None, rois3ds=[]):
         """ roi3ds is a list of roi3d"""
 
-        H, W = rgb.shape[:2]
+        H, W = color_img.shape[:2]
 
         det_imgs = np.empty((len(bboxes),) + dataset.shape)
         
@@ -86,7 +84,7 @@ class ae_pose_estimator(object):
             left = np.maximum(cx-size/2, 0)
             top = np.maximum(cy-size/2, 0)
 
-            det_img = img[top:cy+size/2,left:cx+size/2]
+            det_img = color_img[top:cy+size/2,left:cx+size/2]
             det_img = cv2.resize(det_img, self.dataset.shape[:2])
 
             # if dataset.shape[2]  == 1:
@@ -94,7 +92,8 @@ class ae_pose_estimator(object):
 
             box_xywh = [int(box.xmin*W),int(box.ymin*H),w_box,h_box]
             R, t,_,_= codebook.nearest_rotation_with_bb_depth(self.sess, det_img, box_xywh, camK, self._topk, self.train_args, upright=self._upright)
+
             all_Rs.append(R)
             all_ts.append(t)
-
+        #TODO camPose
         return all_Rs, all_ts
