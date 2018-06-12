@@ -1,19 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import multiprocessing
 import numpy as np
 import time
 import hashlib
 import glob
 import os
-
 import progressbar
-from pysixd_stuff import transform
-from pysixd_stuff import view_sampler
-
 import cv2
 
-from meshrenderer import meshrenderer, meshrenderer_phong
+from pysixd_stuff import transform
+from pysixd_stuff import view_sampler
 from utils import lazy_property
 
 
@@ -62,6 +58,7 @@ class Dataset(object):
 
     @lazy_property
     def renderer(self):
+        from meshrenderer import meshrenderer, meshrenderer_phong
         if self._kw['model'] == 'cad':
             renderer = meshrenderer.Renderer(
                [self._kw['model_path']], 

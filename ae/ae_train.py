@@ -1,13 +1,11 @@
  # -*- coding: utf-8 -*-
 import os
-import ConfigParser
+import configparser
 import argparse
 import numpy as np
 import signal
 import shutil
-import time
 import cv2
-
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import progressbar
@@ -66,7 +64,7 @@ def main():
         print '{}\n'.format(cfg_file_path)
         exit(-1)
 
-    args = ConfigParser.ConfigParser()
+    args = configparser.ConfigParser()
     args.read(cfg_file_path)
 
         

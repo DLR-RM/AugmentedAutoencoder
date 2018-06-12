@@ -88,7 +88,7 @@ def build_codebook(encoder, dataset, args):
 
 def build_codebook_from_name(experiment_name, experiment_group='', return_dataset=False, return_decoder = False):
     import os
-    import ConfigParser
+    import configparser
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
     if workspace_path == None:
@@ -105,7 +105,7 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
     dataset_path = u.get_dataset_path(workspace_path)
 
     if os.path.exists(cfg_file_path):
-        args = ConfigParser.ConfigParser()
+        args = configparser.ConfigParser()
         args.read(cfg_file_path)
     else:
         print 'ERROR: Config File not found: ', cfg_file_path

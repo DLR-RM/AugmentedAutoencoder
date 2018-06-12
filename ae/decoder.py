@@ -25,7 +25,6 @@ class Decoder(object):
     def reconstruction_target(self):
         return self._reconstruction_target
 
-
     @lazy_property
     def x(self):
         z = self._latent_code

@@ -98,7 +98,6 @@ class Codebook(object):
             cosine_similarity, normalized_test_code = session.run([self.cos_similarity,self.normalized_embedding_query], {self._encoder.x: x})
         else:
             cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
-            normalized_test_code = None
 
         if top_n > 1:
             unsorted_max_idcs = np.argpartition(-cosine_similarity.squeeze(), top_n)[:top_n]
@@ -109,10 +108,9 @@ class Codebook(object):
             else:
                 idcs = np.argmax(cosine_similarity, axis=1)
         
-        nearest_train_codes = session.run(self.embedding_normalized)[idcs]
+        
         Rs_est = self._dataset.viewsphere_for_embedding[idcs]
 
-        
         # test_depth = f_test / f_train * render_radius * diag_bb_ratio
         K_train = np.array(eval(train_args.get('Dataset','K'))).reshape(3,3)
         render_radius = train_args.getfloat('Dataset','RADIUS')
@@ -122,7 +120,6 @@ class Codebook(object):
         mean_K_ratio = np.mean([K00_ratio,K11_ratio])
         
         embed_obj_bbs = self.embed_obj_bbs_values(session)
-
 
         ts_est = np.empty((top_n,3))
         for i,idx in enumerate(idcs):
@@ -143,7 +140,12 @@ class Codebook(object):
             center_mm_ty = (center_bb_y - K_test[1,2]) * z / K_test[1,1]
             t_est = np.array([center_mm_tx, center_mm_ty, z])
             ts_est[i] = t_est
-        return (Rs_est, ts_est, normalized_test_code.squeeze(),nearest_train_codes.squeeze())
+            
+        if test_codes:
+            nearest_train_codes = session.run(self.embedding_normalized)[idcs]
+            return (Rs_est, ts_est, normalized_test_code.squeeze(),nearest_train_codes.squeeze())
+        else:
+            return (Rs_est, ts_est)
         
 
 

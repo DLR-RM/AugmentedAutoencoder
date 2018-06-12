@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
-import ConfigParser
+import configparser
 import argparse
 import numpy as np
 import signal
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-import tensorflow as tf
 import progressbar
+import tensorflow as tf
 
 import ae_factory as factory
 import utils as u
@@ -45,7 +43,7 @@ def main():
         print '{}\n'.format(cfg_file_path)
         exit(-1)
 
-    args = ConfigParser.ConfigParser()
+    args = configparser.ConfigParser()
     args.read(cfg_file_path)
 
     with tf.variable_scope(experiment_name):
