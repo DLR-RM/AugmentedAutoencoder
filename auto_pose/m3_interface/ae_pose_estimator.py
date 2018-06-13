@@ -7,7 +7,7 @@ import configparser
 
 from auto_pose.ae import factory, utils
 
-from m3vision.interfaces.pose_estimator import PoseEstInterface
+from m3vision.interfaces.pose_estimator import PoseEstInterface,PoseEstimate,Roi3D
 
 class AePoseEstimator(PoseEstInterface):
     """ """
@@ -73,11 +73,11 @@ class AePoseEstimator(PoseEstInterface):
         """ roi3ds is a list of roi3d"""
 
         H, W = color_img.shape[:2]
-
-        det_imgs = np.empty((len(bboxes),) + self.dataset.shape)
         
         #print vis_img.shape
         all_Rs, all_ts = [],[]
+        H_est = np.eye(4)
+
         for j,box in enumerate(bboxes):
             h_box, w_box = (box.ymax-box.ymin)*H, (box.xmax-box.xmin)*W
             cy, cx = int(box.ymin*H + h_box/2), int(box.xmin*W + w_box/2)
@@ -93,16 +93,26 @@ class AePoseEstimator(PoseEstInterface):
             #     det_img = cv2.cvtColor(det_img,cv2.COLOR_BGR2GRAY)[:,:,None]
 
             box_xywh = [int(box.xmin*W),int(box.ymin*H),w_box,h_box]
-            R_est, t_est = self.codebook.nearest_rotation_with_bb_depth(self.sess, det_img, box_xywh, camK, self._topk, self.train_args, upright=self._upright)
+            Rs_est, ts_est = self.codebook.nearest_rotation_with_bb_depth(self.sess, det_img, box_xywh, camK, self._topk, self.train_args, upright=self._upright)
+
+            if self._topk == 1:
+                R_est = Rs_est.squeeze()
+                t_est = ts_est.squeeze()
+            else:
+                print 'ERROR: Not topk > 1 not implemented yet'
+                exit()
 
             if 'depth_img' in self.query_process_requirements():
                 depth_crop = depth_img[top:cy+size/2,left:cx+size/2]
                 R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H))
 
-            all_Rs.append(R_est)
-            all_ts.append(t_est)
+            H_est[:3,:3] = R_est
+            H_est[:3,3] = t_est
+            
+            top1_pose = PoseEstimate(name=box.classes[max(box.classes)],trafo=H_est)
+            all_pose_estimates.append(top1_pose)
         #TODO camPose
-        return all_Rs, all_ts
+        return all_pose_estimates
 
 
 
