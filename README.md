@@ -9,7 +9,12 @@
 
 # Usage
 ### Preparatory Steps
-*1. Local pip installation*
+*1.1 rmpm environment (right now only inference)*
+```bash
+eval `rmpm_do env --env-format embed_sh auto_pose`
+```
+or \
+*1.2 Local pip installation*
 ```bash
 make
 ```

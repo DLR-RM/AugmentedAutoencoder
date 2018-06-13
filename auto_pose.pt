@@ -7,12 +7,12 @@ LICENSE = Apache v2.0
 
 SUPPORTED_LANGUAGES = Python
 DEPENDS = 	sw.common.tensorflow==1, 
-			sw.common.OpenCV==3.1, 
+			sw.common.OpenCV==3, 
 			sw.moro.m3vision==0.0,
 			sw.common.NumPy=1
 			
 ARCHS = osl42-x86_64,
-DESCRIPTION = binary in hand classifier originally for omnirob lwr cameras
+DESCRIPTION = 6D Pose Estimation from RGB (fast) or RGB-D (slow but more accurate), trained from a 3D model (textured or un-textured) 
 
 EXEC_PATHS = ${ARCH}/bin
 PYTHON_PATHS = ${ARCH}/lib/python2.7/site-packages
@@ -20,12 +20,16 @@ PYTHON_PATHS = ${ARCH}/lib/python2.7/site-packages
 ADDITIONAL_ENV = M3_MODULE_PATH=${PKGROOT}/${ARCH}/m3_interface
 
 [subpackage]
-NAME = training
-DEPENDS += bitarray, imgaug, MeshRenderer
+NAME = withICP
+DEPENDS += sw.moro.meshrenderer
 
-[subpackage]
-NAME = evaluation
-DEPENDS += MeshRenderer, matplotlib, 
+#[subpackage]
+#NAME = training
+#DEPENDS += bitarray, imgaug, MeshRenderer
+
+#[subpackage]
+#NAME = evaluation
+#DEPENDS += MeshRenderer, matplotlib, sixd_toolkit
 
 [pre-install]
 ./build.sh

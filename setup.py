@@ -10,9 +10,9 @@ setup(
     author_email='Martin.Sundermeyer@dlr.de, Dimitri.Henkel@dlr.de',
     license='DLR proprietary',
     entry_points={
-        'console_scripts': ['ae_init_workspace = ae.ae_init_workspace:main',
-                            'ae_train = ae.ae_train:main',
-                            'ae_embed = ae.ae_embed:main',
+        'console_scripts': ['ae_init_workspace = auto_pose.ae.ae_init_workspace:main',
+                            'ae_train = auto_pose.ae.ae_train:main',
+                            'ae_embed = auto_pose.ae.ae_embed:main',
                             'ae_eval = auto_pose.eval.ae_eval:main',
                             'ae_test_embedding = auto_pose.test.ae_test_embedding:main',
                             'ae_compare = auto_pose.eval.comparative_report:main']
