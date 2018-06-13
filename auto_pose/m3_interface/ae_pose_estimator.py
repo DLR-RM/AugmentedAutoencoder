@@ -6,7 +6,6 @@ import os
 import configparser
 
 from auto_pose.ae import factory, utils
-from icp import icp, renderer
 
 from m3vision import PoseEstInterface
 
@@ -40,6 +39,7 @@ class AePoseEstimator(PoseEstInterface):
                               'depth_data_type': eval(test_args.get('MODEL','depth_data_type')) }
 
         if test_args.getboolean('MODEL','icp'):
+            from auto_pose.icp import icp
             self._process_requirements.append('depth_img')
             self.icp_handle = icp.ICP(train_args)
         if test_args.getboolean('MODEL','camPose'):
