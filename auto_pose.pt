@@ -17,7 +17,7 @@ DESCRIPTION = 6D Pose Estimation from RGB (fast) or RGB-D (slow but more accurat
 EXEC_PATHS = ${ARCH}/bin
 PYTHON_PATHS = ${ARCH}/lib/python2.7/site-packages
 
-ADDITIONAL_ENV = M3_MODULE_PATH=${PKGROOT}/${ARCH}/m3_interface
+ADDITIONAL_ENV = M3_ESTIMATOR_PACKAGES=auto_pose:$${M3_ESTIMATOR_PACKAGES}
 
 [subpackage]
 NAME = withICP
