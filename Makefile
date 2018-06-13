@@ -7,7 +7,7 @@ install:
 	pip install . --user --upgrade
 
 uninstall:
-	pip uninstall ae
+	pip uninstall auto_pose
 
 test:
 	nosetests --rednose tests

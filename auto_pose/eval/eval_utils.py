@@ -7,7 +7,7 @@ import hashlib
 from sixd_toolkit.params import dataset_params
 from sixd_toolkit.pysixd import inout
 
-from ae import utils as u
+from auto_pose.ae import utils as u
 
 
 def get_gt_scene_crops(scene_id, eval_args, train_args):

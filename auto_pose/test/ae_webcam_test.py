@@ -4,7 +4,7 @@ import cv2
 import tensorflow as tf
 import numpy as np
 
-from ae import factory
+from auto_pose.ae import factory
 import argparse
 
 

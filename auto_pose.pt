@@ -1,0 +1,37 @@
+PTVERSION = 2
+NAME = auto_pose 
+MAINTAINER = Martin Sundermeyer <Martin.Sundermeyer@dlr.de>
+VERSION = 0.0.1
+DOCUMENTATION = https://rmc-github.robotic.dlr.de/sund-ma/auto_pose
+LICENSE = Apache v2.0
+
+SUPPORTED_LANGUAGES = Python
+DEPENDS = 	sw.common.tensorflow==1, 
+			sw.common.OpenCV==3.1, 
+			sw.moro.m3vision==0.0,
+			sw.common.NumPy=1
+			
+ARCHS = osl42-x86_64,
+DESCRIPTION = binary in hand classifier originally for omnirob lwr cameras
+
+EXEC_PATHS = ${ARCH}/bin
+PYTHON_PATHS = ${ARCH}/lib/python2.7/site-packages
+
+ADDITIONAL_ENV = M3_MODULE_PATH=${PKGROOT}/${ARCH}/m3_interface
+
+[subpackage]
+NAME = training
+DEPENDS += bitarray, imgaug, MeshRenderer
+
+[subpackage]
+NAME = evaluation
+DEPENDS += MeshRenderer, matplotlib, 
+
+[pre-install]
+./build.sh
+
+[install]
+install/${ARCH} => ${ARCH}
+build.sh => build.sh
+
+[post-install]

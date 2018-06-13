@@ -2,15 +2,13 @@ import cv2
 import tensorflow as tf
 import numpy as np
 import glob
-import imageio
 import os
-import ConfigParser
+import configparser
 
-from ae import factory, utils
-from eval import eval_utils
+from auto_pose.ae import factory, utils
+from icp import icp, renderer
 
-# from mvis_pose_estimator import mvis_pose_estimator
-import m3vision
+from m3vision import PoseEstInterface
 
 class AePoseEstimator(PoseEstInterface):
     """ """
@@ -18,19 +16,8 @@ class AePoseEstimator(PoseEstInterface):
     # Takes a configPath only!
     def __init__(self, test_configpath):
 
-        test_args = ConfigParser.ConfigParser()
+        test_args = configparser.ConfigParser()
         test_args.read(test_configpath) 
-
-        self._needs = ['rgb', 'camK', 'bboxes']
-        self._upright = test_args.getboolean('MODEL','upright')
-        self._topk = test_args.getint('MODEL','topk')
-        self._image_format = {'color_format':test_args.get('MODEL','image_format'), 
-                              'type': eval(test_args.get('MODEL','image_type')) }
-
-        if test_args.getboolean('MODEL','icp'):
-            self._needs.append('depth')
-        if test_args.getboolean('MODEL','camPose'):
-            self._needs.append('camPose')
 
         workspace_path = test_args.get('MODEL','workspace_path')
         experiment_group = test_args.get('MODEL','experiment_group')
@@ -38,11 +25,26 @@ class AePoseEstimator(PoseEstInterface):
 
         train_cfg_file_path = utils.get_config_file_path(workspace_path, experiment_name, experiment_group)
         
-        self.train_args = ConfigParser.ConfigParser()
+        self.train_args = configparser.ConfigParser()
         self.train_args.read(train_cfg_file_path)  
 
         log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
         ckpt_dir = utils.get_checkpoint_dir(log_dir)
+
+
+        self._process_requirements = ['color_img', 'camK', 'bboxes']
+        self._upright = test_args.getboolean('MODEL','upright')
+        self._topk = test_args.getint('MODEL','topk')
+        self._image_format = {'color_format':test_args.get('MODEL','color_format'), 
+                              'color_data_type': eval(test_args.get('MODEL','color_data_type')),
+                              'depth_data_type': eval(test_args.get('MODEL','depth_data_type')) }
+
+        if test_args.getboolean('MODEL','icp'):
+            self._process_requirements.append('depth_img')
+            self.icp_handle = icp.ICP(train_args)
+        if test_args.getboolean('MODEL','camPose'):
+            self._process_requirements.append('camPose')
+
 
         self.codebook, self.dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
         saver = tf.train.Saver()
@@ -55,8 +57,8 @@ class AePoseEstimator(PoseEstInterface):
         pass
 
     # ABS
-    def query_needs():
-        return self._needs
+    def query_process_requirements():
+        return self._process_requirements
 
     def query_image_format():
         return self._image_format
@@ -72,14 +74,14 @@ class AePoseEstimator(PoseEstInterface):
 
         H, W = color_img.shape[:2]
 
-        det_imgs = np.empty((len(bboxes),) + dataset.shape)
+        det_imgs = np.empty((len(bboxes),) + self.dataset.shape)
         
         #print vis_img.shape
         all_Rs, all_ts = [],[]
         for j,box in enumerate(bboxes):
             h_box, w_box = (box.ymax-box.ymin)*H, (box.xmax-box.xmin)*W
             cy, cx = int(box.ymin*H + h_box/2), int(box.xmin*W + w_box/2)
-            size = int(np.maximum(h_box, w_box) * 1.25)
+            size = int(np.maximum(h_box, w_box) * self.train_args.getfloat('Dataset','PAD_FACTOR'))
 
             left = np.maximum(cx-size/2, 0)
             top = np.maximum(cy-size/2, 0)
@@ -91,9 +93,16 @@ class AePoseEstimator(PoseEstInterface):
             #     det_img = cv2.cvtColor(det_img,cv2.COLOR_BGR2GRAY)[:,:,None]
 
             box_xywh = [int(box.xmin*W),int(box.ymin*H),w_box,h_box]
-            R, t,_,_= codebook.nearest_rotation_with_bb_depth(self.sess, det_img, box_xywh, camK, self._topk, self.train_args, upright=self._upright)
+            R_est, t_est = self.codebook.nearest_rotation_with_bb_depth(self.sess, det_img, box_xywh, camK, self._topk, self.train_args, upright=self._upright)
 
-            all_Rs.append(R)
-            all_ts.append(t)
+            if 'depth_img' in self.query_process_requirements():
+                depth_crop = depth_img[top:cy+size/2,left:cx+size/2]
+                R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H))
+
+            all_Rs.append(R_est)
+            all_ts.append(t_est)
         #TODO camPose
         return all_Rs, all_ts
+
+
+

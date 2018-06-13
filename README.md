@@ -2,10 +2,10 @@
 # Tensorflow Implementation
 # Overview
 
-1.) Train AAE using only a 3D model to predict 3D Object Orientations \
+1.) Train AAE using only a 3D model to predict 3D Object Orientations from image crops\
 2.) For full RGB-based 6D pose estimation, also train a 2D Object Detector \
     (inference pipeline supports https://rmc-github.robotic.dlr.de/moro/single_shot_multibox_detector) \
-3.) Optionally use a standard depth-based ICP to refine the 6D pose (slower)
+3.) Optionally use a standard depth-based ICP to refine the 6D Pose (slower)
 
 # Usage
 ### Preparatory Steps
@@ -14,7 +14,7 @@
 make
 ```
 
-*2. Set Workspace path, Add executables to path, consider to put this into ~/.bashrc*
+*2. Set Workspace path, Add executables to path, consider to put this into your bash profile*
 ```bash
 export AE_WORKSPACE_PATH=/home_local/$USER/autoencoder_ws
 export PATH=$HOME/.local/bin:$PATH

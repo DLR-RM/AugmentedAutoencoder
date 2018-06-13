@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import argparse
-import ConfigParser
+import configparser
 import shutil
 import os
 import sys
@@ -11,11 +11,9 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-
-
-from ae import factory
-from ae import utils as u
-from eval import eval_utils, icp_utils, eval_plots, latex_report
+from auto_pose.ae import factory
+from auto_pose.ae import utils as u
+from auto_pose.eval import eval_utils, icp_utils, eval_plots, latex_report
 from sixd_toolkit.pysixd import inout, pose_error
 from sixd_toolkit.params import dataset_params
 from sixd_toolkit.tools import eval_calc_errors, eval_loc
@@ -40,8 +38,8 @@ def main():
     train_cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     eval_cfg_file_path = u.get_eval_config_file_path(workspace_path, eval_cfg=eval_cfg)
 
-    train_args = ConfigParser.ConfigParser()
-    eval_args = ConfigParser.ConfigParser()
+    train_args = configparser.ConfigParser()
+    eval_args = configparser.ConfigParser()
     train_args.read(train_cfg_file_path)
     eval_args.read(eval_cfg_file_path)
     
@@ -137,6 +135,7 @@ def main():
         gts = inout.load_gt(data_params['scene_gt_mpath'].format(scene_id))
         visib_gts = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, 15))
         #######
+        W_test, H_test = data_params['test_im_size']
 
         icp_renderer = icp_utils.SynRenderer(train_args) if icp else None
         noof_scene_views = eval_utils.noof_scene_views(scene_id, eval_args)
@@ -195,17 +194,18 @@ def main():
                 run_time = ae_time + bb_preds[view][0]['ssd_time'] if estimate_bbs else ae_time
 
                 # icp = False if view<350 else True
+                #TODO: 
                 Rs_est_old, ts_est_old = Rs_est.copy(), ts_est.copy()
                 for p in xrange(top_nn):
                     if icp:
                         start = time.time()
                         # depth icp
-                        R_est_refined, t_est_refined = icp_utils.icp_refinement(test_crops_depth[i], icp_renderer,Rs_est[p],ts_est[p], Ks_test[view].copy(), depth_only=True)
+                        R_est_refined, t_est_refined = icp_utils.icp_refinement(test_crops_depth[i], icp_renderer,Rs_est[p],ts_est[p], Ks_test[view].copy(), (W_test, H_test),depth_only=True)
                         # x,y update
                         _, ts_est_refined, _, _ = codebook.nearest_rotation_with_bb_depth(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args,depth_pred=t_est_refined[2])
                         t_est_refined = ts_est_refined[p]
                         # rotation icp, only accepted if below 20 deg change
-                        R_est_refined, _ = icp_utils.icp_refinement(test_crops_depth[i], icp_renderer,R_est_refined,t_est_refined, Ks_test[view].copy(), rot_only=True)
+                        R_est_refined, _ = icp_utils.icp_refinement(test_crops_depth[i], icp_renderer,R_est_refined,t_est_refined, Ks_test[view].copy(), (W_test, H_test), no_depth=True)
                         icp_time = time.time() - start
                         Rs_est[p], ts_est[p] = R_est_refined, t_est_refined
                     

@@ -4,13 +4,13 @@ import numpy as np
 import glob
 import imageio
 import os
-import ConfigParser
+import configparser
 import pygame
 import pygame.camera
 
 
-from ae import factory, utils
-from eval import eval_utils
+from auto_pose.ae import factory, utils
+from auto_pose.eval import eval_utils
 
 import argparse
 import rmcssd.bin.detector as detector
@@ -72,7 +72,7 @@ if workspace_path == None:
     exit(-1)
 
 train_cfg_file_path = utils.get_config_file_path(workspace_path, experiment_name, experiment_group)
-train_args = ConfigParser.ConfigParser()
+train_args = configparser.ConfigParser()
 train_args.read(train_cfg_file_path)  
   
 log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
@@ -140,7 +140,7 @@ while videoStream.isActive():
 
         for j,ssd_img in enumerate(ssd_imgs):
             predicted_bb = [ssd_boxes[j][1],ssd_boxes[j][0],ssd_boxes[j][3]-ssd_boxes[j][1],ssd_boxes[j][2]-ssd_boxes[j][0]]
-            R, t,_,_= codebook.nearest_rotation_with_bb_depth(ssd.isess, ssd_img, predicted_bb, K_test, 1, train_args, upright=False)
+            R, t = codebook.nearest_rotation_with_bb_depth(ssd.isess, ssd_img, predicted_bb, K_test, 1, train_args, upright=False)
             Rs.append(R.squeeze())
             ts.append(t.squeeze())
         # Rs = codebook.nearest_rotation(ssd.isess, ssd_imgs)

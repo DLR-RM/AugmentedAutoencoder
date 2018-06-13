@@ -1,13 +1,13 @@
-from eval import eval_plots
-from ae import factory
-from ae import utils as u
+from auto_pose.eval import eval_plots
+from auto_pose.ae import factory
+from auto_pose.ae import utils as u
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib2tikz import save as tikz_save
 
 import argparse
-import ConfigParser
+import configparser
 import os
 import tensorflow as tf
 import numpy as np
@@ -29,7 +29,7 @@ def main():
     train_cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
     ckpt_dir = u.get_checkpoint_dir(log_dir)
-    train_args = ConfigParser.ConfigParser()
+    train_args = configparser.ConfigParser()
     train_args.read(train_cfg_file_path)
 
     print train_args.items('Dataset')

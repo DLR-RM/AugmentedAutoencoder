@@ -52,10 +52,10 @@ r'''
 \end{document}
 '''
 
-from ae import utils as u#
+from auto_pose.ae import utils as u#
 from sixd_toolkit.pysixd import inout
-import ConfigParser
-from eval import eval_utils
+import configparser
+from auto_pose.eval import eval_utils
 
 
 def main():
@@ -104,7 +104,7 @@ def main():
 		else:
 			eval_cfg_file_path = eval_cfg_file_pathes[0]
 
-		eval_args = ConfigParser.ConfigParser()
+		eval_args = configparser.ConfigParser()
 		eval_args.read(eval_cfg_file_path)
 		print eval_cfg_file_path
 		estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')

@@ -4,11 +4,11 @@ import numpy as np
 import glob
 import imageio
 import os
-import ConfigParser
+import configparser
 
-from ae import factory
-from ae import utils as u
-from eval import eval_utils
+from auto_pose.ae import factory
+from auto_pose.ae import utils as u
+from auto_pose.eval import eval_utils
 
 import argparse
 
@@ -28,8 +28,8 @@ file_str = arguments.file_str
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 train_cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
 eval_cfg_file_path = u.get_eval_config_file_path(workspace_path)
-train_args = ConfigParser.ConfigParser()
-eval_args = ConfigParser.ConfigParser()
+train_args = configparser.ConfigParser()
+eval_args = configparser.ConfigParser()
 train_args.read(train_cfg_file_path)
 eval_args.read(eval_cfg_file_path)
 
