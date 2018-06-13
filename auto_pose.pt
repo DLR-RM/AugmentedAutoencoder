@@ -21,7 +21,7 @@ ADDITIONAL_ENV = M3_MODULE_PATH=${PKGROOT}/${ARCH}/m3_interface
 
 [subpackage]
 NAME = withICP
-DEPENDS += sw.moro.meshrenderer
+DEPENDS += sw.moro.meshrenderer==0
 
 #[subpackage]
 #NAME = training
