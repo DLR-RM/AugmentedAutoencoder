@@ -7,7 +7,7 @@ import configparser
 
 from auto_pose.ae import factory, utils
 
-from m3vision import PoseEstInterface
+from m3vision.interfaces.pose_estimator import PoseEstInterface
 
 class AePoseEstimator(PoseEstInterface):
     """ """
