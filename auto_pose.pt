@@ -8,7 +8,7 @@ LICENSE = Apache v2.0
 SUPPORTED_LANGUAGES = Python
 DEPENDS = 	sw.common.tensorflow==1, 
 			sw.common.OpenCV==3, 
-			sw.moro.m3vision==0.0,
+			sw.moro.m3vision==0.1,
 			sw.common.NumPy==1
 			
 ARCHS = osl42-x86_64,
@@ -25,7 +25,7 @@ DEPENDS += sw.moro.meshrenderer==0
 
 #[subpackage]
 #NAME = training
-#DEPENDS += sw.moro.meshrenderer, bitarray, imgaug
+#DEPENDS += sw.moro.meshrenderer, bitarray, sw.common.python-imgaug
 
 #[subpackage]
 #NAME = evaluation
