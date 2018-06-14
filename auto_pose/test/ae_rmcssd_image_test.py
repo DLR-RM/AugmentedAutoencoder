@@ -11,7 +11,6 @@ from auto_pose.eval import eval_utils
 
 import argparse
 import rmcssd.bin.detector as detector
-from sixd_toolkit.pysixd import inout
 
 
 parser = argparse.ArgumentParser()

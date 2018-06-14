@@ -5,8 +5,7 @@ import glob
 import imageio
 import os
 import configparser
-import pygame
-import pygame.camera
+
 
 
 from auto_pose.ae import factory, utils
@@ -14,7 +13,6 @@ from auto_pose.eval import eval_utils
 
 import argparse
 import rmcssd.bin.detector as detector
-from sixd_toolkit.pysixd import inout
 from webcam_video_stream import WebcamVideoStream
 
 

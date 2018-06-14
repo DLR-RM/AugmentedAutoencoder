@@ -23,9 +23,10 @@ ADDITIONAL_ENV = M3_ESTIMATOR_PACKAGES=auto_pose:$${M3_ESTIMATOR_PACKAGES}
 NAME = withICP
 DEPENDS += sw.moro.meshrenderer==0
 
-#[subpackage]
-#NAME = training
-#DEPENDS += sw.moro.meshrenderer, bitarray, sw.common.python-imgaug
+[subpackage]
+NAME = training
+DEPENDS += sw.moro.meshrenderer==0, 
+		   sw.common.python-imgaug==0
 
 #[subpackage]
 #NAME = evaluation
