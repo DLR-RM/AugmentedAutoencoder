@@ -15,8 +15,8 @@ from sixd_toolkit.params import dataset_params
 N = 3000                                 # number of random points in the dataset
 dim = 3                                     # number of dimensions of the points
 verbose = False
-max_mean_dist_factor = 2.0
-angle_change_limit = 0.35 # = 20 deg #0.5236=30 deg
+# max_mean_dist_factor = 2.0
+angle_change_limit = 20*np.pi/180.# = 20 deg #0.5236=30 deg
 
 
 def best_fit_transform(A, B, depth_only=False, no_depth=False):
@@ -47,13 +47,11 @@ def best_fit_transform(A, B, depth_only=False, no_depth=False):
         R=np.eye(3)
         t = centroid_B.T - centroid_A.T
         t = np.array([0,0,t[2]])
-
     else:
         # rotation matrix
         H = np.dot(AA.T, BB)
         U, S, Vt = np.linalg.svd(H)
         R = np.dot(Vt.T, U.T)
-
         # special reflection case
         if np.linalg.det(R) < 0:
            Vt[m-1,:] *= -1
@@ -248,7 +246,7 @@ class SynRenderer(object):
 
         # bgr_y = bgr_y[top:bottom, left:right]
 
-def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_dims, depth_only=False,no_depth=False):
+def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_dims, depth_only=False,no_depth=False,max_mean_dist_factor=2.0):
     synthetic_pts = icp_renderer.generate_synthetic_depth(K_test, R_est,t_est,test_render_dims)
     print synthetic_pts
     centroid_synthetic_pts = np.mean(synthetic_pts, axis=0)
@@ -271,10 +269,10 @@ def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_d
     else:
         sub_idcs_real = np.random.choice(len(real_depth_pts),np.min([len(real_depth_pts),len(synthetic_pts),N]))
         sub_idcs_syn = np.random.choice(len(synthetic_pts),np.min([len(real_depth_pts),len(synthetic_pts),N]))
-
+        a=time.time()
         T, distances, iterations = icp(synthetic_pts[sub_idcs_syn], real_depth_pts[sub_idcs_real], 
                                         tolerance=0.000001, verbose=verbose, depth_only=depth_only, no_depth=no_depth)
-
+        print 'icp_time', time.time()-a
 
         # t_est_hom = np.ones((4,1))
         # t_est_hom[:3] = t_est.reshape(3,1)
@@ -299,6 +297,7 @@ def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_d
         H_est[3,3] = 1
         H_est[:3,3] = t_est 
         H_est[:3,:3] = R_est
+
         H_est_refined = np.dot(T,H_est)
 
         R_refined = H_est_refined[:3,:3]

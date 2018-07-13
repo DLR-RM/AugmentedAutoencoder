@@ -41,15 +41,12 @@ class Codebook(object):
             )
             self.embed_obj_bbs = tf.placeholder(tf.int32, shape=[embedding_size, 4])
             self.embed_obj_bbs_assign_op = tf.assign(self.embed_obj_bbs_var, self.embed_obj_bbs)
+            self.embed_obj_bbs_values = None
         
         self.cos_similarity = tf.matmul(self.normalized_embedding_query, self.embedding_normalized,transpose_b=True)
         self.nearest_neighbor_idx = tf.argmax(self.cos_similarity, axis=1)
 
 
-
-    @lazy_property
-    def embed_obj_bbs_values(self, session):
-        return session.run(self.embed_obj_bbs_var)
 
     def nearest_rotation(self, session, x, top_n=1, upright=False):
         if x.dtype == 'uint8':
@@ -118,14 +115,17 @@ class Codebook(object):
         K00_ratio = K_test[0,0] / K_train[0,0]  
         K11_ratio = K_test[1,1] / K_train[1,1]  
         mean_K_ratio = np.mean([K00_ratio,K11_ratio])
-        
-        embed_obj_bbs = self.embed_obj_bbs_values(session)
+
+
+        ##slow!!!!
+        if self.embed_obj_bbs_values is None:
+            self.embed_obj_bbs_values = session.run(self.embed_obj_bbs_var)
 
         ts_est = np.empty((top_n,3))
         for i,idx in enumerate(idcs):
 
+            rendered_bb = self.embed_obj_bbs_values[idx].squeeze()
             if depth_pred is None:
-                rendered_bb = embed_obj_bbs[idx].squeeze()
                 diag_bb_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
                 z = diag_bb_ratio * mean_K_ratio * render_radius
             else:
@@ -142,10 +142,10 @@ class Codebook(object):
             ts_est[i] = t_est
             
         if test_codes:
-            nearest_train_codes = session.run(self.embedding_normalized)[idcs]
-            return (Rs_est, ts_est, normalized_test_code.squeeze(),nearest_train_codes.squeeze())
+            # nearest_train_codes = session.run(self.embedding_normalized)[idcs]
+            return (Rs_est, ts_est, normalized_test_code.squeeze())#,nearest_train_codes.squeeze())
         else:
-            return (Rs_est, ts_est)
+            return (Rs_est, ts_est,None)
         
 
 

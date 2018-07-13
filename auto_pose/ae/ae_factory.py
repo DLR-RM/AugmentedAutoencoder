@@ -30,21 +30,24 @@ def build_queue(dataset, args):
     )
     return queue
 
-def build_encoder(x, args):
+def build_encoder(x, args, is_training=False):
     LATENT_SPACE_SIZE = args.getint('Network', 'LATENT_SPACE_SIZE')
     NUM_FILTER = eval(args.get('Network', 'NUM_FILTER'))
     KERNEL_SIZE_ENCODER = args.getint('Network', 'KERNEL_SIZE_ENCODER')
     STRIDES = eval(args.get('Network', 'STRIDES'))
+    BATCH_NORM = args.getboolean('Network', 'BATCH_NORMALIZATION')
     encoder = Encoder(
         x,
         LATENT_SPACE_SIZE, 
         NUM_FILTER, 
         KERNEL_SIZE_ENCODER, 
-        STRIDES
+        STRIDES,
+        BATCH_NORM,
+        is_training=is_training
     )
     return encoder
 
-def build_decoder(reconstruction_target, encoder, args, is_training=True):
+def build_decoder(reconstruction_target, encoder, args, is_training=False):
     NUM_FILTER = eval(args.get('Network', 'NUM_FILTER'))
     KERNEL_SIZE_DECODER = args.getint('Network', 'KERNEL_SIZE_DECODER')
     STRIDES = eval(args.get('Network', 'STRIDES'))
@@ -52,6 +55,7 @@ def build_decoder(reconstruction_target, encoder, args, is_training=True):
     BOOTSTRAP_RATIO = args.getint('Network', 'BOOTSTRAP_RATIO')
     VARIATIONAL = args.getfloat('Network', 'VARIATIONAL') if is_training else False
     AUXILIARY_MASK = args.getboolean('Network', 'AUXILIARY_MASK')
+    BATCH_NORM = args.getboolean('Network', 'BATCH_NORMALIZATION')
     decoder = Decoder(
         reconstruction_target,
         encoder.sampled_z if VARIATIONAL else encoder.z,
@@ -60,7 +64,9 @@ def build_decoder(reconstruction_target, encoder, args, is_training=True):
         list( reversed(STRIDES) ),
         LOSS,
         BOOTSTRAP_RATIO,
-        AUXILIARY_MASK
+        AUXILIARY_MASK,
+        BATCH_NORM,
+        is_training=is_training
     )
     return decoder
 
@@ -70,16 +76,16 @@ def build_ae(encoder, decoder, args):
     ae = AE(encoder, decoder, NORM_REGULARIZE, VARIATIONAL)
     return ae
 
-def build_optimizer(ae, args):
+def build_train_op(ae, args):
     LEARNING_RATE = args.getfloat('Training', 'LEARNING_RATE')
     OPTIMIZER_NAME = args.get('Training', 'OPTIMIZER')
     import tensorflow
     optimizer = eval('tensorflow.train.{}Optimizer'.format(OPTIMIZER_NAME))
-    optim = optimizer(LEARNING_RATE).minimize(
-        ae.loss,
-        global_step=ae.global_step
-    )
-    return optim
+    optim = optimizer(LEARNING_RATE)
+
+    train_op = tensorflow.contrib.training.create_train_op(ae.loss, optim, global_step=ae.global_step)
+
+    return train_op
 
 def build_codebook(encoder, dataset, args):
     embed_bb = args.getboolean('Embedding', 'EMBED_BB')
@@ -118,7 +124,7 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
         codebook = build_codebook(encoder, dataset, args)
         if return_decoder:
             reconst_target = tf.placeholder(tf.float32, [None,] + list(dataset.shape))
-            decoder = build_decoder(reconst_target, encoder, args, is_training=True)
+            decoder = build_decoder(reconst_target, encoder, args)
 
     if return_dataset:
         if return_decoder:

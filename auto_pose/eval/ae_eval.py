@@ -170,9 +170,19 @@ def main():
                 start = time.time()
                 if train_args.getint('Dataset','C') == 1:
                     test_crop = cv2.cvtColor(test_crop,cv2.COLOR_BGR2GRAY)[:,:,None]
-                Rs_est, ts_est, normed_test_code = codebook.nearest_rotation_with_bb_depth(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args, test_codes=True)
+                predictions = codebook.nearest_rotation_with_bb_depth(sess, 
+                                                                    test_crop, 
+                                                                    test_bb, 
+                                                                    Ks_test[view].copy(), 
+                                                                    top_nn, 
+                                                                    train_args, 
+                                                                    test_codes=eval_args.getboolean('PLOT','EMBEDDING_PCA'))
                 ae_time = time.time() - start
-                test_embeddings.append(normed_test_code)
+
+                Rs_est, ts_est = predictions[:2]
+                if eval_args.getboolean('PLOT','EMBEDDING_PCA'):
+                    test_embeddings.append(predictions[2])
+
 
                 if eval_args.getboolean('EVALUATION','gt_trans'):
                     ts_est = np.empty((top_nn,3))
@@ -200,12 +210,21 @@ def main():
                     if icp:
                         start = time.time()
                         # depth icp
-                        R_est_refined, t_est_refined = icp_utils.icp_refinement(test_crops_depth[i], icp_renderer,Rs_est[p],ts_est[p], Ks_test[view].copy(), (W_test, H_test),depth_only=True)
-                        # x,y update
-                        _, ts_est_refined, _, _ = codebook.nearest_rotation_with_bb_depth(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args,depth_pred=t_est_refined[2])
+                        R_est_refined, t_est_refined = icp_utils.icp_refinement(test_crops_depth[i], icp_renderer,Rs_est[p],
+                            ts_est[p], Ks_test[view].copy(), (W_test, H_test),depth_only=True, max_mean_dist_factor=5.0)
+                        print ts_est[p]
+                        print t_est_refined
+
+                        # x,y update,does not change tz:
+                        _, ts_est_refined, _ = codebook.nearest_rotation_with_bb_depth(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args,depth_pred=t_est_refined[2])
                         t_est_refined = ts_est_refined[p]
+
                         # rotation icp, only accepted if below 20 deg change
                         R_est_refined, _ = icp_utils.icp_refinement(test_crops_depth[i], icp_renderer,R_est_refined,t_est_refined, Ks_test[view].copy(), (W_test, H_test), no_depth=True)
+                        print Rs_est[p]
+                        print R_est_refined
+
+
                         icp_time = time.time() - start
                         Rs_est[p], ts_est[p] = R_est_refined, t_est_refined
                     
@@ -213,6 +232,9 @@ def main():
                     preds.setdefault('ests',[]).append({'score':test_score, 'R': Rs_est[p], 't':ts_est[p]})
                 run_time = run_time + icp_time if icp else run_time
 
+                min_t_err, min_R_err = eval_plots.print_trans_rot_errors(gts[view], obj_id, ts_est, ts_est_old, Rs_est, Rs_est_old)
+                t_errors_crop.append(min_t_err)
+                R_errors_crop.append(min_R_err)
                                        
                 if eval_args.getboolean('PLOT','RECONSTRUCTION'):
                     eval_plots.plot_reconstruction_test(sess, codebook._encoder, decoder, test_crop)
@@ -221,13 +243,10 @@ def main():
                     for R_est, t_est in zip(Rs_est,ts_est):
                         pred_views.append(dataset.render_rot( R_est ,downSample = 2))
                     eval_plots.show_nearest_rotation(pred_views, test_crop, view)
-                if eval_args.getboolean('PLOT','SCENE_WITH_ESTIMATE') and icp:
-                    eval_plots.plot_scene_with_estimate(test_imgs[view].copy(),icp_renderer,Ks_test[view].copy(), Rs_est_old[0], 
+                if eval_args.getboolean('PLOT','SCENE_WITH_ESTIMATE'):
+                    eval_plots.plot_scene_with_estimate(test_imgs[view].copy(),icp_renderer.renderer if icp else dataset.renderer,Ks_test[view].copy(), Rs_est_old[0], 
                                                         ts_est_old[0],Rs_est[0], ts_est[0],test_bb, test_score, obj_id, gts[view], bb_preds[view] if estimate_bbs else None)
 
-                min_t_err, min_R_err = eval_plots.print_trans_rot_errors(gts[view], obj_id, ts_est, ts_est_old, Rs_est, Rs_est_old)
-                t_errors_crop.append(min_t_err)
-                R_errors_crop.append(min_R_err)
 
                 if cv2.waitKey(1) == 32:
                     cv2.waitKey(0)

@@ -5,7 +5,7 @@ from renderer import SynRenderer
 # Constants
 N = 3000                                 # number of random points in the dataset
 dim = 3                                     # number of dimensions of the points
-max_mean_dist_factor = 2.0
+max_mean_dist_factor = 5.0
 angle_change_limit = 0.35 # = 20 deg #0.5236=30 deg
 
 

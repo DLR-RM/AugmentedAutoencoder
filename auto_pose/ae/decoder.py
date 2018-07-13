@@ -8,7 +8,9 @@ from utils import lazy_property
 
 class Decoder(object):
 
-    def __init__(self, reconstruction_target, latent_code, num_filters, kernel_size, strides, loss, bootstrap_ratio, auxiliary_mask):
+    def __init__(self, reconstruction_target, latent_code, num_filters, 
+                kernel_size, strides, loss, bootstrap_ratio, 
+                auxiliary_mask, batch_norm, is_training=False):
         self._reconstruction_target = reconstruction_target
         self._latent_code = latent_code
         self._auxiliary_mask = auxiliary_mask
@@ -19,6 +21,8 @@ class Decoder(object):
         self._strides = strides
         self._loss = loss
         self._bootstrap_ratio = bootstrap_ratio
+        self._batch_normalization = batch_norm
+        self._is_training = is_training
         self.reconstr_loss
 
     @property
@@ -39,7 +43,8 @@ class Decoder(object):
             activation=tf.nn.relu,
             kernel_initializer=tf.contrib.layers.xavier_initializer()
         )
-        x = tf.layers.batch_normalization(x)
+        if self._batch_normalization:
+            x = tf.layers.batch_normalization(x, training=self._is_training)
         x = tf.reshape( x, [-1, layer_dimensions[0][0], layer_dimensions[0][1], self._num_filters[0] ] )
 
         for filters, layer_size in zip(self._num_filters[1:], layer_dimensions[1:]):
@@ -53,7 +58,8 @@ class Decoder(object):
                 kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
                 activation=tf.nn.relu
             )
-            x = tf.layers.batch_normalization(x)
+            if self._batch_normalization:
+                x = tf.layers.batch_normalization(x, training=self._is_training)
         
         x = tf.image.resize_nearest_neighbor( x, [h, w] )
 

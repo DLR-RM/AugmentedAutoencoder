@@ -67,17 +67,16 @@ def main():
     args = configparser.ConfigParser()
     args.read(cfg_file_path)
 
-        
     shutil.copy2(cfg_file_path, log_dir)
 
     with tf.variable_scope(experiment_name):
         dataset = factory.build_dataset(dataset_path, args)
         queue = factory.build_queue(dataset, args)
-        encoder = factory.build_encoder(queue.x, args)
-        decoder = factory.build_decoder(queue.y, encoder, args)
+        encoder = factory.build_encoder(queue.x, args, is_training=True)
+        decoder = factory.build_decoder(queue.y, encoder, args, is_training=True)
         ae = factory.build_ae(encoder, decoder, args)
-        optimize = factory.build_optimizer(ae, args)
         codebook = factory.build_codebook(encoder, dataset, args)
+        train_op = factory.build_train_op(ae, args)
         saver = tf.train.Saver()
 
     num_iter = args.getint('Training', 'NUM_ITER') if not debug_mode else np.iinfo(np.int32).max
@@ -127,7 +126,7 @@ def main():
         for i in xrange(ae.global_step.eval(), num_iter):
             if not debug_mode:
                 # print 'before optimize'
-                sess.run(optimize)
+                sess.run(train_op)
                 # print 'after optimize'
                 if i % 10 == 0:
                     loss = sess.run(merged_loss_summary)

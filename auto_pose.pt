@@ -8,6 +8,8 @@ LICENSE = Apache v2.0
 SUPPORTED_LANGUAGES = Python
 DEPENDS = 	sw.common.tensorflow==1, 
 			sw.common.OpenCV==3, 
+			sw.common.vtk==6.3.0,
+			sw.common.python-six==1,
 			sw.moro.m3vision==0.1,
 			sw.common.NumPy==1
 			

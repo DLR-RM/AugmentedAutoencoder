@@ -174,7 +174,7 @@ def plot_scene_with_3DBoxes(scene_res_dirs,dataset_name='tless',scene_id=1,save=
 
 
 
-def plot_scene_with_estimate(test_img,icp_renderer,K_test, R_est_old, t_est_old,R_est_ref, t_est_ref, test_bb, test_score, obj_id, gts=[], bb_pred=None):   
+def plot_scene_with_estimate(test_img,renderer,K_test, R_est_old, t_est_old,R_est_ref, t_est_ref, test_bb, test_score, obj_id, gts=[], bb_pred=None):   
     global view_idx
     if bb_pred is not None:
         scene_detect = test_img.copy()
@@ -201,31 +201,31 @@ def plot_scene_with_estimate(test_img,icp_renderer,K_test, R_est_old, t_est_old,
     xmax = int(test_bb[0]+test_bb[2])
     ymax = int(test_bb[1]+test_bb[3])
 
-    print ymin, xmin, ymax, xmax
-    obj_in_scene = icp_renderer.render_trafo(K_test.copy(), R_est_old, t_est_old, test_img.shape)
+    print 'here'
+    obj_in_scene, _ = renderer.render( obj_id=0, W=test_img.shape[1],H=test_img.shape[0], K=K_test.copy(), R=R_est_old, t=np.array(t_est_old),near=10,far=10000,random_light=False)
     scene_view = test_img.copy()
     scene_view[obj_in_scene > 0] = obj_in_scene[obj_in_scene > 0]
     cv2.rectangle(scene_view, (xmin,ymin),(xmax,ymax), (0,255,0), 2)
     cv2.putText(scene_view, '%s: %1.3f' % (obj_id,test_score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,255,0), 2)
     cv2.imshow('scene_estimation',scene_view)
-    
-    obj_in_scene_ref = icp_renderer.render_trafo(K_test.copy(), R_est_ref, t_est_ref,test_img.shape)
+
+    obj_in_scene_ref, _ = renderer.render( obj_id=0, W=test_img.shape[1],H=test_img.shape[0], K=K_test.copy(), R=R_est_ref, t=np.array(t_est_ref),near=10,far=10000,random_light=False)
     scene_view_refined = test_img.copy()
 
     g_y = np.zeros_like(obj_in_scene_ref)
     g_y[:,:,1]= obj_in_scene_ref[:,:,1]
     scene_view_refined[obj_in_scene_ref > 0] = g_y[obj_in_scene_ref > 0]*2./3. + scene_view_refined[obj_in_scene_ref > 0]*1./3.
-
     # scene_view_refined[obj_in_scene_ref > 0] = obj_in_scene_ref[obj_in_scene_ref > 0]
     cv2.rectangle(scene_view_refined, (xmin,ymin),(xmax,ymax), (0,255,0), 2)
     cv2.putText(scene_view_refined,'%s: %1.3f' % (obj_id,test_score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,255,0), 2)
     cv2.imshow('scene_estimation_refined',scene_view_refined)
-    cv2.imwrite('/net/rmc-lx0050/home_local2/sund_ma/autoencoder_ws/bosch/thr_sc2_obj7/%s.png'% view_idx,scene_view_refined)
+    cv2.waitKey(0)
+    # cv2.imwrite('/net/rmc-lx0314/home_local/sund_ma/autoencoder_ws/bosch/thr_sc2_obj7/%s.png'% view_idx,scene_view_refined)
     view_idx += 1
 
     # for gt in gts:
     #     if gt['obj_id'] == obj_id:
-    #         obj_in_scene = icp_renderer.render_trafo(K_test.copy(), gt['cam_R_m2c'], gt['cam_t_m2c'],test_img.shape)
+    #         obj_in_scene, _ = renderer.render( obj_id=0, W=test_img.shape[1],H=test_img.shape[0], K=K_test.copy(), R=gt['cam_R_m2c'], t=np.array(gt['cam_t_m2c']),near=10,far=10000,random_light=False)
     #         scene_view = test_img.copy()
     #         scene_view[obj_in_scene > 0] = obj_in_scene[obj_in_scene > 0]
     #         cv2.imshow('ground truth scene_estimation',scene_view)

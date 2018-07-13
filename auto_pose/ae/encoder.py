@@ -7,12 +7,14 @@ from utils import lazy_property
 
 class Encoder(object):
 
-    def __init__(self, input, latent_space_size, num_filters, kernel_size, strides):
+    def __init__(self, input, latent_space_size, num_filters, kernel_size, strides, batch_norm, is_training=False):
         self._input = input
         self._latent_space_size = latent_space_size
         self._num_filters = num_filters
         self._kernel_size = kernel_size
         self._strides = strides
+        self._batch_normalization = batch_norm
+        self._is_training = is_training
         self.encoder_out
         self.z
         # self.q_sigma
@@ -43,7 +45,8 @@ class Encoder(object):
                 kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
                 activation=tf.nn.relu
             )
-            x = tf.layers.batch_normalization(x)
+            if self._batch_normalization:
+                x = tf.layers.batch_normalization(x, training=self._is_training)
 
         encoder_out = tf.contrib.layers.flatten(x)
         
