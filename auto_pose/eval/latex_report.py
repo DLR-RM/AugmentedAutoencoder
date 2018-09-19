@@ -81,11 +81,11 @@ r'''
                 evalu = g.read().replace('_','\_').replace('#','%')
                 self.latex.append(
 r'''
-\chapter{{\Large Train Config}}
+\section{\Large Train Config}
 
 %s
 
-\chapter{{\Large Evaluation Config}}
+\section{\Large Evaluation Config}
 
 %s
 

@@ -10,6 +10,7 @@ import tensorflow as tf
 from gl_utils import tiles
 from sklearn.decomposition import PCA
 import glob
+import pickle as pl
 
 from meshrenderer import box3d_renderer
 from sixd_toolkit.pysixd import inout,pose_error
@@ -135,16 +136,28 @@ def plot_scene_with_3DBoxes(scene_res_dirs,dataset_name='tless',scene_id=1,save=
     for view in xrange(len(scene_infos)):
         sixd_img_path = data_params['test_rgb_mpath'].format(scene_id,view)
         img = cv2.imread(sixd_img_path)
+        box_img = img.copy()
         # cv2.imshow('',img)
         # cv2.waitKey(0)
         K = scene_infos[view]['cam_K']
-        for gt in scene_gts[view]:
-            if gt['obj_id'] not in [1,8,9]:
-                lines_gt = renderer_line.render(gt['obj_id']-1,K,gt['cam_R_m2c'],gt['cam_t_m2c'],10,5000)
-                lines_gt_mask = (np.sum(lines_gt,axis=2) < 20)[:,:,None]
-                print lines_gt.shape
-                lines_gt = lines_gt[:,:,[1,0,2]]
-                img = lines_gt_mask*img + lines_gt
+
+        for bb in scene_gts[view]:
+
+            xmin = int(bb['obj_bb'][0])
+            ymin = int(bb['obj_bb'][1])
+            xmax = int(bb['obj_bb'][0]+bb['obj_bb'][2])
+            ymax = int(bb['obj_bb'][1]+bb['obj_bb'][3])
+
+            cv2.rectangle(box_img, (xmin,ymin),(xmax,ymax), (0,255,0), 2)
+            cv2.putText(box_img, '%s' % (bb['obj_id']), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,255,0), 2)
+        # for gt in scene_gts[view]:
+            # if gt['obj_id'] not in [1,8,9]:
+            #     lines_gt = renderer_line.render(gt['obj_id']-1,K,gt['cam_R_m2c'],gt['cam_t_m2c'],10,5000)
+            #     lines_gt_mask = (np.sum(lines_gt,axis=2) < 20)[:,:,None]
+            #     print lines_gt.shape
+            #     lines_gt = lines_gt[:,:,[1,0,2]]
+            #     img = lines_gt_mask*img + lines_gt
+
         for scene_dir in scene_dirs: 
             try:
                 res_path = glob.glob(os.path.join(scene_dir,'%04d_*.yml' % (view)))
@@ -153,7 +166,7 @@ def plot_scene_with_3DBoxes(scene_res_dirs,dataset_name='tless',scene_id=1,save=
                 # print 'here', res_path
                 obj_id = int(res_path.split('_')[-1].split('.')[0])
                 results = inout.load_results_sixd17(res_path)
-                # print results
+                print results
                 e = results['ests'][0]
                 R_est = e['R']
                 t_est = e['t']
@@ -161,6 +174,14 @@ def plot_scene_with_3DBoxes(scene_res_dirs,dataset_name='tless',scene_id=1,save=
                 lines = renderer_line.render(obj_id-1,K,R_est,t_est,10,5000)
                 lines_mask = (np.sum(lines,axis=2) < 20)[:,:,None]
                 # img[lines>0] = lines[lines>0]
+                if obj_id % 7 == 1:
+                    lines[:,:,0] = lines[:,:,1] 
+                elif obj_id % 7 == 2:
+                    lines[:,:,2] = lines[:,:,1]
+                elif obj_id % 7 == 3:
+                    lines[:,:,0] = lines[:,:,1]
+                    lines[:,:,1] = lines[:,:,2]
+
                 img = lines_mask*img + lines
             except:
                 print 'undeteceted obj: ', scene_dir
@@ -168,9 +189,17 @@ def plot_scene_with_3DBoxes(scene_res_dirs,dataset_name='tless',scene_id=1,save=
         if cv2.waitKey(1) == 32:
             cv2.waitKey(0)
         if save:
-            if not os.path.exists('%02d' % scene_id):
-                os.makedirs('%02d' % scene_id)
-            cv2.imwrite(os.path.join('%02d' % scene_id,'%04d.png' % view), img)
+            if 'icp' in scene_res_dirs:
+
+                if not os.path.exists('%02d' % scene_id):
+                    os.makedirs('%02d' % scene_id)
+                cv2.imwrite(os.path.join('%02d' % scene_id,'%04d.png' % view), img)
+            else:
+
+                if not os.path.exists('%02d_rgb' % scene_id):
+                    os.makedirs('%02d_rgb' % scene_id)
+                cv2.imwrite(os.path.join('%02d_rgb' % scene_id,'%04d.png' % view), img)
+            # cv2.imwrite(os.path.join('%02d' % scene_id,'%04d_boxes.png' % view), box_img)
 
 
 
@@ -241,15 +270,17 @@ def compute_pca_plot_embedding(eval_dir, z_train, z_test=None, save=True):
     ax = Axes3D(fig)
 
     c=np.linspace(0, 1, len(full_z_pca))
-    ax.scatter(full_z_pca[:,0],full_z_pca[:,1],full_z_pca[:,2], c=c, marker='.', label='train_z')
+    ax.scatter(full_z_pca[:,0],full_z_pca[:,1],full_z_pca[:,2], c=c, marker='.', label='PCs of train viewsphere')
     if z_test is not None:
         ax.scatter(full_z_pca_test[:,0],full_z_pca_test[:,1],full_z_pca_test[:,2], c='red', marker='.', label='test_z')
 
-    # plt.title('Embedding Principal Components')
+    plt.title('Embedding Principal Components')
     ax.set_xlabel('pc1')
     ax.set_ylabel('pc2')
     ax.set_zlabel('pc3')
-    # plt.legend()
+
+    plt.legend()
+    pl.dump(fig,file(os.path.join(eval_dir,'figures','pca_embedding.pickle'),'wb'))
     if save:
         plt.savefig(os.path.join(eval_dir,'figures','pca_embedding.pdf'))
 

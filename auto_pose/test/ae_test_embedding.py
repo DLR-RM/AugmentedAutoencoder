@@ -25,10 +25,10 @@ def main():
     experiment_name = full_name.pop()
     experiment_group = full_name.pop() if len(full_name) > 0 else ''
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
-
-    train_cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
     ckpt_dir = u.get_checkpoint_dir(log_dir)
+
+    train_cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
     train_args = configparser.ConfigParser()
     train_args.read(train_cfg_file_path)
 

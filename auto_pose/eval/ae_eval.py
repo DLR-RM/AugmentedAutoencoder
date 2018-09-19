@@ -76,7 +76,7 @@ def main():
     print eval_args
 
     codebook, dataset, decoder = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True, return_decoder = True)
-
+    dataset.renderer
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.5)
     config = tf.ConfigProto(gpu_options=gpu_options)
 
@@ -102,18 +102,19 @@ def main():
     #     eval_loc.match_and_eval_performance_scores(eval_args, eval_dir)
     #     exit()
 
-        
+    test_embeddings = []  
     for scene_id in scenes:
 
         test_imgs = eval_utils.load_scenes(scene_id, eval_args)
         test_imgs_depth = eval_utils.load_scenes(scene_id, eval_args, depth=True) if icp else None
+
         if estimate_bbs:
             print eval_args.get('BBOXES','EXTERNAL')
             if eval_args.get('BBOXES','EXTERNAL') == 'False':
                 bb_preds = {}
                 for i,img in enumerate(test_imgs):
                     print img.shape
-                    bb_preds[i] = ssd.detectSceneBBs(img, min_score=.2, nms_threshold=.45)
+                    bb_preds[i] = ssd.detectSceneBBs(img, min_score=.05, nms_threshold=.45)
                 # inout.save_yaml(os.path.join(scene_res_dir,'bb_preds.yml'), bb_preds)
                 print bb_preds
             else:
@@ -140,7 +141,7 @@ def main():
         icp_renderer = icp_utils.SynRenderer(train_args) if icp else None
         noof_scene_views = eval_utils.noof_scene_views(scene_id, eval_args)
 
-        test_embeddings = []
+        test_embeddings.append([])
 
         scene_res_dir = os.path.join(eval_dir, '{scene_id:02d}'.format(scene_id = scene_id))
         if not os.path.exists(scene_res_dir):
@@ -181,7 +182,7 @@ def main():
 
                 Rs_est, ts_est = predictions[:2]
                 if eval_args.getboolean('PLOT','EMBEDDING_PCA'):
-                    test_embeddings.append(predictions[2])
+                    test_embeddings[-1].append(predictions[2])
 
 
                 if eval_args.getboolean('EVALUATION','gt_trans'):
@@ -201,7 +202,7 @@ def main():
                 # print ts_est
                 # print Rs_est.shape
 
-                run_time = ae_time + bb_preds[view][0]['ssd_time'] if estimate_bbs else ae_time
+                run_time = ae_time + bb_preds[view][0]['det_time'] if estimate_bbs else ae_time
 
                 # icp = False if view<350 else True
                 #TODO: 
@@ -273,7 +274,7 @@ def main():
     cyclo = train_args.getint('Embedding','NUM_CYCLO')
     if eval_args.getboolean('PLOT','EMBEDDING_PCA'):
         embedding = sess.run(codebook.embedding_normalized)
-        eval_plots.compute_pca_plot_embedding(eval_dir, embedding[::cyclo], np.array(test_embeddings))
+        eval_plots.compute_pca_plot_embedding(eval_dir, embedding[::cyclo], np.array(test_embeddings[0]))
     if eval_args.getboolean('PLOT','VIEWSPHERE'):
         eval_plots.plot_viewsphere_for_embedding(dataset.viewsphere_for_embedding[::cyclo], eval_dir)
     if eval_args.getboolean('PLOT','CUM_T_ERROR_HIST'):
@@ -289,7 +290,7 @@ def main():
     if eval_args.getboolean('PLOT','R_ERROR_OCCLUSION'):
         eval_plots.plot_re_rect_occlusion(eval_args, eval_dir, scenes, np.array(all_test_visibs))
     if eval_args.getboolean('PLOT','ANIMATE_EMBEDDING_PCA'):
-        eval_plots.animate_embedding_path(test_embeddings)
+        eval_plots.animate_embedding_path(test_embeddings[0])
     if eval_args.getboolean('PLOT','RECONSTRUCTION_TEST_BATCH'):
         eval_plots.plot_reconstruction_test_batch(sess, codebook, decoder, test_img_crops, noof_scene_views, obj_id, eval_dir=eval_dir)
         # plt.show()    

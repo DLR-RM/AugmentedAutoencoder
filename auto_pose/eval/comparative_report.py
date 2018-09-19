@@ -241,7 +241,7 @@ def main():
 		df_paper = df_paper[cols]
 		df_paper = df_paper.sort_index(axis=1)
 		df_paper.loc['mean'] = df_paper.mean(axis=0)
-		df_paper.loc['mean'][0] = 0
+		# df_paper.loc['mean'][0] = 0
 
 		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
 		latex_list = df_paper.to_latex(index=False, multirow=True, float_format='%.2f').splitlines()
@@ -257,7 +257,7 @@ def main():
 		df_paper = df_paper[cols]
 		df_paper = df_paper.sort_index(axis=1)
 		df_paper.loc['mean'] = df_paper.mean(axis=0)
-		df_paper.loc['mean'][0] = 0
+		# df_paper.loc['mean'][0] = 0
 
 		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
 		latex_list = df_paper.to_latex(index=False, multirow=True, float_format='%.2f').splitlines()

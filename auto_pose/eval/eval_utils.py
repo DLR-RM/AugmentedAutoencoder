@@ -95,8 +95,14 @@ def generate_scene_crops(test_imgs, test_depth_imgs, bboxes, eval_args, train_ar
                     obj_id = bbox['obj_id']
                     bb_score = bbox['score'] if estimate_bbs else 1.0
                     vis_frac = None if estimate_bbs else visib_gt[view][bbox_idx]['visib_fract']
-                    print bb
-                    x, y, w, h = bb
+                    #print bb
+                    ## uebler hack: remove!
+                    # xmin, ymin, xmax, ymax = bb
+                    # x, y, w, h = xmin, ymin, xmax-xmin, ymax-ymin 
+                    # bb = np.array([x, y, w, h])
+                    ##
+                    x,y,w,h = bb
+                    
                     size = int(np.maximum(h,w) * pad_factor)
                     left = int(np.max([x+w/2-size/2, 0]))
                     right = int(np.min([x+w/2+size/2, W]))

@@ -52,7 +52,6 @@ def main():
         encoder = factory.build_encoder(queue.x, args)
         decoder = factory.build_decoder(queue.y, encoder, args)
         ae = factory.build_ae(encoder, decoder, args)
-        optimize = factory.build_optimizer(ae, args)
         codebook = factory.build_codebook(encoder, dataset, args)
         saver = tf.train.Saver()
 

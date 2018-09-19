@@ -143,7 +143,7 @@ class Dataset(object):
     #     print 'loaded %s training images' % len(self.train_x)
 
     def load_bg_images(self, dataset_path):
-        current_config_hash = hashlib.md5(str(self.shape) + str(self.bg_img_paths)).hexdigest()
+        current_config_hash = hashlib.md5(str(self.shape) + str(self.noof_bg_imgs) + str(self._kw['background_images_glob'])).hexdigest()
         current_file_name = os.path.join(dataset_path, current_config_hash +'.npy')
         if os.path.exists(current_file_name):
             self.bg_imgs = np.load(current_file_name)

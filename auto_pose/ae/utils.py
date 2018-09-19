@@ -51,6 +51,12 @@ def get_train_fig_dir(log_dir):
         'train_figures'
     )
 
+def get_train_config_exp_file_path(log_dir, experiment_name):
+    return os.path.join(
+        log_dir,
+        '{}.cfg'.format(experiment_name)
+    )
+
 def get_checkpoint_basefilename(log_dir):
     return os.path.join(
         log_dir,
@@ -65,6 +71,8 @@ def get_config_file_path(workspace_path, experiment_name, experiment_group=''):
         experiment_group,
         '{}.cfg'.format(experiment_name)
     )
+
+
 
 def get_eval_config_file_path(workspace_path, eval_cfg='eval.cfg'):
     return os.path.join(

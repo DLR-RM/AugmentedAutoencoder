@@ -90,7 +90,7 @@ class Codebook(object):
         if x.ndim == 3:
             x = np.expand_dims(x, 0)
         # print np.max(x)
-
+        
         if test_codes:
             cosine_similarity, normalized_test_code = session.run([self.cos_similarity,self.normalized_embedding_query], {self._encoder.x: x})
         else:
