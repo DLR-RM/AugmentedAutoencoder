@@ -114,10 +114,9 @@ class Codebook(object):
 
         K00_ratio = K_test[0,0] / K_train[0,0]  
         K11_ratio = K_test[1,1] / K_train[1,1]  
+        
         mean_K_ratio = np.mean([K00_ratio,K11_ratio])
 
-
-        ##slow!!!!
         if self.embed_obj_bbs_values is None:
             self.embed_obj_bbs_values = session.run(self.embed_obj_bbs_var)
 

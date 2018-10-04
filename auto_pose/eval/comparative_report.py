@@ -81,6 +81,7 @@ def main():
 	data_cou = []
 	data_add = []
 	data_adi = []
+	data_proj = []
 	data_paper_vsd = {}
 	data_paper_auc = {}
 	latex_content = []
@@ -177,6 +178,10 @@ def main():
 			data_add.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
+		elif error_type=='proj':
+			data_proj.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
+				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
+				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
 		elif error_type=='adi':
 			data_adi.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
@@ -225,6 +230,13 @@ def main():
 		df_add = pd.DataFrame(data_add).sort_values(by=['eval_obj','eval_name','eval_data','sixd_recall'])
 		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
 		latex_content.append(df_add.to_latex(index=False, multirow=True))
+		latex_content.append('\\end{adjustbox}')
+		latex_content.append('\n')
+		latex_content.append('\n')
+	if len(data_proj) > 0:
+		df_proj = pd.DataFrame(data_proj).sort_values(by=['eval_obj','eval_name','eval_data','sixd_recall'])
+		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
+		latex_content.append(df_proj.to_latex(index=False, multirow=True))
 		latex_content.append('\\end{adjustbox}')
 		latex_content.append('\n')
 		latex_content.append('\n')

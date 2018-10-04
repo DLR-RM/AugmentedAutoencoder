@@ -94,7 +94,7 @@ for i,experiment_name in enumerate(arguments.experiment_names):
         print 'no obj_id in name, needed to get the mapping for the detector'
         exit()
 
-    train_cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
+    train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
     train_args = configparser.ConfigParser()
     train_args.read(train_cfg_file_path)  
     h_train, w_train, c = train_args.getint('Dataset','H'),train_args.getint('Dataset','W'), train_args.getint('Dataset','C')
@@ -105,7 +105,7 @@ for i,experiment_name in enumerate(arguments.experiment_names):
     # codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
     # with tf.variable_scope('model1'):
     # with tf.Graph().as_default():
-
+    print experiment_name
     all_codebooks.append(factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=False))
     # all_sessions.append(sess)
     factory.restore_checkpoint(sess, tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='obj%s' % obj_id)), ckpt_dir)
@@ -163,7 +163,7 @@ while videoStream.isActive():
     img_show = img.copy()
     # img_show = cv2.resize(img_show, (width/arguments.down,height/arguments.down))
 
-    rclasses, rscores, rbboxes = ssd.process(img,select_threshold=0.4)
+    rclasses, rscores, rbboxes = ssd.process(img,select_threshold=0.4,nms_threshold=.9)
     print rclasses
 
     ssd_boxes = [ (int(rbboxes[i][0]*H), int(rbboxes[i][1]*W), int(rbboxes[i][2]*H), int(rbboxes[i][3]*W)) for i in xrange(len(rbboxes))]

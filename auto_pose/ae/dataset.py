@@ -436,28 +436,25 @@ class Dataset(object):
         
         rand_idcs = np.random.choice(self.noof_training_imgs, batch_size, replace=False)
         
-        if self.noof_bg_imgs > 0:
-            rand_idcs_bg = np.random.choice(self.noof_bg_imgs, batch_size, replace=False)
-            
-            batch_x, masks, batch_y = self.train_x[rand_idcs], self.mask_x[rand_idcs], self.train_y[rand_idcs]
-            rand_vocs = self.bg_imgs[rand_idcs_bg]
+        assert self.noof_bg_imgs > 0
 
-            if eval(self._kw['realistic_occlusion']):
-                masks = self.augment_occlusion(masks.copy(),max_occl=np.float(self._kw['realistic_occlusion']))
+        rand_idcs_bg = np.random.choice(self.noof_bg_imgs, batch_size, replace=False)
+        
+        batch_x, masks, batch_y = self.train_x[rand_idcs], self.mask_x[rand_idcs], self.train_y[rand_idcs]
+        rand_vocs = self.bg_imgs[rand_idcs_bg]
 
+        if eval(self._kw['realistic_occlusion']):
+            masks = self.augment_occlusion(masks.copy(),max_occl=np.float(self._kw['realistic_occlusion']))
+        
+        batch_x[masks] = rand_vocs[masks]
 
-            # masks
-            
-            batch_x[masks] = rand_vocs[masks]
-        else:
-            batch_x, batch_y = self.train_x[rand_idcs], self.train_y[rand_idcs]
-
-            for i in xrange(batch_size):
-              rot_angle= np.random.rand()*360
-              cent = int(self.shape[0]/2)
-              M = cv2.getRotationMatrix2D((cent,cent),rot_angle,1)
-              batch_x[i] = cv2.warpAffine(batch_x[i],M,self.shape[:2])[:,:,np.newaxis]
-              batch_y[i] = cv2.warpAffine(batch_y[i],M,self.shape[:2])[:,:,np.newaxis]
+        # random in-plane rotation, not necessary
+        # for i in xrange(batch_size):
+        #   rot_angle= np.random.rand()*360
+        #   cent = int(self.shape[0]/2)
+        #   M = cv2.getRotationMatrix2D((cent,cent),rot_angle,1)
+        #   batch_x[i] = cv2.warpAffine(batch_x[i],M,self.shape[:2])[:,:,np.newaxis]
+        #   batch_y[i] = cv2.warpAffine(batch_y[i],M,self.shape[:2])[:,:,np.newaxis]
 
 
         #needs uint8

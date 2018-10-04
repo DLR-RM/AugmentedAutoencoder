@@ -38,7 +38,6 @@ class AE(object):
     @lazy_property
     def loss(self):
         loss = self._decoder.reconstr_loss
-        tf.summary.scalar('reconst_loss', self._decoder.reconstr_loss)
         if self._norm_regularize > 0:
             loss += self._encoder.reg_loss * tf.constant(self._norm_regularize,dtype=tf.float32)
             tf.summary.scalar('reg_loss', self._encoder.reg_loss)

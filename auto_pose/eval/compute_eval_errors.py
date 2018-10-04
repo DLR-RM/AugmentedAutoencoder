@@ -76,7 +76,6 @@ eval_dir = get_eval_dir(log_dir, evaluation_name, data)
 
 
 eval_calc_errors.eval_calc_errors(eval_args, eval_dir)
-
 eval_loc.match_and_eval_performance_scores(eval_args, eval_dir)
 
 # report = latex_report.Report(eval_dir,log_dir)

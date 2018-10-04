@@ -105,15 +105,40 @@ class Decoder(object):
                     self.x,
                     reduction=tf.losses.Reduction.MEAN
                 )
+        elif self._loss == 'L1':
+            if self._bootstrap_ratio > 1:
+
+                x_flat = tf.contrib.layers.flatten(self.x)
+                reconstruction_target_flat = tf.contrib.layers.flatten(self._reconstruction_target)
+                l1 = tf.losses.absolute_difference(
+                    reconstruction_target_flat,
+                    x_flat,
+                    reduction=tf.losses.Reduction.NONE
+                )
+                print l1.shape
+                l1_val,_ = tf.nn.top_k(l1,k=l1.shape[1]/self._bootstrap_ratio)
+                loss = tf.reduce_mean(l1_val)
+            else:
+                x_flat = tf.contrib.layers.flatten(self.x)
+                reconstruction_target_flat = tf.contrib.layers.flatten(self._reconstruction_target)
+                l1 = tf.losses.absolute_difference(
+                    reconstruction_target_flat,
+                    x_flat,
+                    reduction=tf.losses.Reduction.MEAN
+                )
         else:
             print 'ERROR: UNKNOWN LOSS ', self._loss
             exit()
-
+        
+        tf.summary.scalar('reconst_loss', loss)
         if self._auxiliary_mask:
-            loss += tf.losses.mean_squared_error (
+            mask_loss = tf.losses.mean_squared_error (
                 tf.cast(tf.greater(tf.reduce_sum(self._reconstruction_target,axis=3,keepdims=True),0.0001),tf.float32),
                 self._xmask,
                 reduction=tf.losses.Reduction.MEAN
             )
+            loss += mask_loss
+
+            tf.summary.scalar('mask_loss', mask_loss)
 
         return loss

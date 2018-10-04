@@ -26,6 +26,7 @@ class AePoseEstimator(PoseEstInterface):
         
         self.train_args = configparser.ConfigParser()
         self.train_args.read(train_cfg_file_path)  
+        print train_cfg_file_path
 
         log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
         ckpt_dir = utils.get_checkpoint_dir(log_dir)
@@ -33,7 +34,12 @@ class AePoseEstimator(PoseEstInterface):
 
         self._process_requirements = ['color_img', 'camK', 'bboxes']
         self._upright = test_args.getboolean('MODEL','upright')
+
         self._topk = test_args.getint('MODEL','topk')
+        if self._topk > 1:
+            print 'ERROR: topk > 1 not implemented yet'
+            exit()
+
         self._image_format = {'color_format':test_args.get('MODEL','color_format'), 
                               'color_data_type': eval(test_args.get('MODEL','color_data_type')),
                               'depth_data_type': eval(test_args.get('MODEL','depth_data_type')) }
@@ -57,10 +63,10 @@ class AePoseEstimator(PoseEstInterface):
         pass
 
     # ABS
-    def query_process_requirements():
+    def query_process_requirements(self):
         return self._process_requirements
 
-    def query_image_format():
+    def query_image_format(self):
         return self._image_format
 #    def get_native_coord_frame():
 #        """With respect to x -> right; y -> down; z away from the camera.
@@ -69,7 +75,7 @@ class AePoseEstimator(PoseEstInterface):
 #        pass
     
     # ABS
-    def process(self, bboxes=[], color_img=None, depth_img=None, camK=None, camPose=None, rois3ds=[]):
+    def process(self, bboxes, color_img, camK, depth_img=None, camPose=None, rois3ds=[]):
         """ roi3ds is a list of roi3d"""
 
         H, W = color_img.shape[:2]
@@ -77,6 +83,7 @@ class AePoseEstimator(PoseEstInterface):
         #print vis_img.shape
         all_Rs, all_ts = [],[]
         H_est = np.eye(4)
+        all_pose_estimates = []
 
         for j,box in enumerate(bboxes):
             h_box, w_box = (box.ymax-box.ymin)*H, (box.xmax-box.xmin)*W
@@ -88,19 +95,16 @@ class AePoseEstimator(PoseEstInterface):
 
             det_img = color_img[top:cy+size/2,left:cx+size/2]
             det_img = cv2.resize(det_img, self.dataset.shape[:2])
-
+            cv2.imshow('',det_img)
+            cv2.waitKey(0)
             # if dataset.shape[2]  == 1:
             #     det_img = cv2.cvtColor(det_img,cv2.COLOR_BGR2GRAY)[:,:,None]
 
             box_xywh = [int(box.xmin*W),int(box.ymin*H),w_box,h_box]
-            Rs_est, ts_est = self.codebook.nearest_rotation_with_bb_depth(self.sess, det_img, box_xywh, camK, self._topk, self.train_args, upright=self._upright)
+            Rs_est, ts_est, _ = self.codebook.nearest_rotation_with_bb_depth(self.sess, det_img, box_xywh, camK, self._topk, self.train_args, upright=self._upright)
 
-            if self._topk == 1:
-                R_est = Rs_est.squeeze()
-                t_est = ts_est.squeeze()
-            else:
-                print 'ERROR: Not topk > 1 not implemented yet'
-                exit()
+            R_est = Rs_est.squeeze()
+            t_est = ts_est.squeeze()
 
             if 'depth_img' in self.query_process_requirements():
                 depth_crop = depth_img[top:cy+size/2,left:cx+size/2]
