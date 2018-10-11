@@ -29,6 +29,7 @@ class Dataset(object):
 
         self.train_x = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.mask_x = np.empty( (self.noof_training_imgs,) + self.shape[:2], dtype= bool)
+        self.normal_x = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8)
         self.train_y = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.bg_imgs = np.empty( (self.noof_bg_imgs,) + self.shape, dtype=np.uint8 )
         if np.float(eval(self._kw['realistic_occlusion'])):
@@ -86,11 +87,12 @@ class Dataset(object):
         if os.path.exists(current_file_name):
             training_data = np.load(current_file_name)
             self.train_x = training_data['train_x'].astype(np.uint8)
+            self.normal_x = training_data['normal_x'].astype(np.uint8)
             self.mask_x = training_data['mask_x']
             self.train_y = training_data['train_y'].astype(np.uint8)
         else:
             self.render_training_images()
-            np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
+            np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, normal_x=self.normal_x, train_y = self.train_y)
         print 'loaded %s training images' % len(self.train_x)
 
     def get_sprite_training_images(self, train_args):

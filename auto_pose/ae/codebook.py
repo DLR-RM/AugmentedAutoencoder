@@ -80,7 +80,6 @@ class Codebook(object):
                 print 'top_n > 1 + Multiple Input Crops is not supported yet'
                 exit()
 
-
     def nearest_rotation_with_bb_depth(self, session, x, predicted_bb, K_test, top_n, train_args, depth_pred=None, upright=False, test_codes = False):
         
         if x.dtype == 'uint8':
@@ -232,7 +231,7 @@ class Codebook(object):
             bar.update(e)
         bar.finish()
         # embedding_z = embedding_z.T
-        normalized_embedding = embedding_z / np.linalg.norm( embedding_z, axis=1, keepdims=True )
+        normalized_embedding = embedding_z / np.linalg.norm( embedding_z, axis=1, keepdims=True)
 
         session.run(self.embedding_assign_op, {self.embedding: normalized_embedding})
 
