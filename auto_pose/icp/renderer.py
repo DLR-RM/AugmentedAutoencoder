@@ -1,11 +1,13 @@
 from meshrenderer import meshrenderer, meshrenderer_phong
 from auto_pose.ae.utils import lazy_property
+from auto_pose.ae.pysixd_stuff import misc
 
 class SynRenderer(object):
     def __init__(self,train_args):
-        MODEL_PATH = train_args.get('Paths','MODEL_PATH')
+        self.model_path = train_args.get('Paths','MODEL_PATH')
         self.model = train_args.get('Dataset','MODEL')
-        self.model_path = MODEL_PATH.replace(self.model,'cad')
+        if os.path.exists(self.model_path.replace(self.model,'cad')):
+            self.model_path = MODEL_PATH.replace(self.model,'cad')
         self.renderer
 
     @lazy_property

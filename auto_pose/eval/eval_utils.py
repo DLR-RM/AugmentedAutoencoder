@@ -123,40 +123,6 @@ def generate_scene_crops(test_imgs, test_depth_imgs, bboxes, eval_args, train_ar
 
     return (test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis)
 
-def generate_depth_scene_crops(test_depth_imgs, scene_id, eval_args, train_args):
-
-    dataset_name = eval_args.get('DATA','DATASET')
-    cam_type = eval_args.get('DATA','CAM_TYPE')
-    obj_id = eval_args.getint('DATA','OBJ_ID')
-    estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
-
-    p = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
-    noof_imgs = len(os.listdir(os.path.join(p['base_path'], p['test_dir'], '{:02d}', 'depth').format(scene_id)))
-    bb_gt = inout.load_gt(p['scene_gt_mpath'].format(scene_id))    
-    all_real_depth_pts = []
-    R_gts = []
-    t_gts = []
-    for view,depth in enumerate(test_depth_imgs):
-        H,W = depth.shape
-        for bbox_idx,bbox in enumerate(bb_gt[view]):
-            if bbox['obj_id'] == obj_id:
-                bb = np.array(bbox['obj_bb'])
-                R_gts.append(np.array(bbox['cam_R_m2c']))
-                t_gts.append(np.array(bbox['cam_t_m2c']))
-                x, y, w, h = bb
-                size = int(np.maximum(h,w) * 1.1)
-                left = np.max([x+w/2-size/2, 0])
-                right = np.min([x+w/2+size/2, W])
-                top = np.max([y+h/2-size/2, 0])
-                bottom = np.min([y+h/2+size/2, H])
-
-                depth_crop = depth[top:bottom, left:right]
-                #print 'Original Crop Size: ', depth_crop.shape
-                real_depth_pts = misc.rgbd_to_point_cloud(np.array([1075.65, 0, depth_crop.shape[0]/2, 0, 1073.90, depth_crop.shape[0]/2, 0, 0, 1]).reshape(3,3),depth_crop)[0]
-                # real_depth_pts = misc.rgbd_to_point_cloud(np.array([1075.65091572, 0.00000000, 372.06888344, 0.00000000, 1073.90347929, 300.72159802, 0.00000000, 0.00000000, 1.00000000]).reshape(3,3),depth)[0]
-                all_real_depth_pts.append(real_depth_pts)
-
-    return (all_real_depth_pts, R_gts, t_gts)
 
 def noof_scene_views(scene_id, eval_args):
     dataset_name = eval_args.get('DATA','DATASET')

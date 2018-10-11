@@ -13,7 +13,6 @@ import tensorflow as tf
 import numpy as np
 import cv2
 
-from gl_utils import tiles
 
 def main():
     parser = argparse.ArgumentParser()
@@ -56,10 +55,10 @@ def main():
 
     print idcs_orig
 
-    # im = tiles(dataset.train_x[np.array(idcs_random_trans)[::3]],2,7,3,3)
-    # im2 = tiles(dataset.train_x[np.array(idcs_random_scale)[::3]],2,7,3,3)
-    # im3 = tiles(dataset.train_x[np.array(idcs_orig)[::3]],2,7,3,3)
-    # im4 = tiles(dataset.train_x[np.array(idcs_random)[::3]],2,7,3,3)
+    # im = u.tiles(dataset.train_x[np.array(idcs_random_trans)[::3]],2,7,3,3)
+    # im2 = u.tiles(dataset.train_x[np.array(idcs_random_scale)[::3]],2,7,3,3)
+    # im3 = u.tiles(dataset.train_x[np.array(idcs_orig)[::3]],2,7,3,3)
+    # im4 = u.tiles(dataset.train_x[np.array(idcs_random)[::3]],2,7,3,3)
     # cv2.imshow('trans',im)
     # cv2.imshow('scale',im2)
     # cv2.imshow('orig',im3)

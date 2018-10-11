@@ -5,8 +5,8 @@ import os
 import math
 import glob
 import numpy as np
-from PIL import Image, ImageDraw
-from scipy.spatial import distance
+# from PIL import Image, ImageDraw
+
 
 def ensure_dir(path):
     """
@@ -17,13 +17,13 @@ def ensure_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def draw_rect(vis, rect, color=(255, 255, 255)):
-    vis_pil = Image.fromarray(vis)
-    draw = ImageDraw.Draw(vis_pil)
-    draw.rectangle((rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3]),
-                   outline=color, fill=None)
-    del draw
-    return np.asarray(vis_pil)
+# def draw_rect(vis, rect, color=(255, 255, 255)):
+#     vis_pil = Image.fromarray(vis)
+#     draw = ImageDraw.Draw(vis_pil)
+#     draw.rectangle((rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3]),
+#                    outline=color, fill=None)
+#     del draw
+#     return np.asarray(vis_pil)
 
 def project_pts(pts, K, R, t):
     assert(pts.shape[1] == 3)
@@ -127,14 +127,14 @@ def paste_im(src, trg, pos):
     else:
         trg[pos[1]:(pos[1] + h), pos[0]:(pos[0] + w)] = src[:h, :w]
 
-def paste_im_mask(src, trg, pos, mask):
-    assert(src.ndim == trg.ndim)
-    assert(src.shape[:2] == mask.shape[:2])
-    src_pil = Image.fromarray(src)
-    trg_pil = Image.fromarray(trg)
-    mask_pil = Image.fromarray(mask.astype(np.uint8))
-    trg_pil.paste(src_pil, pos, mask_pil)
-    trg[:] = np.array(trg_pil)[:]
+# def paste_im_mask(src, trg, pos, mask):
+#     assert(src.ndim == trg.ndim)
+#     assert(src.shape[:2] == mask.shape[:2])
+#     src_pil = Image.fromarray(src)
+#     trg_pil = Image.fromarray(trg)
+#     mask_pil = Image.fromarray(mask.astype(np.uint8))
+#     trg_pil.paste(src_pil, pos, mask_pil)
+#     trg[:] = np.array(trg_pil)[:]
 
 def transform_pts_Rt(pts, R, t):
     """
@@ -176,6 +176,7 @@ def calc_pts_diameter2(pts):
     :param pts: nx3 ndarray with 3D points.
     :return: Diameter.
     """
+    from scipy.spatial import distance
     dists = distance.cdist(pts, pts, 'euclidean')
     diameter = np.max(dists)
     return diameter

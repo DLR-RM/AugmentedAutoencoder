@@ -7,7 +7,7 @@ import os
 import time
 import numpy as np
 import tensorflow as tf
-from gl_utils import tiles
+from auto_pose.ae.utils import tiles
 from sklearn.decomposition import PCA
 import glob
 import pickle as pl

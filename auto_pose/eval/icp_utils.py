@@ -8,8 +8,7 @@ from sklearn.neighbors import NearestNeighbors
 from meshrenderer import meshrenderer, meshrenderer_phong
 from auto_pose.ae.utils import lazy_property
 
-from sixd_toolkit.pysixd import transform, misc, inout, pose_error
-from sixd_toolkit.params import dataset_params
+from sixd_toolkit.pysixd import transform, misc
 
 # Constants
 N = 3000                                 # number of random points in the dataset

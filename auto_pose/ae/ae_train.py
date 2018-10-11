@@ -13,7 +13,6 @@ import tensorflow as tf
 
 import ae_factory as factory
 import utils as u
-import gl_utils as gu
 
 
 def main():
@@ -138,7 +137,7 @@ def main():
 
                     this_x, this_y = sess.run([queue.x, queue.y])
                     reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
-                    train_imgs = np.hstack(( gu.tiles(this_x, 4, 4), gu.tiles(reconstr_train, 4,4),gu.tiles(this_y, 4, 4)))
+                    train_imgs = np.hstack(( u.tiles(this_x, 4, 4), u.tiles(reconstr_train, 4,4),u.tiles(this_y, 4, 4)))
                     cv2.imwrite(os.path.join(train_fig_dir,'training_images_%s.png' % i), train_imgs*255)
             else:
 
@@ -147,7 +146,7 @@ def main():
                 # print np.min(this_x), np.max(this_x)
                 # print np.min(this_y), np.max(this_y)
                 # print np.min(reconstr_train), np.max(reconstr_train)
-                cv2.imshow('sample batch', np.hstack(( gu.tiles(this_x, 3, 3), gu.tiles(reconstr_train, 3,3),gu.tiles(this_y, 3, 3))) )
+                cv2.imshow('sample batch', np.hstack(( u.tiles(this_x, 3, 3), u.tiles(reconstr_train, 3,3),u.tiles(this_y, 3, 3))) )
                 k = cv2.waitKey(0)
                 if k == 27:
                     break

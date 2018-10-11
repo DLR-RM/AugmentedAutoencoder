@@ -23,7 +23,8 @@ ADDITIONAL_ENV = M3_ESTIMATOR_PACKAGES=auto_pose:$${M3_ESTIMATOR_PACKAGES}
 
 [subpackage]
 NAME = withICP
-DEPENDS += sw.moro.meshrenderer==0
+DEPENDS += sw.moro.meshrenderer==0,
+		   software.common.scikit-learn==0
 
 [subpackage]
 NAME = training
