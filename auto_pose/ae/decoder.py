@@ -10,11 +10,10 @@ class Decoder(object):
 
     def __init__(self, reconstruction_target, latent_code, num_filters, 
                 kernel_size, strides, loss, bootstrap_ratio, 
-                auxiliary_mask, auxiliary_normal, batch_norm, is_training=False):
+                auxiliary_mask, batch_norm, is_training=False):
         self._reconstruction_target = reconstruction_target
         self._latent_code = latent_code
         self._auxiliary_mask = auxiliary_mask
-        self._auxiliary_normal = auxiliary_normal
         if self._auxiliary_mask:
             self._xmask = None
         self._num_filters = num_filters
@@ -68,15 +67,6 @@ class Decoder(object):
             self._xmask = tf.layers.conv2d(
                     inputs=x,
                     filters=1,
-                    kernel_size=self._kernel_size,
-                    padding='same',
-                    kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
-                    activation=tf.nn.sigmoid
-                )
-        if self._auxiliary_normal:
-            self._xnormal = tf.layers.conv2d(
-                    inputs=x,
-                    filters=3,
                     kernel_size=self._kernel_size,
                     padding='same',
                     kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
@@ -150,15 +140,5 @@ class Decoder(object):
             loss += mask_loss
 
             tf.summary.scalar('mask_loss', mask_loss)
-
-        if self._auxiliary_normal:
-            normal_loss = tf.losses.mean_squared_error (
-                tf.cast(tf.greater(tf.reduce_sum(self._reconstruction_target,axis=3,keepdims=True),0.0001),tf.float32),
-                self._xnormal,
-                reduction=tf.losses.Reduction.MEAN
-            )
-            loss += normal_loss
-
-            tf.summary.scalar('normal_loss', normal_loss)
 
         return loss
