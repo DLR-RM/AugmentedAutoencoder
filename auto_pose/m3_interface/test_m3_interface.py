@@ -6,19 +6,20 @@ from auto_pose.m3_interface.ae_pose_estimator import AePoseEstimator
 
 visualize = True
 
-img = cv2.imread('./cup.png')
+this_dir = os.path.dirname(os.path.abspath(__file__))
+img = cv2.imread(os.path.join('this_dir','cup.png'))
 H,W,_ = img.shape
 bb = BoundingBox(xmin=0.517,xmax=0.918,ymin=0.086,ymax=0.592,classes={'ikea_cup':1.0})
 camK = np.array([[1075.65,0,W//2],[0,1073.90,H//2],[0,0,1]])
 
-ae_pose_est = AePoseEstimator('../ae/cfg_m3vision/test_config.cfg')
+ae_pose_est = AePoseEstimator(os.path.join('this_dir','../ae/cfg_m3vision/test_config.cfg'))
 pose_est = ae_pose_est.process([bb],img,camK)
 print pose_est[0].trafo
 
 
 if visualize:
     from meshrenderer import meshrenderer
-    renderer = meshrenderer.Renderer(['/home_local/sund_ma/data/ikea_mugs/ikea_cup_model/ikea_mug_reduced.ply'], 
+    renderer = meshrenderer.Renderer(['/net/rmc-lx0314/home_local/sund_ma/data/ikea_mugs/ikea_cup_model/ikea_mug_reduced.ply'], 
                     samples=1, 
                     vertex_tmp_store_folder='.',
                     vertex_scale=float(1000)) 
