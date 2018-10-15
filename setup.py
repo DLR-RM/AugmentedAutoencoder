@@ -18,6 +18,5 @@ setup(
                             'ae_compare = auto_pose.eval.comparative_report:main']
     },
     # package_data={'ae': ['cfg/*', 'cfg_eval/*', 'renderer/shader/*']},
-    package_data={'auto_pose/ae': ['cfg/*', 'cfg_eval/*', 'cfg_m3vision/*']},
-    include_package_data=True
+    package_data={'auto_pose/ae': ['cfg/*', 'cfg_eval/*', 'cfg_m3vision/*']}
 )
