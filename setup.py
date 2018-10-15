@@ -5,7 +5,7 @@ setup(
     version='0.0.1',
     packages=find_packages(exclude=('docs')),
     # install_requires=['imgaug>=0.2.3'],
-    install_requires=['progressbar'],
+    install_requires=['progressbar', 'bitarray'],
     author='Martin Sundermeyer, Dimitri Henkel',
     author_email='Martin.Sundermeyer@dlr.de, Dimitri.Henkel@dlr.de',
     license='DLR proprietary',
