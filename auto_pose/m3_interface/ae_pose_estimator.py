@@ -53,16 +53,16 @@ class AePoseEstimator(PoseEstInterface):
             full_name = experiment.split('/')
             experiment_name = full_name.pop()
             experiment_group = full_name.pop() if len(full_name) > 0 else ''
-
-            train_cfg_file_path = utils.get_config_file_path(workspace_path, experiment_name, experiment_group)
+            log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
+            ckpt_dir = utils.get_checkpoint_dir(log_dir)
+            train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
+            # train_cfg_file_path = utils.get_config_file_path(workspace_path, experiment_name, experiment_group)
             train_args = configparser.ConfigParser()
             train_args.read(train_cfg_file_path)
             self.all_train_args.append(train_args)
 
             self.all_codebooks.append(factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=False))
             saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=experiment_name))
-            log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
-            ckpt_dir = utils.get_checkpoint_dir(log_dir)
             factory.restore_checkpoint(self.sess, saver, ckpt_dir)
 
 
