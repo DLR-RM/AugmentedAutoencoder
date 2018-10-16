@@ -107,7 +107,7 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
 
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
     checkpoint_file = u.get_checkpoint_basefilename(log_dir)
-    cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
+    cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
     dataset_path = u.get_dataset_path(workspace_path)
 
     if os.path.exists(cfg_file_path):
