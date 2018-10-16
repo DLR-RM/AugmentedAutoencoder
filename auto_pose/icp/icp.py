@@ -1,3 +1,5 @@
+import os
+import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from auto_pose.ae.pysixd_stuff import transform, misc
 from renderer import SynRenderer
@@ -13,7 +15,7 @@ class ICP():
     def __init__(self, train_args):
         self.syn_renderer = SynRenderer(train_args)
 
-    def best_fit_transform(A, B, depth_only=False, no_depth=False):
+    def best_fit_transform(self,A, B, depth_only=False, no_depth=False):
         '''
         Calculates the least-squares best-fit transform that maps corresponding points A to B in m spatial dimensions
         Input:
@@ -65,7 +67,7 @@ class ICP():
         return T, R, t
 
 
-    def nearest_neighbor(src, dst):
+    def nearest_neighbor(self,src, dst):
         '''
         Find the nearest (Euclidean) neighbor in dst for each point in src
         Input:
@@ -84,7 +86,7 @@ class ICP():
         return distances.ravel(), indices.ravel()
 
 
-    def icp(A, B, init_pose=None, max_iterations=100, tolerance=0.001, depth_only=False,no_depth=False):
+    def icp(self,A, B, init_pose=None, max_iterations=100, tolerance=0.001, depth_only=False,no_depth=False):
         '''
         The Iterative Closest Point method: finds best-fit transform that maps points A on to points B
         Input:
@@ -155,7 +157,7 @@ class ICP():
         return T, distances, i
 
 
-    def icp_refinement(depth_crop, R_est, t_est, K_test, test_render_dims, depth_only=False, no_depth=False):
+    def icp_refinement(self,depth_crop, R_est, t_est, K_test, test_render_dims, depth_only=False, no_depth=False):
         synthetic_pts = self.syn_renderer.generate_synthetic_depth(K_test, R_est, t_est, test_render_dims)
         centroid_synthetic_pts = np.mean(synthetic_pts, axis=0)
         max_mean_dist = np.max(np.linalg.norm(synthetic_pts - centroid_synthetic_pts,axis=1))

@@ -28,7 +28,7 @@ def batch_iteration_indices(N, batch_size):
 def get_dataset_path(workspace_path):
     return os.path.join(
         workspace_path, 
-        'dataset',
+        'tmp_datasets',
     )
 
 def get_checkpoint_dir(log_dir):

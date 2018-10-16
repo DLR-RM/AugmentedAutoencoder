@@ -23,7 +23,7 @@ def main():
 	eval_cfg_path = os.path.join(workspace_path, 'cfg_eval' )
 	m3_cfg_path = os.path.join(workspace_path, 'cfg_m3vision' )
 	experiments_path = os.path.join(workspace_path, 'experiments' )
-	dataset_path = os.path.join(workspace_path, 'dataset' )
+	dataset_path = os.path.join(workspace_path, 'tmp_datasets' )
 
 
 	this_dir = os.path.dirname(os.path.abspath(__file__))

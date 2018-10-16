@@ -17,7 +17,6 @@ setup(
                             'ae_test_embedding = auto_pose.test.ae_test_embedding:main',
                             'ae_compare = auto_pose.eval.comparative_report:main']
     },
-    # package_data={'ae': ['cfg/*', 'cfg_eval/*', 'renderer/shader/*']},
-    package_data={'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*']},
+    package_data={'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*', 'm3_interface/sample_data/*']},
     # include_package_data=True
 )
