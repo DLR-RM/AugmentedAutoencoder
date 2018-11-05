@@ -126,23 +126,6 @@ for file in files:
         vis_img[:ssd_rot_imgs.shape[0],dataset.shape[1]:,:] = ssd_rot_imgs
 
 
-    # if arguments.eval:
-    #     dict_key = ''.join(os.path.basename(os.path.dirname(file)).split('_H')[0])
-    #     result_dict[dict_key] = {}
-    #     Rs_flat = np.zeros((len(Rs),9))
-    #     ts_flat = np.zeros((len(Rs),3))
-    #     for i in xrange(len(Rs)):
-    #         Rs_flat[i]=Rs[i].flatten()
-    #         ts_flat[i]=ts[i].flatten()
-
-    #     result_dict[dict_key]['cam_R_m2c'] = Rs_flat.tolist()
-    #     result_dict[dict_key]['cam_t_m2c'] = ts_flat.tolist()
-    #     print result_dict[dict_key]['cam_R_m2c']
-    #     print ssd_boxes
-    #     result_dict[dict_key]['ssd_bboxes'] = np.array(ssd_boxes).tolist()
-    #     result_dict[dict_key]['ssd_scores'] = rscores.tolist()
-
-
         Rs_flat = np.zeros((len(Rs),9))
         ts_flat = np.zeros((len(Rs),3))
         for i in xrange(len(Rs)):
@@ -183,56 +166,4 @@ for file in files:
         cv2.waitKey(0)
     except:
         pass
-
-
-    # z_sort = np.argsort(ts_flat[:,2])
-    # print z_sort
-    # for t,R in zip(ts_flat[z_sort[::-1]],Rs_flat[z_sort[::-1]]):
-    #     bgr_y, depth_y  = dataset.renderer.render( 
-    #         obj_id=0,
-    #         W=640, 
-    #         H=512,
-    #         K=K_test, 
-    #         R=np.array(R).reshape(3,3), 
-    #         t=t,
-    #         near=10,
-    #         far=10000,
-    #         random_light=False
-    #     )
-
-    #     img_show[bgr_y > 0] = bgr_y[bgr_y > 0]
-    #     # cv2.imshow('render6D',img_show)
-    # for i in xrange(len(rscores)):
-    #     score = rscores[i]
-    #     ymin = int(rbboxes[i, 0] * H)
-    #     xmin = int(rbboxes[i, 1] * W)
-    #     ymax = int(rbboxes[i, 2] * H)
-    #     xmax = int(rbboxes[i, 3] * W)
-    #     cv2.putText(img_show, '%1.3f' % score, (xmin, ymax+10), cv2.FONT_ITALIC, .5, (0,255,0), 1)
-    #     cv2.rectangle(img_show, (xmin,ymin),(xmax,ymax), (0,255,0), 1)
-
-    # cv2.imshow('preds', vis_img)
-    # cv2.imshow('img', img_show)
-    # cv2.waitKey(0)
-        
-
-
-
-    # print rclasses, rscores, rbboxes
-
-
-    # im = cv2.resize(im,(128,128))
-
-    # R = codebook.nearest_rotation(ssd.isess, im/255.)
-
-    # pred_view = dataset.render_rot( R ,downSample = 1)
-    
-    # cv2.imshow('resized img', cv2.resize(im/255.,(256,256)))
-    # cv2.imshow('pred_view', cv2.resize(pred_view,(256,256)))
-    # print R
-    # cv2.waitKey(0)
-# if arguments.eval:
-#     # print result_dict
-#     inout.save_yaml('/home_local2/sund_ma/data/kuka_results/kuka_results.yaml',result_dict)
-
 

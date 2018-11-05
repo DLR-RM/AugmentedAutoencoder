@@ -14,14 +14,16 @@ from auto_pose.eval import eval_utils
 import argparse
 
 
-def render_rot(renderer, obj_i, train_args, R):
+def render_rot(renderer, obj_i, train_args, R, downSample=1):
     h, w = train_args.getint('Dataset','H'),train_args.getint('Dataset','W')
     radius = float(train_args.getfloat('Dataset','RADIUS'))
     render_dims = eval(train_args.get('Dataset','RENDER_DIMS'))
 
     K = eval(train_args.get('Dataset','K'))
     K = np.array(K).reshape(3,3)
+    K[:2,:] = K[:2,:] / downSample
 
+    
     clip_near = float(train_args.getfloat('Dataset','CLIP_NEAR'))
     clip_far = float(train_args.getfloat('Dataset','CLIP_FAR'))
     pad_factor = float(train_args.getfloat('Dataset','PAD_FACTOR'))
@@ -30,8 +32,8 @@ def render_rot(renderer, obj_i, train_args, R):
 
     bgr_y, depth_y = renderer.render( 
         obj_id=obj_i,
-        W=render_dims[0], 
-        H=render_dims[1],
+        W=render_dims[0]/ downSample, 
+        H=render_dims[1]/ downSample,
         K=K.copy(), 
         R=R, 
         t=t,
@@ -69,25 +71,20 @@ else:
 
 
 
-all_sessions = []
 all_codebooks = []
 all_train_args = []
-
 model_paths = []
 
+sess = tf.Session()
 for i,experiment_name in enumerate(arguments.experiment_names):
 
     full_name = experiment_name.split('/')
     experiment_name = full_name.pop()
     experiment_group = full_name.pop() if len(full_name) > 0 else ''
 
-    
-    # gt_bb = arguments.gt_bb
-
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
     log_dir = u.get_log_dir(workspace_path,experiment_name,experiment_group)
     ckpt_dir = u.get_checkpoint_dir(log_dir)
-    
     train_cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
     eval_cfg_file_path = u.get_eval_config_file_path(workspace_path)
     train_args = configparser.ConfigParser()
@@ -97,24 +94,20 @@ for i,experiment_name in enumerate(arguments.experiment_names):
     model_paths.append(train_args.get('Paths','MODEL_PATH'))
     all_train_args.append(train_args)
 
-
-    with tf.Graph().as_default():
-
-        # Sessions created in this scope will run operations from `g_1`.
-        all_codebooks.append(factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=False))
-        all_sessions.append(tf.Session())
-
-        factory.restore_checkpoint(all_sessions[-1], tf.train.Saver(), ckpt_dir)
+    all_codebooks.append(factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True))
+    factory.restore_checkpoint(sess, tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=experiment_name)), ckpt_dir)
+    # factory.restore_checkpoint(all_sessions[-1], tf.train.Saver(), ckpt_dir)
 
 
 renderer = meshrenderer_phong.Renderer(
     model_paths, 
-    1
+    1,
+    vertex_tmp_store_folder=u.get_dataset_path(workspace_path)
 )
 
 
 for file in files*10:
-    for i,(sess,codebook,train_args) in enumerate(zip(all_sessions,all_codebooks,all_train_args)):
+    for i,(codebook,train_args) in enumerate(zip(all_codebooks,all_train_args)):
         h, w = train_args.getint('Dataset','H'),train_args.getint('Dataset','W')
         
         im = cv2.imread(file)

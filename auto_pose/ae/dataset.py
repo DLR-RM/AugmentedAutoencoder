@@ -29,6 +29,7 @@ class Dataset(object):
 
         self.train_x = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.mask_x = np.empty( (self.noof_training_imgs,) + self.shape[:2], dtype= bool)
+        self.noof_obj_pixels = np.empty( (self.noof_training_imgs,), dtype= bool)
         self.train_y = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.bg_imgs = np.empty( (self.noof_bg_imgs,) + self.shape, dtype=np.uint8 )
         if np.float(eval(self._kw['realistic_occlusion'])):
@@ -91,6 +92,7 @@ class Dataset(object):
         else:
             self.render_training_images()
             np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
+        self.noof_obj_pixels = np.count_nonzero(self.mask_x==0,axis=(1,2))
         print 'loaded %s training images' % len(self.train_x)
 
     def get_sprite_training_images(self, train_args):
@@ -387,6 +389,18 @@ class Dataset(object):
             ElasticTransformation
         return eval(self._kw['code'])
 
+    @lazy_property
+    def _aug_occl(self):
+        from imgaug.augmenters import Sequential,SomeOf,OneOf,Sometimes,WithColorspace,WithChannels, \
+            Noop,Lambda,AssertLambda,AssertShape,Scale,CropAndPad, \
+            Pad,Crop,Fliplr,Flipud,Superpixels,ChangeColorspace, PerspectiveTransform, \
+            Grayscale,GaussianBlur,AverageBlur,MedianBlur,Convolve, \
+            Sharpen,Emboss,EdgeDetect,DirectedEdgeDetect,Add,AddElementwise, \
+            AdditiveGaussianNoise,Multiply,MultiplyElementwise,Dropout, \
+            CoarseDropout,Invert,ContrastNormalization,Affine,PiecewiseAffine, \
+            ElasticTransformation
+        return Sequential([Sometimes(0.7, CoarseDropout( p=0.4, size_percent=0.01) )])
+
     
     @lazy_property
     def random_syn_masks(self):
@@ -404,7 +418,7 @@ class Dataset(object):
         return occlusion_masks
 
 
-    def augment_occlusion(self, masks, verbose=False, min_trans = 0.2, max_trans=0.7, max_occl = 0.25,min_occl = 0.0):
+    def augment_occlusion_mask(self, masks, verbose=False, min_trans = 0.2, max_trans=0.7, max_occl = 0.25,min_occl = 0.0):
 
         
         new_masks = np.zeros_like(masks,dtype=np.bool)
@@ -428,6 +442,16 @@ class Dataset(object):
                     break
 
         return new_masks
+    def augment_squares(self,masks,rand_idcs,max_occl=0.25):
+        new_masks = np.invert(masks)
+
+        idcs = np.arange(len(masks))
+        while len(idcs) > 0:
+            new_masks[idcs] = self._aug_occl.augment_images(np.invert(masks[idcs]))
+            new_noof_obj_pixels = np.count_nonzero(new_masks,axis=(1,2))
+            idcs = np.where(new_noof_obj_pixels/self.noof_obj_pixels[rand_idcs].astype(np.float32) < 1-max_occl)[0]
+            print idcs
+        return np.invert(new_masks)
 
     def batch(self, batch_size):
 
@@ -444,8 +468,11 @@ class Dataset(object):
         rand_vocs = self.bg_imgs[rand_idcs_bg]
 
         if eval(self._kw['realistic_occlusion']):
-            masks = self.augment_occlusion(masks.copy(),max_occl=np.float(self._kw['realistic_occlusion']))
+            masks = self.augment_occlusion_mask(masks.copy(),max_occl=np.float(self._kw['realistic_occlusion']))
         
+        if eval(self._kw['square_occlusion']):
+            masks = self.augment_squares(masks.copy(),rand_idcs,max_occl=np.float(self._kw['square_occlusion']))
+
         batch_x[masks] = rand_vocs[masks]
 
         # random in-plane rotation, not necessary

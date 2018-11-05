@@ -14,7 +14,7 @@ from auto_pose.eval import eval_utils
 import argparse
 
 
-def render_rot(renderer, obj_i, train_args, R, downsample=1):
+def render_rot(renderer, obj_i, train_args, R, downSample=1):
     h, w = train_args.getint('Dataset','H'),train_args.getint('Dataset','W')
     radius = float(train_args.getfloat('Dataset','RADIUS'))
     render_dims = eval(train_args.get('Dataset','RENDER_DIMS'))
@@ -71,12 +71,12 @@ else:
 
 
 
-all_sessions = []
 all_codebooks = []
 all_train_args = []
+all_decoders = []
 
 model_paths = []
-
+sess = tf.Session()
 for i,experiment_name in enumerate(arguments.experiment_names):
 
     full_name = experiment_name.split('/')
@@ -98,28 +98,34 @@ for i,experiment_name in enumerate(arguments.experiment_names):
     model_paths.append(train_args.get('Paths','MODEL_PATH'))
     all_train_args.append(train_args)
 
-
-    with tf.Graph().as_default():
-
-        # Sessions created in this scope will run operations from `g_1`.
-        all_codebooks.append(factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=False))
-        all_sessions.append(tf.Session())
-
-        factory.restore_checkpoint(all_sessions[-1], tf.train.Saver(), ckpt_dir)
+    cb, dataset, decoder = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True,return_decoder = True)
+    # all_codebooks.append(factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True))
+    all_codebooks.append(cb)
+    all_decoders.append(decoder)
+    factory.restore_checkpoint(sess, tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=experiment_name)), ckpt_dir)
+    # factory.restore_checkpoint(all_sessions[-1], tf.train.Saver(), ckpt_dir)
 
 
 renderer = meshrenderer_phong.Renderer(
     model_paths, 
-    1
+    1,
+    vertex_tmp_store_folder=u.get_dataset_path(workspace_path)
 )
 
 
 for file in files*10:
-    for i,(sess,codebook,train_args) in enumerate(zip(all_sessions,all_codebooks,all_train_args)):
+    for i,(decoder,codebook,train_args) in enumerate(zip(all_decoders,all_codebooks,all_train_args)):
         h, w = train_args.getint('Dataset','H'),train_args.getint('Dataset','W')
         
         im = cv2.imread(file)
+        im = im[im.shape[0]/4:3*im.shape[0]/4,im.shape[1]/4:3*im.shape[1]/4,:]
         im = cv2.resize(im,(w,h))
+
+        x_off = np.random.randint(0,64)
+        y_off = np.random.randint(0,64)
+        im[y_off:y_off+64,x_off:x_off+64,:] = np.array([213,214,218])
+
+
         if train_args.getint('Dataset','C')==1:
             im=cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)[:,:,None]
 
@@ -127,9 +133,14 @@ for file in files*10:
 
         pred_view = render_rot(renderer, i, train_args, R)
         
+        if im.ndim == 3:
+            im2 = np.expand_dims(im, 0)
+
+        reconst = sess.run(decoder.x, feed_dict={codebook._encoder.x: im2/255.})
         
         cv2.imshow('resized img', cv2.resize(im/255.,(256,256)))
         cv2.imshow('pred_view', cv2.resize(pred_view/255.,(256,256)))
+        cv2.imshow('reconst', cv2.resize(reconst[0],(256,256)))
         print R
         cv2.waitKey(0)
 

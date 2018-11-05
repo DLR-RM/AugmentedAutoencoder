@@ -49,7 +49,12 @@ def main():
     ckpt_dir = u.get_checkpoint_dir(log_dir)
     train_fig_dir = u.get_train_fig_dir(log_dir)
     dataset_path = u.get_dataset_path(workspace_path)
-
+    
+    if not os.path.exists(cfg_file_path):
+        print 'Could not find config file:\n'
+        print '{}\n'.format(cfg_file_path)
+        exit(-1)
+        
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir)
     if not os.path.exists(train_fig_dir):
@@ -58,10 +63,7 @@ def main():
         os.makedirs(dataset_path)
         
 
-    if not os.path.exists(cfg_file_path):
-        print 'Could not find config file:\n'
-        print '{}\n'.format(cfg_file_path)
-        exit(-1)
+
 
     args = configparser.ConfigParser()
     args.read(cfg_file_path)

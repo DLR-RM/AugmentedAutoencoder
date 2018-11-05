@@ -7,8 +7,9 @@ from m3vision.interfaces.detector_bb import BoundingBox
 from auto_pose.m3_interface.ae_pose_estimator import AePoseEstimator
 from auto_pose.ae.utils import get_dataset_path
 
-import scipy.misc
+
 def load_depth2(path):
+    import scipy.misc
     d = scipy.misc.imread(path)
     d = d.astype(np.float32)
     return d
@@ -42,6 +43,8 @@ camK = np.array([[1075.65,0,W//2],[0,1073.90,H//2],[0,0,1]])
 
 ae_pose_est = AePoseEstimator(os.path.join(workspace_path,'cfg_m3vision/test_config.cfg'))
 pose_ests = ae_pose_est.process([bb2],img,camK)#,depth_img=depth_img)
+
+
 print pose_ests[0].trafo
 
 if args.vis:

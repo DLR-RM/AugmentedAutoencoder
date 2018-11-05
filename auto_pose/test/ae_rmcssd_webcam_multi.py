@@ -31,24 +31,6 @@ arguments = parser.parse_args()
 width = 960
 height = 720
 
-# width = 1920
-# height = 1080
-
-# def initializeWebcam(width, height):
-#     #initialise pygame   
-#     pygame.init()
-#     pygame.camera.init()
-#     cam = pygame.camera.Camera("/dev/video0",(width,height))
-#     cam.start()
-
-#     #setup window
-#     windowSurfaceObj = pygame.display.set_mode((width,height),1,16)
-#     pygame.display.set_caption('Camera')
-
-#     return cam
-
-# cam = initializeWebcam(width, height)
-
 
 videoStream = WebcamVideoStream(0,width,height).start()
 
@@ -107,7 +89,7 @@ for i,experiment_name in enumerate(arguments.experiment_names):
     print experiment_name
     all_codebooks.append(factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=False))
     # all_sessions.append(sess)
-    factory.restore_checkpoint(sess, tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='obj%s' % obj_id)), ckpt_dir)
+    factory.restore_checkpoint(sess, tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=experiment_name)), ckpt_dir)
 
         # factory.restore_checkpoint(ssd.isess, saver, ckpt_dir)
 
@@ -127,7 +109,8 @@ result_dict = {}
 
 renderer = meshrenderer_phong.Renderer(
     model_paths, 
-    1
+    1,
+    vertex_tmp_store_folder=u.get_dataset_path(workspace_path)
 )
 
 # sequential vs. concurrent executeion

@@ -71,6 +71,7 @@ def main():
 	workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
 	exp_group_path = os.path.join(workspace_path, 'experiments', experiment_group)
+	print exp_group_path
 	error_score_files = glob.glob(os.path.join(exp_group_path, '*/eval',eval_name,'*/error*/scores*'))
 	print error_score_files
 	data_re = []
