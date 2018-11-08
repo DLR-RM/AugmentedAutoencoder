@@ -28,6 +28,7 @@ class AePoseEstimator(PoseEstInterface):
         self._process_requirements = ['color_img', 'camK', 'bboxes']
         if test_args.getboolean('MODEL','camPose'):
             self._process_requirements.append('camPose')
+        self._camPose = test_args.getboolean('MODEL','camPose')
         self._upright = test_args.getboolean('MODEL','upright')
         self._topk = test_args.getint('MODEL','topk')
         if self._topk > 1:
@@ -105,6 +106,7 @@ class AePoseEstimator(PoseEstInterface):
         H, W = color_img.shape[:2]
         
         #print vis_img.shape
+         
         all_Rs, all_ts = [],[]
         H_est = np.eye(4)
         all_pose_estimates = []
@@ -116,7 +118,8 @@ class AePoseEstimator(PoseEstInterface):
             try:
                 clas_idx = self.class_names.index(pred_clas)
             except:
-                raise ValueError('%s not contained in config class_names %s', (pred_clas, self.class_names))
+                print('%s not contained in config class_names %s', (pred_clas, self.class_names))
+                continue
 
             h_box, w_box = (box.ymax-box.ymin)*H, (box.xmax-box.xmin)*W
             cy, cx = int(box.ymin*H + h_box/2), int(box.xmin*W + w_box/2)
@@ -137,7 +140,7 @@ class AePoseEstimator(PoseEstInterface):
             Rs_est, ts_est, _ = self.all_codebooks[clas_idx].nearest_rotation_with_bb_depth(self.sess, 
                                                                                             det_img, 
                                                                                             box_xywh, 
-                                                                                            camK, 
+                                                                                            camK*2,#REMOVE, and input correct calibration with 1280x960 instead 640x480 
                                                                                             self._topk, 
                                                                                             self.all_train_args[clas_idx], 
                                                                                             upright=self._upright)
@@ -149,13 +152,18 @@ class AePoseEstimator(PoseEstInterface):
                 depth_crop = depth_img[top:cy+size/2,left:cx+size/2]
                 R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H))
 
+
             H_est[:3,:3] = R_est
-            H_est[:3,3] = t_est
-            
+            H_est[:3,3] = t_est / 1000. #mm in m
+            print 'translation from camera: ',  H_est[:3,3]
+
+            if self._camPose:
+                H_est = np.dot(camPose, H_est)           
+
             top1_pose = PoseEstimate(name=pred_clas,trafo=H_est)
             all_pose_estimates.append(top1_pose)
         #TODO camPose
-        return all_pose_estimates
 
+        return all_pose_estimates
 
 

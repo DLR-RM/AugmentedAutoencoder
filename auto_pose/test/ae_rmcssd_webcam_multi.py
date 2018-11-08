@@ -20,7 +20,7 @@ from webcam_video_stream import WebcamVideoStream
 
 parser = argparse.ArgumentParser()
 parser.add_argument("experiment_names", nargs='+',type=str)
-parser.add_argument("ssd_name")
+parser.add_argument("ssd_frozen_ckpt_path")
 parser.add_argument('-down', default=1, type=int)
 parser.add_argument("-s", action='store_true', default=False)
 
@@ -38,9 +38,8 @@ videoStream = WebcamVideoStream(0,width,height).start()
 if arguments.s:
     out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (width,height))
 
-ssd_name = arguments.ssd_name
 
-ssd = detector.Detector(os.path.join('/home_local/sund_ma/ssd_ws/checkpoints', ssd_name))
+ssd = detector.Detector( arguments.ssd_frozen_ckpt_path)
 
 
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
@@ -145,7 +144,7 @@ while videoStream.isActive():
     img_show = img.copy()
     # img_show = cv2.resize(img_show, (width/arguments.down,height/arguments.down))
 
-    rclasses, rscores, rbboxes = ssd.process(img,select_threshold=0.4,nms_threshold=.9)
+    rclasses, rscores, rbboxes = ssd.process(img,select_threshold=0.4,nms_threshold=.5)
     print rclasses
 
     ssd_boxes = [ (int(rbboxes[i][0]*H), int(rbboxes[i][1]*W), int(rbboxes[i][2]*H), int(rbboxes[i][3]*W)) for i in xrange(len(rbboxes))]
