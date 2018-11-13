@@ -1,0 +1,9 @@
+convenient functions to interface with the sixd toolkit for evaluation
+
+1. Download and install the sixd_toolkit as a pip package 
+		https://github.com/thodan/sixd_toolkit
+2. In params/dataset_params.py** set **common_base_path** to the path of the SIXD datasets.
+3. replace eval_loc.py and eval_calc_erros.py
+4. use ae_eval to evaluate on any sixd dataset (T-Less, Linemod, etc.)
+
+
