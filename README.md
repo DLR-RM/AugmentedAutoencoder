@@ -40,7 +40,7 @@ Duration depending on Configuration and Hardware: ~3h per Object
 Linux, Python 2.7
 
 GLFW for OpenGL: sudo apt-get install libglfw3-dev libglfw3  
-Assimp: sudo apt-get install libassimp-dev
+Assimp: sudo apt-get install libassimp-dev  
 Tensorflow >= 1.6  
 OpenCV >= 3.1
 
