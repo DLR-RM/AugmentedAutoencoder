@@ -108,8 +108,8 @@ ae_embed exp_group/my_autoencoder
 
 ### Use A Model
 
-ae_eval to evaluate on datasets
-look at test/ 
+ae_eval to evaluate on datasets  
+have a look at test/ 
 
 
 # Config file parameters
