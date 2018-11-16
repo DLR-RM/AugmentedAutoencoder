@@ -140,7 +140,7 @@ might need a bit effort to get running but results are worth it:
 *For the evaluation you will also need*
 https://github.com/thodan/sixd_toolkit + our extensions, see sixd_toolkit_extension/help.txt  
 
-###Evaluate and visualize 6D pose estimation of AAE with ground truth bounding boxes
+### Evaluate and visualize 6D pose estimation of AAE with ground truth bounding boxes
 
 *Create the evaluation config file*
 ```bash
@@ -157,7 +157,7 @@ ae_eval tless_nobn/obj5 trained_without_batchnorm --eval_cfg tless/5.cfg
 ```
 
 
-###Evaluate 6D Object Detection with a 2D Object Detector
+### Evaluate 6D Object Detection with a 2D Object Detector
 *Generate a training dataset for T-Less using detection_utils/generate_sixd_train.py*
 ```bash
 python detection_utils/generate_sixd_train.py
