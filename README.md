@@ -124,7 +124,7 @@ python aae_image.py exp_group/my_autoencoder -f /path/to/image/file/or/folder
 python aae_webcam.py exp_group/my_autoencoder
 ```
 
-*Multi-object real-time RGB-based 6D Object Detection from a Webcam stream*
+*Multi-object real-time RGB-based 6D Object Detection from a Webcam stream*  
 Train a 2D detector following https://github.com/naisy/train_ssd_mobilenet  
 adapt /auto_pose/test/googledet_utils/googledet_config.yml  
 
