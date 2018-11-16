@@ -1,5 +1,4 @@
-## AugmentedAutoencoder Beta
-More documentation and code will follow soon
+## AugmentedAutoencoder  
 
 ### Implicit 3D Orientation Learning for 6D Object Detection from RGB Images   
 Martin Sundermeyer, Zoltan-Csaba Marton, Maximilian Durner, Manuel Brucker, Rudolph Triebel  
@@ -39,18 +38,24 @@ Duration depending on Configuration and Hardware: ~3h per Object
 
 Linux, Python 2.7
 
-GLFW for OpenGL: sudo apt-get install libglfw3-dev libglfw3  
-Assimp: sudo apt-get install libassimp-dev  
+GLFW for OpenGL: 
+```bash
+sudo apt-get install libglfw3-dev libglfw3  
+```
+Assimp: 
+```bash
+sudo apt-get install libassimp-dev  
+```
 Tensorflow >= 1.6  
 OpenCV >= 3.1
 
 ```bash
 pip install PyOpenGL PyOpenGL_accelerate  
+pip install cython
 pip install cyglfw3
 pip install pyassimp
 pip install imgaug
 pip install progressbar
-pip install numpy
 ```
 
 *For the evaluation you will also need*
@@ -79,6 +84,9 @@ ae_init_workspace
 ```
 
 ### Train A Model
+```diff
+- Currently it is not possible to train on a remote machine without a display since glfw does not support headless rendering
+```
 
 *1. Create the training config file. Insert the paths to your 3D model and background images.*
 ```bash
@@ -116,9 +124,9 @@ have a look at test/
 ```yaml
 [Paths]
 # Path to the model file. All formats supported by assimp should work. Tested with ply files.
-MODEL_PATH: /net/rmc-lx0050/home_local/sund_ma/data/t-less/models_reconst/obj_05.ply
+MODEL_PATH: /path/to/my_3d_model.ply
 # Path to some background image folder. Should contain a * as a placeholder for the image name.
-BACKGROUND_IMAGES_GLOB: /net/rmc-lx0050/home_local/sund_ma/data/VOCdevkit/VOC2012/JPEGImages/*.jpg
+BACKGROUND_IMAGES_GLOB: /path/to/VOCdevkit/VOC2012/JPEGImages/*.jpg
 
 [Dataset]
 #cad or reconst (with texture)
