@@ -44,7 +44,7 @@ def load_frozenmodel():
     print('> Loading frozen model into memory')
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=log_device)
     config.gpu_options.allow_growth=allow_memory_growth
-    config.gpu_options.per_process_gpu_memory_fraction = 0.3 ###Jetson only
+    config.gpu_options.per_process_gpu_memory_fraction = 0.5 ###Jetson only
     if not split_model:
         detection_graph = tf.Graph()
         with detection_graph.as_default():
@@ -178,13 +178,6 @@ def detection(detection_graph, category_index, score, expand):
                 experiment_name = full_name.pop()
                 experiment_group = full_name.pop() if len(full_name) > 0 else ''
 
-                # try:
-                #     obj_id = int(re.findall(r"(\d+)", experiment_name)[-1])
-                #     class_i_mapping[obj_id] = i
-                # except:
-                #     print 'no obj_id in name, needed to get the mapping for the detector'
-                #     exit()
-
                 train_cfg_file_path = utils.get_config_file_path(workspace_path, experiment_name, experiment_group)
                 train_args = configparser.ConfigParser()
                 train_args.read(train_cfg_file_path)  
@@ -195,12 +188,7 @@ def detection(detection_graph, category_index, score, expand):
                 log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
                 ckpt_dir = utils.get_checkpoint_dir(log_dir)
 
-                # codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
-                # with tf.variable_scope('model1'):
-                # with tf.Graph().as_default():
-
                 all_codebooks.append(factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=False))
-                # all_sessions.append(sess)
                 factory.restore_checkpoint(sess, tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=experiment_name)), ckpt_dir)
             
             

@@ -58,10 +58,6 @@ pip install imgaug
 pip install progressbar
 ```
 
-*For the evaluation you will also need*
-https://github.com/thodan/sixd_toolkit + our extensions, see sixd_toolkit_extension/help.txt  
-...
-
 
 ## Usage
 ### Preparatory Steps
@@ -83,9 +79,9 @@ cd $AE_WORKSPACE_PATH
 ae_init_workspace
 ```
 
-### Train A Model
+### Train an Augmented Autoencoder
 ```diff
-- Currently it is not possible to train on a remote machine without a display since glfw does not support headless rendering
+- Currently remote training is not supported since glfw 3.2. does not allow headless rendering even with X Server forwarding
 ```
 
 *1. Create the training config file. Insert the paths to your 3D model and background images.*
@@ -114,10 +110,61 @@ ae_train exp_group/my_autoencoder
 ae_embed exp_group/my_autoencoder
 ```
 
-### Use A Model
+### Testing
 
-ae_eval to evaluate on datasets  
-have a look at test/ 
+have a look at /auto_pose/test/   
+
+*Feed one or more object crops from disk into AAE and predict 3D Orientation*
+```bash
+python aae_image.py exp_group/my_autoencoder -f /path/to/image/file/or/folder
+```
+
+*The same with a webcam input stream*
+```bash
+python aae_webcam.py exp_group/my_autoencoder
+```
+
+*Multi-object real-time RGB-based 6D Object Detection from a Webcam stream*
+Train a 2D detector following https://github.com/naisy/train_ssd_mobilenet  
+adapt /auto_pose/test/googledet_utils/googledet_config.yml  
+
+```bash
+python aae_googledet_webcam_multi.py exp_group/my_autoencoder exp_group/my_autoencoder2 exp_group/my_autoencoder3
+```
+might need a bit effort to get running but results are worth it:  
+
+[embed a video demonstration]
+
+### Evaluate a model
+
+*For the evaluation you will also need*
+https://github.com/thodan/sixd_toolkit + our extensions, see sixd_toolkit_extension/help.txt  
+
+###Evaluate and visualize 6D pose estimation of AAE with ground truth bounding boxes
+
+*Create the evaluation config file*
+```bash
+mkdir $AE_WORKSPACE_PATH/eval_cfg/eval_group
+cp $AE_WORKSPACE_PATH/eval_cfg/eval_template.cfg $AE_WORKSPACE_PATH/eval_cfg/eval_group/eval_my_autoencoder.cfg
+gedit $AE_WORKSPACE_PATH/cfg/eval_group/eval_my_autoencoder.cfg
+```
+Set estimate_bbs=False in the evaluation config  
+
+```bash
+ae_eval exp_group/my_autoencoder name_of_evaluation --eval_cfg eval_group/eval_my_autoencoder.cfg
+e.g.
+ae_eval tless_nobn/obj5 trained_without_batchnorm --eval_cfg tless/5.cfg
+```
+
+
+###Evaluate 6D Object Detection with a 2D Object Detector
+*Generate a training dataset for T-Less using detection_utils/generate_sixd_train.py*
+```bash
+python detection_utils/generate_sixd_train.py
+```
+Train https://github.com/fizyr/keras-retinanet or https://github.com/balancap/SSD-Tensorflow
+
+Then continue as stated above  
 
 
 # Config file parameters

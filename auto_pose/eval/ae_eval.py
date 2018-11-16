@@ -111,7 +111,7 @@ def main():
                 bb_preds = {}
                 for i,img in enumerate(test_imgs):
                     print img.shape
-                    bb_preds[i] = ssd.detectSceneBBs(img, min_score=.05, nms_threshold=.45)
+                    bb_preds[i] = ssd.detectSceneBBs(img, min_score=.2, nms_threshold=.45)
                 # inout.save_yaml(os.path.join(scene_res_dir,'bb_preds.yml'), bb_preds)
                 print bb_preds
             else:
