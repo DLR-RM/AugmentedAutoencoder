@@ -46,7 +46,7 @@ Assimp:
 ```bash
 sudo apt-get install libassimp-dev  
 ```
-Install PyOpenGL from   
+Clone and install PyOpenGL from  
 https://github.com/mcfletch/PyOpenGL  
 
 Tensorflow >= 1.6  
