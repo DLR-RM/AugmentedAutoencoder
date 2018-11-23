@@ -46,13 +46,12 @@ Assimp:
 ```bash
 sudo apt-get install libassimp-dev  
 ```
-Clone and install PyOpenGL from  
-https://github.com/mcfletch/PyOpenGL  
 
 Tensorflow >= 1.6  
 OpenCV >= 3.1  
 
 ```bash
+pip install --pre --upgrade PyOpenGL PyOpenGL_accelerate
 pip install cython
 pip install cyglfw3
 pip install pyassimp
