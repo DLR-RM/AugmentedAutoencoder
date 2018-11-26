@@ -137,13 +137,13 @@ class AePoseEstimator(PoseEstInterface):
             #     det_img = cv2.cvtColor(det_img,cv2.COLOR_BGR2GRAY)[:,:,None]
 
             box_xywh = [int(box.xmin*W),int(box.ymin*H),w_box,h_box]
-            Rs_est, ts_est, _ = self.all_codebooks[clas_idx].nearest_rotation_with_bb_depth(self.sess, 
-                                                                                            det_img, 
-                                                                                            box_xywh, 
-                                                                                            camK*2,#REMOVE, and input correct calibration with 1280x960 instead 640x480 
-                                                                                            self._topk, 
-                                                                                            self.all_train_args[clas_idx], 
-                                                                                            upright=self._upright)
+            Rs_est, ts_est, _ = self.all_codebooks[clas_idx].auto_pose6d(self.sess, 
+                                                                        det_img, 
+                                                                        box_xywh, 
+                                                                        camK,#*2 REMOVE, and input correct calibration with 1280x960 instead 640x480 
+                                                                        self._topk, 
+                                                                        self.all_train_args[clas_idx], 
+                                                                        upright=self._upright)
 
             R_est = Rs_est.squeeze()
             t_est = ts_est.squeeze()

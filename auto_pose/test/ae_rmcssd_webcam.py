@@ -29,23 +29,7 @@ experiment_group = full_name.pop() if len(full_name) > 0 else ''
 width = 960
 height = 720
 
-# width = 1920
-# height = 1080
 
-# def initializeWebcam(width, height):
-#     #initialise pygame   
-#     pygame.init()
-#     pygame.camera.init()
-#     cam = pygame.camera.Camera("/dev/video0",(width,height))
-#     cam.start()
-
-#     #setup window
-#     windowSurfaceObj = pygame.display.set_mode((width,height),1,16)
-#     pygame.display.set_caption('Camera')
-
-#     return cam
-
-# cam = initializeWebcam(width, height)
 videoStream = WebcamVideoStream(0,width,height).start()
 
 print 'here'
@@ -147,7 +131,7 @@ while videoStream.isActive():
 
         for j,ssd_img in enumerate(ssd_imgs):
             predicted_bb = [ssd_boxes[j][1],ssd_boxes[j][0],ssd_boxes[j][3]-ssd_boxes[j][1],ssd_boxes[j][2]-ssd_boxes[j][0]]
-            R, t, _ = codebook.nearest_rotation_with_bb_depth(ssd.isess, ssd_img, predicted_bb, K_test, 1, train_args, upright=False)
+            R, t, _ = codebook.auto_pose6d(ssd.isess, ssd_img, predicted_bb, K_test, 1, train_args, upright=False)
             Rs.append(R.squeeze())
             ts.append(t.squeeze())
         # Rs = codebook.nearest_rotation(ssd.isess, ssd_imgs)

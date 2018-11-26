@@ -48,65 +48,39 @@ class Codebook(object):
 
 
 
-    def nearest_rotation(self, session, x, top_n=1, upright=False):
-        if x.dtype == 'uint8':
-            x = x/255.
-        if top_n==1:
-            if x.ndim == 3:
-                x = np.expand_dims(x, 0)
-                cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
-                if upright:
-                    idcs = np.argmax(cosine_similarity[::int(self._dataset._kw['num_cyclo'])], axis=1)*int(self._dataset._kw['num_cyclo'])
-                else:
-                    idcs = np.argmax(cosine_similarity, axis=1)
-                return self._dataset.viewsphere_for_embedding[idcs][0]      
-            else:
-                cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
-                if upright:
-                    idcs = np.argmax(cosine_similarity[:,::int(self._dataset._kw['num_cyclo'])], axis=1)*int(self._dataset._kw['num_cyclo'])
-                else:
-                    idcs = np.argmax(cosine_similarity, axis=1)
-                return self._dataset.viewsphere_for_embedding[idcs]
-        else:
-            if x.ndim == 3:
-                x = np.expand_dims(x, 0)
-
-                cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
-                unsorted_max_idcs = np.argpartition(-cosine_similarity.squeeze(), top_n)[:top_n]
-                idcs = unsorted_max_idcs[np.argsort(-cosine_similarity.squeeze()[unsorted_max_idcs])]
-
-                return self._dataset.viewsphere_for_embedding[idcs]
-            else:
-                print 'top_n > 1 + Multiple Input Crops is not supported yet'
-                exit()
-
-
-    def nearest_rotation_with_bb_depth(self, session, x, predicted_bb, K_test, top_n, train_args, depth_pred=None, upright=False, test_codes = False):
+    def nearest_rotation(self, session, x, top_n=1, upright=False, return_idcs=False):
         
         if x.dtype == 'uint8':
             x = x/255.
-            # print 'converted uint8 to float type'
-
         if x.ndim == 3:
             x = np.expand_dims(x, 0)
-        # print np.max(x)
         
-        if test_codes:
-            cosine_similarity, normalized_test_code = session.run([self.cos_similarity,self.normalized_embedding_query], {self._encoder.x: x})
-        else:
-            cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
-
-        if top_n > 1:
-            unsorted_max_idcs = np.argpartition(-cosine_similarity.squeeze(), top_n)[:top_n]
-            idcs = unsorted_max_idcs[np.argsort(-cosine_similarity.squeeze()[unsorted_max_idcs])]
-        else:
+        cosine_similarity = session.run(self.cos_similarity, {self._encoder.x: x})
+        if top_n == 1:
             if upright:
                 idcs = np.argmax(cosine_similarity[:,::int(self._dataset._kw['num_cyclo'])], axis=1)*int(self._dataset._kw['num_cyclo'])
             else:
                 idcs = np.argmax(cosine_similarity, axis=1)
+        else:
+            unsorted_max_idcs = np.argpartition(-cosine_similarity.squeeze(), top_n)[:top_n]
+            idcs = unsorted_max_idcs[np.argsort(-cosine_similarity.squeeze()[unsorted_max_idcs])]
+        if return_idcs:
+            return idcs
+        else:
+            return self._dataset.viewsphere_for_embedding[idcs].squeeze()
+
+
+
+    def auto_pose6d(self, session, x, predicted_bb, K_test, top_n, train_args, depth_pred=None, upright=False):
         
-        
+        idcs = self.nearest_rotation(session, x, top_n=top_n, upright=upright,return_idcs=True)
         Rs_est = self._dataset.viewsphere_for_embedding[idcs]
+
+
+        # if test_codes:
+        #     if x.ndim == 3:
+        #         x = np.expand_dims(x, 0)
+        #     normalized_test_code = session.run(self.normalized_embedding_query, {self._encoder.x: x})
 
         # test_depth = f_test / f_train * render_radius * diag_bb_ratio
         K_train = np.array(eval(train_args.get('Dataset','K'))).reshape(3,3)
@@ -140,11 +114,20 @@ class Codebook(object):
             t_est = np.array([center_mm_tx, center_mm_ty, z])
             ts_est[i] = t_est
             
-        if test_codes:
-            # nearest_train_codes = session.run(self.embedding_normalized)[idcs]
-            return (Rs_est, ts_est, normalized_test_code.squeeze())#,nearest_train_codes.squeeze())
-        else:
-            return (Rs_est, ts_est,None)
+            # correcting the rotation matrix 
+            # the codebook consists of centered object views, but the test image crop is not centered
+            # we determine the rotation that preserves appearance when translating the object
+            d_alpha_x = - np.arctan(t_est[0]/t_est[2])
+            d_alpha_y = - np.arctan(t_est[1]/t_est[2])
+            R_corr_x = np.array([[1,0,0],
+                                [0,np.cos(d_alpha_y),-np.sin(d_alpha_y)],
+                                [0,np.sin(d_alpha_y),np.cos(d_alpha_y)]]) 
+            R_corr_y = np.array([[np.cos(d_alpha_x),0,-np.sin(d_alpha_x)],
+                                [0,1,0],
+                                [np.sin(d_alpha_x),0,np.cos(d_alpha_x)]]) 
+            R_corrected = np.dot(R_corr_y,np.dot(R_corr_x,Rs_est[i]))
+            Rs_est[i] = R_corrected
+        return (Rs_est, ts_est,None)
         
 
 

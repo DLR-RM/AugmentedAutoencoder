@@ -171,18 +171,16 @@ def main():
                 start = time.time()
                 if train_args.getint('Dataset','C') == 1:
                     test_crop = cv2.cvtColor(test_crop,cv2.COLOR_BGR2GRAY)[:,:,None]
-                predictions = codebook.nearest_rotation_with_bb_depth(sess, 
+                Rs_est, ts_est,_ = codebook.auto_pose6d(sess, 
                                                                     test_crop, 
                                                                     test_bb, 
                                                                     Ks_test[view].copy(), 
                                                                     top_nn, 
-                                                                    train_args, 
-                                                                    test_codes=eval_args.getboolean('PLOT','EMBEDDING_PCA'))
+                                                                    train_args)
                 ae_time = time.time() - start
 
-                Rs_est, ts_est = predictions[:2]
                 if eval_args.getboolean('PLOT','EMBEDDING_PCA'):
-                    test_embeddings[-1].append(predictions[2])
+                    test_embeddings[-1].append(codebook.test_embedding(sess,test_crop,normalized=True))
 
 
                 if eval_args.getboolean('EVALUATION','gt_trans'):
@@ -217,7 +215,7 @@ def main():
                         print t_est_refined
 
                         # x,y update,does not change tz:
-                        _, ts_est_refined, _ = codebook.nearest_rotation_with_bb_depth(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args,depth_pred=t_est_refined[2])
+                        _, ts_est_refined, _ = codebook.auto_pose6d(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args,depth_pred=t_est_refined[2])
                         t_est_refined = ts_est_refined[p]
 
                         # rotation icp, only accepted if below 20 deg change

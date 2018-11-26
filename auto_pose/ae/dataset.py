@@ -228,7 +228,6 @@ class Dataset(object):
         crop_offset_sigma = float(kw['crop_offset_sigma'])
         t = np.array([0, 0, float(kw['radius'])])
 
-
         bar = progressbar.ProgressBar(
             maxval=self.noof_training_imgs, 
             widgets=[' [', progressbar.Timer(), ' | ', 
@@ -297,16 +296,8 @@ class Dataset(object):
 
             ys, xs = np.nonzero(depth_y > 0)
             obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
-            x, y, w, h = obj_bb
 
-            size = int(np.maximum(h, w) * pad_factor)
-            left = x+w/2-size/2
-            right = x+w/2+size/2
-            top = y+h/2-size/2
-            bottom = y+h/2+size/2
-
-            bgr_y = bgr_y[top:bottom, left:right]
-            bgr_y = cv2.resize(bgr_y, (W, H), interpolation = cv2.INTER_NEAREST)
+            bgr_y = self.extract_square_patch(bgr_y, obj_bb, pad_factor,resize=(W,H),interpolation = cv2.INTER_NEAREST)
 
             if self.shape[2] == 1:
                 bgr_x = cv2.cvtColor(np.uint8(bgr_x), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
@@ -355,22 +346,29 @@ class Dataset(object):
             # cv2.waitKey(0)
             ys, xs = np.nonzero(depth_y > 0)
             obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
-            x, y, w, h = obj_bb
+
             obj_bbs[i] = obj_bb
 
-            size = int(np.maximum(h, w) * pad_factor)
-            left = x+w/2-size/2
-            right = x+w/2+size/2
-            top = y+h/2-size/2
-            bottom = y+h/2+size/2
+            resized_bgr_y = self.extract_square_patch(bgr_y, obj_bb, pad_factor,resize=self.shape[:2],interpolation = cv2.INTER_NEAREST)
 
-            bgr_y = bgr_y[top:bottom, left:right]
-
-            resized_bgr_y = cv2.resize(bgr_y, self.shape[:2], interpolation = cv2.INTER_NEAREST)
             if self.shape[2] == 1:
                 resized_bgr_y = cv2.cvtColor(resized_bgr_y, cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
             batch[i] = resized_bgr_y / 255.
         return (batch, obj_bbs)
+
+    def extract_square_patch(self, scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST):
+
+        x, y, w, h = np.array(bb_xywh).astype(np.int32)
+        size = int(np.maximum(h, w) * pad_factor)
+        
+        left = np.maximum(x+w/2-size/2, 0)
+        right = x+w/2+size/2
+        top = np.maximum(y+h/2-size/2, 0)
+        bottom = y+h/2+size/2
+
+        scene_crop = scene_img[top:bottom, left:right]
+        scene_crop = cv2.resize(scene_crop, resize, interpolation = interpolation)
+        return scene_crop
 
     @property
     def embedding_size(self):

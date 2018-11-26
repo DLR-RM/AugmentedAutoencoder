@@ -103,7 +103,7 @@ for file in files:
 
         for j,ssd_img in enumerate(ssd_imgs):
             predicted_bb = [ssd_boxes[j][1],ssd_boxes[j][0],ssd_boxes[j][3]-ssd_boxes[j][1],ssd_boxes[j][2]-ssd_boxes[j][0]]
-            R, t = codebook.nearest_rotation_with_bb_depth(ssd.isess, ssd_img, predicted_bb, K_test, 1, train_args, upright=False)
+            R, t = codebook.auto_pose6d(ssd.isess, ssd_img, predicted_bb, K_test, 1, train_args, upright=False)
             Rs.append(R.squeeze())
             ts.append(t.squeeze())
         # Rs = codebook.nearest_rotation(ssd.isess, ssd_imgs)

@@ -94,7 +94,8 @@ for i,experiment_name in enumerate(arguments.experiment_names):
     model_paths.append(train_args.get('Paths','MODEL_PATH'))
     all_train_args.append(train_args)
 
-    all_codebooks.append(factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True))
+    cb,dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
+    all_codebooks.append(cb)
     factory.restore_checkpoint(sess, tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=experiment_name)), ckpt_dir)
     # factory.restore_checkpoint(all_sessions[-1], tf.train.Saver(), ckpt_dir)
 
@@ -108,21 +109,47 @@ renderer = meshrenderer_phong.Renderer(
 
 for file in files*10:
     for i,(codebook,train_args) in enumerate(zip(all_codebooks,all_train_args)):
-        h, w = train_args.getint('Dataset','H'),train_args.getint('Dataset','W')
-        
-        im = cv2.imread(file)
-        im = cv2.resize(im,(w,h))
-        if train_args.getint('Dataset','C')==1:
-            im=cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)[:,:,None]
+                
+        # detect some objects here
 
-        R = codebook.nearest_rotation(sess, im/255.)
+        #######################
+        ## if you have a trained object detector, use something like this:
+        #######################
 
-        pred_view = render_rot(renderer, i, train_args, R)
-        
-        
-        cv2.imshow('resized img', cv2.resize(im/255.,(256,256)))
-        cv2.imshow('pred_view', cv2.resize(pred_view/255.,(256,256)))
-        print R
-        cv2.waitKey(0)
+        # det_bb = np.array([x,y,w,h])
+        # img_crop = dataset.extract_square_patch(im,det_bb,train_args.getfloat('Dataset','PAD_FACTOR'))
+        # R,t,_ = codebook.auto_pose6d(sess, img_crop, det_bb,K_test,1,train_args)
+        # print R,t
 
+        # R = R.squeeze()
+        # t = t.squeeze()
+        # img_crop
+        # Rs = []
+        # ts = []
+        # for k,bb,img_crop in zip(det_aae_objects_k,det_aae_bbs,img_crops):
+        #     R, t = all_codebooks[k].auto_pose6d(sess, img_crop, bb, K_test, 1, all_train_args[k], upright=False)
+        #     Rs.append(R.squeeze())
+        #     ts.append(t.squeeze())
 
+        # Rs = np.array(Rs)
+        # ts = np.array(ts)                                    
+
+        # bgr_y,_,_ = renderer.render_many( 
+        #     obj_ids=np.array(det_aae_objects_k).astype(np.int32),
+        #     W=width/arguments.down,
+        #     H=height/arguments.down,
+        #     K=K_down, 
+        #     Rs=Rs, 
+        #     ts=ts,
+        #     near=1.,
+        #     far=10000.,
+        #     random_light=False,
+        #     # calc_bbs=False,
+        #     # depth=False
+        # )
+
+        # bgr_y = cv2.resize(bgr_y,(width,height))
+        # g_y = np.zeros_like(bgr_y)
+        # g_y[:,:,1]= bgr_y[:,:,1]    
+        # im_bg = cv2.bitwise_and(image,image,mask=(g_y[:,:,1]==0).astype(np.uint8))                 
+        # image = cv2.addWeighted(im_bg,1,g_y,1,0)
