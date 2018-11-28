@@ -62,14 +62,14 @@ class Dataset(object):
         from meshrenderer import meshrenderer, meshrenderer_phong
         if self._kw['model'] == 'cad':
             renderer = meshrenderer.Renderer(
-               [self._kw['model_path']], 
+               list(self._kw['model_path']), 
                int(self._kw['antialiasing']), 
                self.dataset_path, 
                float(self._kw['vertex_scale'])
             )
         elif self._kw['model'] == 'reconst':
             renderer = meshrenderer_phong.Renderer(
-               [self._kw['model_path']], 
+               list(self._kw['model_path']), 
                int(self._kw['antialiasing']), 
                self.dataset_path, 
                float(self._kw['vertex_scale'])
@@ -91,6 +91,23 @@ class Dataset(object):
             self.train_y = training_data['train_y'].astype(np.uint8)
         else:
             self.render_training_images()
+            np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
+        self.noof_obj_pixels = np.count_nonzero(self.mask_x==0,axis=(1,2))
+        print 'loaded %s training images' % len(self.train_x)
+
+    def create_tfrecord_training_images(self, dataset_path, args):
+
+        current_config_hash = hashlib.md5(str(args.items('Dataset')+args.items('Paths'))).hexdigest()
+        current_file_name = os.path.join(dataset_path, current_config_hash + '.tfrecord')
+
+        if os.path.exists(current_file_name):
+            training_data = np.load(current_file_name)
+            self.train_x = training_data['train_x'].astype(np.uint8)
+            self.mask_x = training_data['mask_x']
+            self.train_y = training_data['train_y'].astype(np.uint8)
+        else:
+            train_x, mask_x, train_y = self.render_training_images()
+            
             np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
         self.noof_obj_pixels = np.count_nonzero(self.mask_x==0,axis=(1,2))
         print 'loaded %s training images' % len(self.train_x)
@@ -216,7 +233,7 @@ class Dataset(object):
         return cv2.resize(bgr_y, self.shape[:2])
 
 
-    def render_training_images(self):
+    def render_training_images(self,obj_id=0):
         kw = self._kw
         H, W = int(kw['h']), int(kw['w'])
         render_dims = eval(kw['render_dims'])
@@ -243,7 +260,7 @@ class Dataset(object):
             # start_time = time.time()
             R = transform.random_rotation_matrix()[:3,:3]
             bgr_x, depth_x = self.renderer.render( 
-                obj_id=0,
+                obj_id=obj_id,
                 W=render_dims[0], 
                 H=render_dims[1],
                 K=K.copy(), 
@@ -254,7 +271,7 @@ class Dataset(object):
                 random_light=True
             )
             bgr_y, depth_y = self.renderer.render( 
-                obj_id=0,
+                obj_id=obj_id,
                 W=render_dims[0], 
                 H=render_dims[1],
                 K=K.copy(), 
@@ -309,6 +326,7 @@ class Dataset(object):
 
             #print 'rendertime ', render_time, 'processing ', time.time() - start_time
         bar.finish()
+        return (self.train_x,self.mask_x,self.train_y)
 
     def render_embedding_image_batch(self, start, end):
         kw = self._kw

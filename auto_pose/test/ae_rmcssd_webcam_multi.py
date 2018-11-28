@@ -190,42 +190,6 @@ while videoStream.isActive():
 
 
 
-
-        # det_objects_k = np.array(det_objects_k)
-        # Rs_flat = np.zeros((len(Rs),9))
-        # ts_flat = np.zeros((len(Rs),3))
-        # for i in xrange(len(Rs)):
-        #     Rs_flat[i]=Rs[i].flatten()
-        #     ts_flat[i]=ts[i].flatten()
-
-        # z_sort = np.argsort(ts_flat[:,2])
-        # print z_sort
-        # for t,R,k in zip(ts_flat[z_sort[::-1]],Rs_flat[z_sort[::-1]],det_objects_k[z_sort[::-1]]):
-        #     st = time.time()
-        #     #use render_many
-        #     bgr_y, depth_y  = renderer.render( 
-        #         obj_id=k,
-        #         W=width/arguments.down, 
-        #         H=height/arguments.down,
-        #         K=K_down, 
-        #         R=np.array(R).reshape(3,3), 
-        #         t=t,
-        #         near=10,
-        #         far=10000,
-        #         random_light=False
-        #     )
-        #     # print 'rendering time', time.time() - st
-        #     g_y = np.zeros_like(bgr_y)
-        #     g_y[:,:,1]= bgr_y[:,:,1]
-        #     st = time.time()
-        #     g_y = cv2.resize(g_y, (width,height))
-        #     depth_y = cv2.resize(depth_y, (width,height))
-        #     # print 'resize time', time.time() - st
-        #     img_show[depth_y > 0] = g_y[depth_y > 0]*2./3. + img_show[depth_y > 0]*1./3.
-
-            # cv2.imshow('render6D',img_show)
-
-
         for i in xrange(len(rscores)):
             if not rclasses[i] in class_i_mapping:
                 continue
