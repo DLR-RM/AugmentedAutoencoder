@@ -43,6 +43,8 @@ class AePoseEstimator(PoseEstInterface):
         self.class_names = eval(test_args.get('MODEL','class_names'))
         self.all_codebooks = []
         self.all_train_args = []
+        self.pad_factors = []
+        self.patch_sizes = []
 
         config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth=True
@@ -62,6 +64,8 @@ class AePoseEstimator(PoseEstInterface):
             train_args = configparser.ConfigParser()
             train_args.read(train_cfg_file_path)
             self.all_train_args.append(train_args)
+            self.pad_factors.append(train_args.getfloat('Dataset','PAD_FACTOR'))
+            self.patch_sizes.append((train_args.getint('Dataset','W'), train_args.getint('Dataset','H')))
 
             self.all_codebooks.append(factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=False))
             saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=experiment_name))
@@ -75,13 +79,7 @@ class AePoseEstimator(PoseEstInterface):
                 self._process_requirements.append('depth_img')
                 self.icp_handle = icp.ICP(train_args)
 
-            
-            
-            # self.codebook = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
-            # saver = tf.train.Saver()
-            # config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.3))
-            # self.sess = tf.InteractiveSession(config=config)
-            # factory.restore_checkpoint(self.sess, saver, ckpt_dir)
+
 
 
     def set_parameter(self, string_name, string_val):
@@ -93,26 +91,31 @@ class AePoseEstimator(PoseEstInterface):
 
     def query_image_format(self):
         return self._image_format
-#    def get_native_coord_frame():
-#        """With respect to x -> right; y -> down; z away from the camera.
-#        E.g.: OGL system would be:
-#        [[1,0,0,0],[0,-1,0,0],[0,0,-1,0],[0,0,0,1]]"""
-#        pass
-    
-    # ABS
+
+
+    def extract_square_patch(self, scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST):
+
+        x, y, w, h = np.array(bb_xywh).astype(np.int32)
+        size = int(np.maximum(h, w) * pad_factor)
+        
+        left = np.maximum(x+w//2-size//2, 0)
+        right = x+w//2+size/2
+        top = np.maximum(y+h//2-size//2, 0)
+        bottom = y+h//2+size//2
+
+        scene_crop = scene_img[top:bottom, left:right]
+        scene_crop = cv2.resize(scene_crop, resize, interpolation = interpolation)
+        return scene_crop
+
     def process(self, bboxes, color_img, camK, depth_img=None, camPose=None, rois3ds=[]):
-        """ roi3ds is a list of roi3d"""
 
         H, W = color_img.shape[:2]
-        
-        #print vis_img.shape
-         
+
         all_Rs, all_ts = [],[]
-        H_est = np.eye(4)
         all_pose_estimates = []
 
         for j,box in enumerate(bboxes):
-
+            H_est = np.eye(4)
             pred_clas = max(box.classes)
 
             try:
@@ -121,26 +124,18 @@ class AePoseEstimator(PoseEstInterface):
                 print('%s not contained in config class_names %s', (pred_clas, self.class_names))
                 continue
 
-            h_box, w_box = (box.ymax-box.ymin)*H, (box.xmax-box.xmin)*W
-            cy, cx = int(box.ymin*H + h_box/2), int(box.xmin*W + w_box/2)
-            size = int(np.maximum(h_box, w_box) * self.all_train_args[clas_idx].getfloat('Dataset','PAD_FACTOR'))
+            box_xywh = [box.xmin*W, box.ymin*H, (box.xmax-box.xmin)*W, (box.ymax-box.ymin)*H]
 
-            left = np.maximum(cx-size/2, 0)
-            top = np.maximum(cy-size/2, 0)
+            det_img = self.extract_square_patch(color_img, 
+                                                box_xywh, 
+                                                self.pad_factors[clas_idx],
+                                                resize=self.patch_sizes[clas_idx], 
+                                                interpolation=cv2.INTER_LINEAR)
 
-            det_img = color_img[top:cy+size/2,left:cx+size/2]
-            det_img = cv2.resize(det_img, (self.all_train_args[clas_idx].getint('Dataset','W'),self.all_train_args[clas_idx].getint('Dataset','H')))
-
-            # cv2.imshow('',det_img)
-            # cv2.waitKey(0)
-            # if dataset.shape[2]  == 1:
-            #     det_img = cv2.cvtColor(det_img,cv2.COLOR_BGR2GRAY)[:,:,None]
-
-            box_xywh = [int(box.xmin*W),int(box.ymin*H),w_box,h_box]
             Rs_est, ts_est, _ = self.all_codebooks[clas_idx].auto_pose6d(self.sess, 
                                                                         det_img, 
                                                                         box_xywh, 
-                                                                        camK,#*2 REMOVE, and input correct calibration with 1280x960 instead 640x480 
+                                                                        camK,
                                                                         self._topk, 
                                                                         self.all_train_args[clas_idx], 
                                                                         upright=self._upright)
@@ -149,9 +144,13 @@ class AePoseEstimator(PoseEstInterface):
             t_est = ts_est.squeeze()
 
             if 'depth_img' in self.query_process_requirements():
-                depth_crop = depth_img[top:cy+size/2,left:cx+size/2]
+                assert H == depth_img.shape[0]
+                depth_crop = self.extract_square_patch(depth_img, 
+                                                    box_xywh,
+                                                    self.pad_factors[clas_idx],
+                                                    resize=self.patch_sizes[clas_idx], 
+                                                    interpolation=cv2.INTER_NEAREST)
                 R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H))
-
 
             H_est[:3,:3] = R_est
             H_est[:3,3] = t_est / 1000. #mm in m
@@ -162,7 +161,7 @@ class AePoseEstimator(PoseEstInterface):
 
             top1_pose = PoseEstimate(name=pred_clas,trafo=H_est)
             all_pose_estimates.append(top1_pose)
-        #TODO camPose
+
 
         return all_pose_estimates
 
