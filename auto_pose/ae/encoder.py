@@ -8,7 +8,9 @@ from utils import lazy_property
 class Encoder(object):
 
     def __init__(self, input, latent_space_size, num_filters, kernel_size, strides, batch_norm, is_training=False):
-        self._input = input
+        
+        self._input = tf.concat([inp[0] for inp in input],0)
+        print self._input.shape
         self._latent_space_size = latent_space_size
         self._num_filters = num_filters
         self._kernel_size = kernel_size

@@ -63,8 +63,6 @@ def main():
         os.makedirs(dataset_path)
         
 
-
-
     args = configparser.ConfigParser()
     args.read(cfg_file_path)
 
@@ -72,10 +70,17 @@ def main():
 
     with tf.variable_scope(experiment_name):
         dataset = factory.build_dataset(dataset_path, args)
-        queue = factory.build_queue(dataset, args)
-        encoder = factory.build_encoder(queue.x, args, is_training=True)
-        decoder = factory.build_decoder(queue.y, encoder, args, is_training=True)
-        ae = factory.build_ae(encoder, decoder, args)
+        # queue = factory.build_queue(dataset, args)
+        multi_queue = factory.build_multi_queue(dataset, args)
+
+        iterator = multi_queue.create_iterator(dataset_path, args)
+
+        encoder = factory.build_encoder(multi_queue.next_element, args, is_training=True)
+        decoders = []
+        for i in multi_queue._num_objects:            
+            decoders.append(factory.build_decoder(multi_queue.next_element[i], encoder, args, is_training=True))
+
+        ae = factory.build_ae(encoder, decoders, args)
         codebook = factory.build_codebook(encoder, dataset, args)
         train_op = factory.build_train_op(ae, args)
         saver = tf.train.Saver(save_relative_paths=True)
@@ -84,11 +89,9 @@ def main():
     save_interval = args.getint('Training', 'SAVE_INTERVAL')
     model_type = args.get('Dataset', 'MODEL')
 
-    if model_type=='dsprites':
-        dataset.get_sprite_training_images(args)
-    else:
-        dataset.get_training_images(dataset_path, args)
-        dataset.load_bg_images(dataset_path)
+        # dataset.get_training_images(dataset_path, args)
+    dataset.load_bg_images(dataset_path)
+    multi_queue.create_tfrecord_training_images(dataset_path, args)
 
     if generate_data:
         print 'finished generating synthetic training data for ' + experiment_name
@@ -122,8 +125,10 @@ def main():
             bar.start()
         
         # print 'before starting queue'
-        queue.start(sess)
+        # queue.start(sess)
         # print 'after starting queue'
+        sess.run(iterator.initializer)
+
         for i in xrange(ae.global_step.eval(), num_iter):
             if not debug_mode:
                 # print 'before optimize'
@@ -137,17 +142,30 @@ def main():
                 if (i+1) % save_interval == 0:
                     saver.save(sess, checkpoint_file, global_step=ae.global_step)
 
-                    this_x, this_y = sess.run([queue.x, queue.y])
-                    reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
+                    # this_x, this_y = sess.run([queue.x, queue.y])
+                    # reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
+
+                    this = sess.run(multi_queue.next_element)
+                    reconstr_train = sess.run([decoder.x for decoder in decoders])
+                    this_x = np.concatenate([el[0] for el in this])
+                    this_y = np.concatenate([el[2] for el in this])
+                    reconstr_train = np.concatenate(reconstr_train)
+
                     train_imgs = np.hstack(( u.tiles(this_x, 4, 4), u.tiles(reconstr_train, 4,4),u.tiles(this_y, 4, 4)))
                     cv2.imwrite(os.path.join(train_fig_dir,'training_images_%s.png' % i), train_imgs*255)
             else:
 
-                this_x, this_y = sess.run([queue.x, queue.y])
-                reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
+                # this_x, this_y = sess.run([queue.x, queue.y])
+                # reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
                 # print np.min(this_x), np.max(this_x)
                 # print np.min(this_y), np.max(this_y)
                 # print np.min(reconstr_train), np.max(reconstr_train)
+                this = sess.run(multi_queue.next_element)
+                reconstr_train = sess.run([decoder.x for decoder in decoders])
+                this_x = np.concatenate([el[0] for el in this])
+                this_y = np.concatenate([el[2] for el in this])
+                reconstr_train = np.concatenate(reconstr_train)
+
                 cv2.imshow('sample batch', np.hstack(( u.tiles(this_x, 3, 3), u.tiles(reconstr_train, 3,3),u.tiles(this_y, 3, 3))) )
                 k = cv2.waitKey(0)
                 if k == 27:
@@ -156,7 +174,7 @@ def main():
             if gentle_stop[0]:
                 break
 
-        queue.stop(sess)
+        # queue.stop(sess)
         if not debug_mode:
             bar.finish()
         if not gentle_stop[0] and not debug_mode:

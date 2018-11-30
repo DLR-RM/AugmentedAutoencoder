@@ -3,6 +3,7 @@
 
 from dataset import Dataset
 from queue import Queue
+from multi_queue import MultiQueue
 from ae import AE
 from encoder import Encoder
 from decoder import Decoder
@@ -27,6 +28,20 @@ def build_queue(dataset, args):
         NUM_THREADS, 
         QUEUE_SIZE, 
         BATCH_SIZE
+    )
+    return queue
+
+def build_multi_queue(dataset, args):
+    BATCH_SIZE = args.getint('Training', 'BATCH_SIZE')
+    SHAPE = (args.getint('Dataset', 'W'), args.getint('Dataset', 'H'), args.getint('Dataset', 'C'))
+    NOOF_TRAINING_IMGS = args.getint('Dataset', 'NOOF_TRAINING_IMGS')
+    MODEL_PATHS = eval(args.get('Paths', 'MODEL_PATH'))
+    queue = MultiQueue(
+        dataset, 
+        BATCH_SIZE,
+        NOOF_TRAINING_IMGS,
+        MODEL_PATHS,
+        SHAPE
     )
     return queue
 

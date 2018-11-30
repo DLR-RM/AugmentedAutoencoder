@@ -60,16 +60,17 @@ class Dataset(object):
     @lazy_property
     def renderer(self):
         from meshrenderer import meshrenderer, meshrenderer_phong
+        print eval(self._kw['model_path'])
         if self._kw['model'] == 'cad':
             renderer = meshrenderer.Renderer(
-               list(self._kw['model_path']), 
+               eval(self._kw['model_path']), 
                int(self._kw['antialiasing']), 
                self.dataset_path, 
                float(self._kw['vertex_scale'])
             )
         elif self._kw['model'] == 'reconst':
             renderer = meshrenderer_phong.Renderer(
-               list(self._kw['model_path']), 
+               eval(self._kw['model_path']), 
                int(self._kw['antialiasing']), 
                self.dataset_path, 
                float(self._kw['vertex_scale'])
@@ -95,22 +96,7 @@ class Dataset(object):
         self.noof_obj_pixels = np.count_nonzero(self.mask_x==0,axis=(1,2))
         print 'loaded %s training images' % len(self.train_x)
 
-    def create_tfrecord_training_images(self, dataset_path, args):
 
-        current_config_hash = hashlib.md5(str(args.items('Dataset')+args.items('Paths'))).hexdigest()
-        current_file_name = os.path.join(dataset_path, current_config_hash + '.tfrecord')
-
-        if os.path.exists(current_file_name):
-            training_data = np.load(current_file_name)
-            self.train_x = training_data['train_x'].astype(np.uint8)
-            self.mask_x = training_data['mask_x']
-            self.train_y = training_data['train_y'].astype(np.uint8)
-        else:
-            train_x, mask_x, train_y = self.render_training_images()
-            
-            np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
-        self.noof_obj_pixels = np.count_nonzero(self.mask_x==0,axis=(1,2))
-        print 'loaded %s training images' % len(self.train_x)
 
     def get_sprite_training_images(self, train_args):
         
@@ -233,7 +219,7 @@ class Dataset(object):
         return cv2.resize(bgr_y, self.shape[:2])
 
 
-    def render_training_images(self,obj_id=0):
+    def render_training_images(self, serialize_func = None, obj_id=0, tfrec_writer=None):
         kw = self._kw
         H, W = int(kw['h']), int(kw['w'])
         render_dims = eval(kw['render_dims'])
@@ -320,9 +306,11 @@ class Dataset(object):
                 bgr_x = cv2.cvtColor(np.uint8(bgr_x), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
                 bgr_y = cv2.cvtColor(np.uint8(bgr_y), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
 
-            self.train_x[i] = bgr_x.astype(np.uint8)
-            self.mask_x[i] = mask_x
-            self.train_y[i] = bgr_y.astype(np.uint8)
+            train_x = bgr_x.astype(np.uint8)
+            mask_x = mask_x
+            train_y = bgr_y.astype(np.uint8)
+
+            serialize_func(train_x, mask_x, train_y, writer=tfrec_writer)
 
             #print 'rendertime ', render_time, 'processing ', time.time() - start_time
         bar.finish()
@@ -468,6 +456,16 @@ class Dataset(object):
             idcs = np.where(new_noof_obj_pixels/self.noof_obj_pixels[rand_idcs].astype(np.float32) < 1-max_occl)[0]
             print idcs
         return np.invert(new_masks)
+
+
+    def preprocess_aae(self, batch_x, masks_x, batch_y):
+        rand_idcs_bg = np.random.choice(self.noof_bg_imgs, len(batch_x), replace=False)
+        rand_vocs = self.bg_imgs[rand_idcs_bg]
+
+        batch_x[masks_x] = rand_vocs[masks_x]
+        batch_x = self._aug.augment_images(batch_x)
+
+        return (batch_x,masks_x,batch_y)
 
     def batch(self, batch_size):
 
