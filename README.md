@@ -1,4 +1,4 @@
-## AugmentedAutoencoder  
+## Augmented Autoencoder  
 
 ### Implicit 3D Orientation Learning for 6D Object Detection from RGB Images   
 Martin Sundermeyer, Zoltan-Csaba Marton, Maximilian Durner, Manuel Brucker, Rudolph Triebel  
