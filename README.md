@@ -1,4 +1,4 @@
-## AugmentedAutoencoder  
+## Augmented Autoencoder  
 
 ### Implicit 3D Orientation Learning for 6D Object Detection from RGB Images   
 Martin Sundermeyer, Zoltan-Csaba Marton, Maximilian Durner, Manuel Brucker, Rudolph Triebel  
@@ -82,7 +82,7 @@ ae_init_workspace
 
 ### Train an Augmented Autoencoder
 ```diff
-- Currently remote training is not supported since glfw 3.2. does not allow headless rendering even with X Server forwarding
+- Currently remote training is not supported since glfw 3.2. does not allow headless rendering
 ```
 
 *1. Create the training config file. Insert the paths to your 3D model and background images.*
@@ -105,6 +105,11 @@ Output:
 ```bash
 ae_train exp_group/my_autoencoder
 ```
+
+```bash
+$AE_WORKSPACE_PATH/experiments/exp_group/my_autoencoder/train_figures/training_images_29999.png  
+```
+Middle part should show reconstructions of the input object (if all black, try with higher bootstrap_ratio / auxilliary_mask in training config)  
 
 *4. Create the embedding*
 ```bash

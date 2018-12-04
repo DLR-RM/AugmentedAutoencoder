@@ -53,7 +53,7 @@ def main():
         decoder = factory.build_decoder(queue.y, encoder, args)
         ae = factory.build_ae(encoder, decoder, args)
         codebook = factory.build_codebook(encoder, dataset, args)
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(save_relative_paths=True)
 
     batch_size = args.getint('Training', 'BATCH_SIZE')
     model = args.get('Dataset', 'MODEL')

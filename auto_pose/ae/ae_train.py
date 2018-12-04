@@ -78,7 +78,7 @@ def main():
         ae = factory.build_ae(encoder, decoder, args)
         codebook = factory.build_codebook(encoder, dataset, args)
         train_op = factory.build_train_op(ae, args)
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(save_relative_paths=True)
 
     num_iter = args.getint('Training', 'NUM_ITER') if not debug_mode else np.iinfo(np.int32).max
     save_interval = args.getint('Training', 'SAVE_INTERVAL')
