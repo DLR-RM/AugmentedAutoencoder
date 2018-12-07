@@ -26,6 +26,7 @@ def main():
     parser.add_argument('evaluation_name')
     parser.add_argument('--eval_cfg', default='eval.cfg', required=False)
     parser.add_argument('--at_step', default=None, required=False)
+    parser.add_argument('--model_path', default=None, required=True)
     arguments = parser.parse_args()
     full_name = arguments.experiment_name.split('/')
     experiment_name = full_name.pop()
@@ -33,6 +34,7 @@ def main():
     evaluation_name = arguments.evaluation_name
     eval_cfg = arguments.eval_cfg
     at_step = arguments.at_step
+    model_path = arguments.model_path
 
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
     train_cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
@@ -75,7 +77,8 @@ def main():
 
     print eval_args
 
-    codebook, dataset, decoder = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True, return_decoder = True)
+    codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True)
+    dataset._kw['model_path'] = [model_path] #'/net/rmc-lx0314/home_local/sund_ma/data/t-less/models_reconst/obj_11.ply'
     dataset.renderer
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.5)
     config = tf.ConfigProto(gpu_options=gpu_options)
@@ -92,12 +95,10 @@ def main():
         # ssd = SSD_detector(sess, num_classes=31, net_shape=(300,300))
         from rmcssd.bin import detector
         ssd = detector.Detector(eval_args.get('BBOXES','CKPT'))
-
     
     t_errors = []
     R_errors = []
     all_test_visibs = []
-
     # if eval_args.getboolean('EVALUATION','EVALUATE_ERRORS'):    
     #     eval_loc.match_and_eval_performance_scores(eval_args, eval_dir)
     #     exit()
@@ -235,8 +236,9 @@ def main():
                 t_errors_crop.append(min_t_err)
                 R_errors_crop.append(min_R_err)
                                        
-                if eval_args.getboolean('PLOT','RECONSTRUCTION'):
-                    eval_plots.plot_reconstruction_test(sess, codebook._encoder, decoder, test_crop)
+                # if eval_args.getboolean('PLOT','RECONSTRUCTION'):
+                #     eval_plots.plot_reconstruction_test(sess, codebook._encoder, decoder, test_crop)
+
                     # eval_plots.plot_reconstruction_train(sess, decoder, nearest_train_codes[0])
                 if eval_args.getboolean('PLOT','NEAREST_NEIGHBORS') and not icp:
                     for R_est, t_est in zip(Rs_est,ts_est):
@@ -289,8 +291,8 @@ def main():
         eval_plots.plot_re_rect_occlusion(eval_args, eval_dir, scenes, np.array(all_test_visibs))
     if eval_args.getboolean('PLOT','ANIMATE_EMBEDDING_PCA'):
         eval_plots.animate_embedding_path(test_embeddings[0])
-    if eval_args.getboolean('PLOT','RECONSTRUCTION_TEST_BATCH'):
-        eval_plots.plot_reconstruction_test_batch(sess, codebook, decoder, test_img_crops, noof_scene_views, obj_id, eval_dir=eval_dir)
+    # if eval_args.getboolean('PLOT','RECONSTRUCTION_TEST_BATCH'):
+    #     eval_plots.plot_reconstruction_test_batch(sess, codebook, decoder, test_img_crops, noof_scene_views, obj_id, eval_dir=eval_dir)
         # plt.show()    
 
         # calculate 6D pose errors

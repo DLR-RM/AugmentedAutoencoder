@@ -191,7 +191,9 @@ class Codebook(object):
 
 
 
-    def update_embedding(self, session, batch_size):
+    def update_embedding(self, session, batch_size, model_path):
+
+        self._dataset._kw['model_path'] = list([str(model_path)])
         embedding_size = self._dataset.embedding_size
         J = self._encoder.latent_space_size
         embedding_z = np.empty( (embedding_size, J) )

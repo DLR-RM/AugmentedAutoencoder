@@ -74,11 +74,12 @@ def main():
         multi_queue = factory.build_multi_queue(dataset, args)
 
         iterator = multi_queue.create_iterator(dataset_path, args)
-
-        encoder = factory.build_encoder(multi_queue.next_element, args, is_training=True)
+        all_object_views = tf.concat([inp[0] for inp in multi_queue.next_element],0)
+        encoder = factory.build_encoder(all_object_views, args, is_training=True)
         decoders = []
-        for i in multi_queue._num_objects:            
-            decoders.append(factory.build_decoder(multi_queue.next_element[i], encoder, args, is_training=True))
+        encoding_splits = tf.split(encoder.z,multi_queue._num_objects,0)
+        for i in xrange(multi_queue._num_objects):            
+            decoders.append(factory.build_decoder(multi_queue.next_element[i], encoding_splits[i], args, is_training=True))
 
         ae = factory.build_ae(encoder, decoders, args)
         codebook = factory.build_codebook(encoder, dataset, args)
@@ -110,15 +111,22 @@ def main():
 
     with tf.Session(config=config) as sess:
 
-        chkpt = tf.train.get_checkpoint_state(ckpt_dir)
-        if chkpt and chkpt.model_checkpoint_path:
-            saver.restore(sess, chkpt.model_checkpoint_path)
-        else:
-            sess.run(tf.global_variables_initializer())
+        sess.run(multi_queue.bg_img_init.initializer)
+        sess.run(iterator.initializer)
 
         merged_loss_summary = tf.summary.merge_all()
         summary_writer = tf.summary.FileWriter(ckpt_dir, sess.graph)
-        
+        print 'summary'
+
+        chkpt = tf.train.get_checkpoint_state(ckpt_dir)
+        if chkpt and chkpt.model_checkpoint_path:
+            print 'loading ', chkpt.model_checkpoint_path
+            saver.restore(sess, chkpt.model_checkpoint_path)
+        else:
+            print 'run global'
+            sess.run(tf.global_variables_initializer())
+            print 'ran global'
+
                 
         if not debug_mode:
             print 'Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))
@@ -127,12 +135,10 @@ def main():
         # print 'before starting queue'
         # queue.start(sess)
         # print 'after starting queue'
-        sess.run(iterator.initializer)
-
-        for i in xrange(ae.global_step.eval(), num_iter):
+        for i in xrange(encoder.global_step.eval(), num_iter):
             if not debug_mode:
                 # print 'before optimize'
-                sess.run(train_op)
+                sess.run([train_op,multi_queue.next_bg_element])
                 # print 'after optimize'
                 if i % 10 == 0:
                     loss = sess.run(merged_loss_summary)
@@ -140,7 +146,7 @@ def main():
 
                 bar.update(i)
                 if (i+1) % save_interval == 0:
-                    saver.save(sess, checkpoint_file, global_step=ae.global_step)
+                    saver.save(sess, checkpoint_file, global_step=encoder.global_step)
 
                     # this_x, this_y = sess.run([queue.x, queue.y])
                     # reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
@@ -150,23 +156,36 @@ def main():
                     this_x = np.concatenate([el[0] for el in this])
                     this_y = np.concatenate([el[2] for el in this])
                     reconstr_train = np.concatenate(reconstr_train)
-
+                    np.random.seed(0)
+                    np.random.shuffle(this_x)
+                    np.random.seed(0)
+                    np.random.shuffle(this_y)
+                    np.random.seed(0)
+                    np.random.shuffle(reconstr_train)
                     train_imgs = np.hstack(( u.tiles(this_x, 4, 4), u.tiles(reconstr_train, 4,4),u.tiles(this_y, 4, 4)))
                     cv2.imwrite(os.path.join(train_fig_dir,'training_images_%s.png' % i), train_imgs*255)
             else:
-
                 # this_x, this_y = sess.run([queue.x, queue.y])
                 # reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
                 # print np.min(this_x), np.max(this_x)
                 # print np.min(this_y), np.max(this_y)
                 # print np.min(reconstr_train), np.max(reconstr_train)
-                this = sess.run(multi_queue.next_element)
+                this,_ = sess.run([multi_queue.next_element,multi_queue.next_bg_element])
                 reconstr_train = sess.run([decoder.x for decoder in decoders])
+                
+
                 this_x = np.concatenate([el[0] for el in this])
                 this_y = np.concatenate([el[2] for el in this])
                 reconstr_train = np.concatenate(reconstr_train)
+                np.random.seed(0)
+                np.random.shuffle(this_x)
+                np.random.seed(0)
+                np.random.shuffle(this_y)
+                np.random.seed(0)
+                np.random.shuffle(reconstr_train)
+                print this_x.shape
 
-                cv2.imshow('sample batch', np.hstack(( u.tiles(this_x, 3, 3), u.tiles(reconstr_train, 3,3),u.tiles(this_y, 3, 3))) )
+                cv2.imshow('sample batch', np.hstack(( u.tiles(this_x, 4, 6), u.tiles(reconstr_train, 4,6),u.tiles(this_y, 4, 6))) )
                 k = cv2.waitKey(0)
                 if k == 27:
                     break

@@ -31,7 +31,7 @@ class Dataset(object):
         self.mask_x = np.empty( (self.noof_training_imgs,) + self.shape[:2], dtype= bool)
         self.noof_obj_pixels = np.empty( (self.noof_training_imgs,), dtype= bool)
         self.train_y = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
-        self.bg_imgs = np.empty( (self.noof_bg_imgs,) + self.shape, dtype=np.float32 )
+        self.bg_imgs = np.empty( (self.noof_bg_imgs,) + self.shape, dtype=np.uint8 )
         if np.float(eval(self._kw['realistic_occlusion'])):
             self.random_syn_masks
 
@@ -60,17 +60,17 @@ class Dataset(object):
     @lazy_property
     def renderer(self):
         from meshrenderer import meshrenderer, meshrenderer_phong
-
+        print eval(self._kw['model_path'])
         if self._kw['model'] == 'cad':
             renderer = meshrenderer.Renderer(
-               eval(str(self._kw['model_path'])), 
+               eval(self._kw['model_path']), 
                int(self._kw['antialiasing']), 
                self.dataset_path, 
                float(self._kw['vertex_scale'])
             )
         elif self._kw['model'] == 'reconst':
             renderer = meshrenderer_phong.Renderer(
-               eval(str(self._kw['model_path'])), 
+               eval(self._kw['model_path']), 
                int(self._kw['antialiasing']), 
                self.dataset_path, 
                float(self._kw['vertex_scale'])
@@ -173,8 +173,8 @@ class Dataset(object):
                 self.bg_imgs[j] = bgr
             np.save(current_file_name,self.bg_imgs)
 
-        import tensorflow as tf
-        self.bg_imgs = self.bg_imgs/255.
+
+
         print 'loaded %s bg images' % self.noof_bg_imgs
 
 
@@ -267,7 +267,10 @@ class Dataset(object):
                 far=clip_far,
                 random_light=False
             )
-
+            # render_time = time.time() - start_time
+            # cv2.imshow('bgr_x',bgr_x)
+            # cv2.imshow('bgr_y',bgr_y)
+            # cv2.waitKey(0)
             
             ys, xs = np.nonzero(depth_x > 0)
             try:

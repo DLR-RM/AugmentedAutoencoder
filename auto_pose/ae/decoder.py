@@ -11,7 +11,8 @@ class Decoder(object):
     def __init__(self, reconstruction_target, latent_code, num_filters, 
                 kernel_size, strides, loss, bootstrap_ratio, 
                 auxiliary_mask, batch_norm, is_training=False):
-        self._reconstruction_target = reconstruction_target
+	
+        self._reconstruction_target = reconstruction_target[2]
         self._latent_code = latent_code
         self._auxiliary_mask = auxiliary_mask
         if self._auxiliary_mask:

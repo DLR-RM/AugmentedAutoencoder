@@ -21,12 +21,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_name")
     parser.add_argument('--at_step', default=None, required=False)
+    parser.add_argument('--model_path', type=str, required=True)
     arguments = parser.parse_args()
     full_name = arguments.experiment_name.split('/')
+
     
     experiment_name = full_name.pop()
     experiment_group = full_name.pop() if len(full_name) > 0 else ''
     at_step = arguments.at_step
+    model_path = arguments.model_path
 
     cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
@@ -50,8 +53,8 @@ def main():
         dataset = factory.build_dataset(dataset_path, args)
         queue = factory.build_queue(dataset, args)
         encoder = factory.build_encoder(queue.x, args)
-        decoder = factory.build_decoder(queue.y, encoder, args)
-        ae = factory.build_ae(encoder, decoder, args)
+        # decoder = factory.build_decoder(queue.y, encoder, args)
+        # ae = factory.build_ae(encoder, decoder, args)
         codebook = factory.build_codebook(encoder, dataset, args)
         saver = tf.train.Saver(save_relative_paths=True)
 
@@ -80,11 +83,11 @@ def main():
         if model=='dsprites':
             codebook.update_embedding_dsprites(sess, args)
         else:
-            codebook.update_embedding(sess, batch_size)
+            codebook.update_embedding(sess, batch_size, model_path)
 
         print 'Saving new checkoint ..',
 
-        saver.save(sess, checkpoint_file, global_step=ae.global_step)
+        saver.save(sess, checkpoint_file, global_step=encoder.global_step)
 
         print 'done',
 

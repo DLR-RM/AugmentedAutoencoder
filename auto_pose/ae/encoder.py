@@ -9,7 +9,7 @@ class Encoder(object):
 
     def __init__(self, input, latent_space_size, num_filters, kernel_size, strides, batch_norm, is_training=False):
         
-        self._input = tf.concat([inp[0] for inp in input],0)
+        self._input = input #tf.concat([inp[0] for inp in input],0)
         print self._input.shape
         self._latent_space_size = latent_space_size
         self._num_filters = num_filters
@@ -19,6 +19,7 @@ class Encoder(object):
         self._is_training = is_training
         self.encoder_out
         self.z
+        self.global_step
         # self.q_sigma
         # self.sampled_z
         # self.reg_loss
@@ -101,3 +102,7 @@ class Encoder(object):
     def reg_loss(self):
         reg_loss = tf.reduce_mean(tf.abs(tf.norm(self.z,axis=1) - tf.constant(1.)))
         return reg_loss
+
+    @lazy_property
+    def global_step(self):
+        return tf.Variable(0, dtype=tf.int64, trainable=False, name='global_step')

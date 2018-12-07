@@ -62,7 +62,7 @@ def build_encoder(x, args, is_training=False):
     )
     return encoder
 
-def build_decoder(reconstruction_target, encoder, args, is_training=False):
+def build_decoder(reconstruction_target, encoder_z_split, args, is_training=False):
     NUM_FILTER = eval(args.get('Network', 'NUM_FILTER'))
     KERNEL_SIZE_DECODER = args.getint('Network', 'KERNEL_SIZE_DECODER')
     STRIDES = eval(args.get('Network', 'STRIDES'))
@@ -73,7 +73,7 @@ def build_decoder(reconstruction_target, encoder, args, is_training=False):
     BATCH_NORM = args.getboolean('Network', 'BATCH_NORMALIZATION')
     decoder = Decoder(
         reconstruction_target,
-        encoder.sampled_z if VARIATIONAL else encoder.z,
+        encoder_z_split,
         list( reversed(NUM_FILTER) ),
         KERNEL_SIZE_DECODER,
         list( reversed(STRIDES) ),
@@ -98,7 +98,7 @@ def build_train_op(ae, args):
     optimizer = eval('tensorflow.train.{}Optimizer'.format(OPTIMIZER_NAME))
     optim = optimizer(LEARNING_RATE)
 
-    train_op = tensorflow.contrib.training.create_train_op(ae.loss, optim, global_step=ae.global_step)
+    train_op = tensorflow.contrib.training.create_train_op(ae.loss, optim, global_step=ae._encoder.global_step)
 
     return train_op
 
