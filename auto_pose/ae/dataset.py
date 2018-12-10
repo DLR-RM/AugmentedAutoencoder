@@ -225,7 +225,7 @@ class Dataset(object):
         clip_near = float(kw['clip_near'])
         clip_far = float(kw['clip_far'])
         pad_factor = float(kw['pad_factor'])
-        crop_offset_sigma = float(kw['crop_offset_sigma'])
+        max_rel_offset = float(kw['max_rel_offset'])
         t = np.array([0, 0, float(kw['radius'])])
 
         bar = progressbar.ProgressBar(
@@ -264,12 +264,12 @@ class Dataset(object):
                 far=clip_far,
                 random_light=False
             )
-            # render_time = time.time() - start_time
-            # cv2.imshow('bgr_x',bgr_x)
-            # cv2.imshow('bgr_y',bgr_y)
-            # cv2.waitKey(0)
-            
+
+
+
             ys, xs = np.nonzero(depth_x > 0)
+
+
             try:
                 obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             except ValueError as e:
@@ -278,20 +278,13 @@ class Dataset(object):
 
             x, y, w, h = obj_bb
 
-            rand_trans_x = np.random.uniform(-crop_offset_sigma, crop_offset_sigma)
-            rand_trans_y = np.random.uniform(-crop_offset_sigma, crop_offset_sigma)
+            rand_trans_x = np.random.uniform(-max_rel_offset, max_rel_offset) * w
+            rand_trans_y = np.random.uniform(-max_rel_offset, max_rel_offset) * h
 
-            size = int(np.maximum(h, w) * pad_factor)
-            left = int(x+w/2-size/2 + rand_trans_x)
-            right = int(x+w/2+size/2 + rand_trans_x)
-            top = int(y+h/2-size/2 + rand_trans_y)
-            bottom = int(y+h/2+size/2 + rand_trans_y)
+            obj_bb_off = obj_bb + np.array([rand_trans_x,rand_trans_y,0,0])
 
-            bgr_x = bgr_x[top:bottom, left:right]
-            depth_x = depth_x[top:bottom, left:right]
-            bgr_x = cv2.resize(bgr_x, (W, H), interpolation = cv2.INTER_NEAREST)
-            depth_x = cv2.resize(depth_x, (W, H), interpolation = cv2.INTER_NEAREST)
-
+            bgr_x = self.extract_square_patch(bgr_x, obj_bb_off, pad_factor,resize=(W,H),interpolation = cv2.INTER_NEAREST)
+            depth_x = self.extract_square_patch(depth_x, obj_bb_off, pad_factor,resize=(W,H),interpolation = cv2.INTER_NEAREST)
             mask_x = depth_x == 0.
 
             ys, xs = np.nonzero(depth_y > 0)
@@ -302,6 +295,9 @@ class Dataset(object):
             if self.shape[2] == 1:
                 bgr_x = cv2.cvtColor(np.uint8(bgr_x), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
                 bgr_y = cv2.cvtColor(np.uint8(bgr_y), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
+            # cv2.imshow('bgr_x',bgr_x)
+            # cv2.imshow('bgr_y',bgr_y)
+            # cv2.waitKey(0)
 
             self.train_x[i] = bgr_x.astype(np.uint8)
             self.mask_x[i] = mask_x
