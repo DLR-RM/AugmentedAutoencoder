@@ -67,7 +67,8 @@ def main():
     data = dataset_name + '_' + cam_type if len(cam_type) > 0 else dataset_name
 
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
-    ckpt_dir = u.get_checkpoint_dir(log_dir)
+    checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path, latest=train_args.getint('Training', 'NUM_ITER'))
+
     eval_dir = u.get_eval_dir(log_dir, evaluation_name, data)
 
     if not os.path.exists(eval_dir):
@@ -79,12 +80,17 @@ def main():
 
     codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True)
     dataset._kw['model_path'] = [model_path] #'/net/rmc-lx0314/home_local/sund_ma/data/t-less/models_reconst/obj_11.ply'
+    dataset._kw['model'] = 'cad' if 'cad' in model_path else 'reconst'
+    dataset._kw['model'] = 'reconst' if 'reconst' in model_path else 'cad'
+
     dataset.renderer
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.5)
     config = tf.ConfigProto(gpu_options=gpu_options)
 
     sess = tf.Session(config=config)
-    factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir, at_step=at_step)
+    saver = tf.train.Saver()
+    saver.restore(sess, checkpoint_file)
+    # factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir, at_step=at_step)
     
 
     if estimate_bbs:

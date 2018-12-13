@@ -36,12 +36,14 @@ def build_multi_queue(dataset, args):
     SHAPE = (args.getint('Dataset', 'W'), args.getint('Dataset', 'H'), args.getint('Dataset', 'C'))
     NOOF_TRAINING_IMGS = args.getint('Dataset', 'NOOF_TRAINING_IMGS')
     MODEL_PATHS = eval(args.get('Paths', 'MODEL_PATH'))
+    AUG_ARGS = { k:v for k,v in args.items('Augmentation')}
     queue = MultiQueue(
         dataset, 
         BATCH_SIZE,
         NOOF_TRAINING_IMGS,
         MODEL_PATHS,
-        SHAPE
+        SHAPE,
+        AUG_ARGS
     )
     return queue
 
@@ -171,4 +173,3 @@ def restore_checkpoint(session, saver, ckpt_dir, at_step=None):
         print '{}\n'.format(ckpt_dir)
         exit(-1)
 
-        

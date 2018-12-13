@@ -182,7 +182,9 @@ def zoom_and_translate(in_tensor, zoom_range, trans_range):
 	return img
 
 @map_decorator('in_plane_rotation')
-def in_plane_rotation(in_tensor):
+def in_plane_rotation(in_tensor, angle = None):
+	if angle is not None:
+		return tf.contrib.image.rotate(in_tensor, angle)
 	rad_rot = tf.random_uniform([], 0, 2 * pi)
 	return tf.contrib.image.rotate(in_tensor, rad_rot)
 
@@ -194,8 +196,6 @@ def add_black_patches(in_tensor, max_area_cov = 0.25, max_patch_nb = 5):
 		
 		in_tensor_shape = in_tensor.get_shape()
 		in_tensor_shape_list = in_tensor.get_shape().as_list()
-		print(in_tensor_shape)
-		print(in_tensor_shape_list)
 		
 		coverage = tf.random_uniform([], minval = 0.01, maxval = max_coverage)
 
@@ -205,7 +205,7 @@ def add_black_patches(in_tensor, max_area_cov = 0.25, max_patch_nb = 5):
 		max_x = tf.subtract(in_tensor_shape[1], patch_edge_len)
 		max_y = tf.subtract(in_tensor_shape[2], patch_edge_len)
 
-		x_offset = tf.random_uniform([in_tensor_shape[0], 1], 0, max_x, dtype = tf.int32)
+		x_offset = tf.random_uniform([in_tensor_shape_list[0], 1], 0, max_x, dtype = tf.int32)
 		y_offset = tf.random_uniform([in_tensor_shape_list[0], 1], 0, max_y, dtype = tf.int32)
 
 		patch = tf.ones([in_tensor_shape[0], patch_edge_len, patch_edge_len, in_tensor_shape[3]], dtype=tf.float32)
@@ -319,38 +319,6 @@ def add_background(obj_images, background_images, bg_color = 0, name='add_backgr
 				tf.zeros_like(obj_images))
 			return tf.where(tf.equal(mask, 0.0), background_images, obj_images)
 
-@map_decorator('invert_color')
-def invert_color(in_tensor):
-
-	def _all_channels(in_tensor):
-		return 1.0 - in_tensor
-
-	def _one_channel(in_tensor):
-		channel = tf.random_uniform([], minval = 0, maxval = 3, dtype = tf.int32)
-		c = in_tensor.get_shape().as_list()[3]
-		channels = tf.unstack(in_tensor, c, 3)
-		new_channels = []
-		for i, tensor_channel in enumerate(channels):
-			new_channels.append(tf.where(tf.equal(i, channel),
-				1.0 - tensor_channel,
-				tensor_channel))
-
-		return tf.stack(new_channels, 3)
-
-	def _no_aug(in_tensor):
-		return in_tensor
-
-	prob = tf.random_uniform([], minval = 0.0, maxval = 1.0, dtype = tf.float32)
-
-	aug1 = lambda: _all_channels(in_tensor)
-	aug2 = lambda: _one_channel(in_tensor)
-	aug3 = lambda: _no_aug(in_tensor)
-
-	return tf.case([(tf.less_equal(prob, 0.25), aug1), 
-		(tf.less_equal(prob, 0.5), aug2)],
-		default = aug3)
-
-	
 @map_decorator('random_brightness')
 def random_brightness(in_tensor, max_offset):
 	
@@ -453,6 +421,62 @@ def gaussian_blur(in_tensor, size = 5):
 	return tf.case([(tf.less_equal(prob, 0.5), lambda: _blur(in_tensor, size))],
 		default = lambda: _no_blur(in_tensor, size))
 
+@map_decorator('gamma_normalization')
+def gamma_normalization(in_tensor, f = [0.5, 2.2]):
+	'''
+	Perform Gamma Contrast Normalization on the input tensor
+	the normalization algorithm is the gamma normalization, 
+	following the equation: I_N = I ** gamma
+	where I is the image normalized between 0 and 1
+
+	Inputs:
+		in_tensor:	tensor to be normalized. Must
+				either be 3D with format HxWxC or
+				4D with format NxHxWxC (N - Batch size
+				H - Height, W - Width, C - Channels)
+		f:	normalization factor. normal range lies 
+				between 0.5 and 2.0
+	Returns:
+		The normalized image batch
+	'''
+	def _normalize(in_tensor, f):
+
+		shape = in_tensor.get_shape().as_list()
+		gamma = tf.random_uniform([shape[0]], f[0], f[1], dtype = tf.float32)
+		gamma = tf.tile(gamma[:, tf.newaxis, tf.newaxis, tf.newaxis], [1, shape[1], shape[2], shape[3]])
+		new_tensor = tf.pow(in_tensor, gamma)#0.5 + alpha * (in_tensor - 0.5)
+
+		return tf.clip_by_value(new_tensor, 0.0, 1.0)
+	
+	def _one_channel(in_tensor, f):
+		
+		shape = in_tensor.get_shape().as_list()
+		gamma = tf.random_uniform([shape[0]], f[0], f[1], dtype = tf.float32)
+		gamma = tf.tile(gamma[:, tf.newaxis, tf.newaxis], [1, shape[1], shape[2]])
+		
+		c = tf.random_uniform([shape[0]], 0, 3, dtype = tf.int32)
+		c = tf.tile(c[:, tf.newaxis, tf.newaxis], [1, shape[1], shape[2]])
+
+		channels = tf.unstack(in_tensor, shape[3], 3)
+		new_channels = []
+		for i, channel in enumerate(channels):
+			new_channels.append(tf.where(tf.equal(i, c),
+				tf.pow(channel, gamma),
+				channel))
+
+		return tf.clip_by_value(tf.stack(new_channels, 3), 0.0, 1.0)
+
+	def _no_norm(in_tensor, f):
+		return in_tensor
+
+	prob = tf.random_uniform([], minval = 0.0, maxval = 1.0, dtype = tf.float32)
+
+	per_channel_prob = 0.3
+
+	return tf.case([(tf.less_equal(prob, 0.5*per_channel_prob), lambda: _normalize(in_tensor, f)),
+		(tf.less_equal(prob, 0.5), lambda: _one_channel(in_tensor, f))],
+		default = lambda: _no_norm(in_tensor, f))
+
 @map_decorator('contrast_normalization')
 def contrast_normalization(in_tensor, f = [0.5, 2.0]):
 	'''
@@ -517,63 +541,6 @@ def contrast_normalization(in_tensor, f = [0.5, 2.0]):
 		(tf.less_equal(prob, 0.5), lambda: _one_channel(in_tensor, f))],
 		default = lambda: _no_norm(in_tensor, f))
 
-
-@map_decorator('contrast_normalization')
-def gamma_normalization(in_tensor, f = [0.5, 2.2]):
-	'''
-	Perform Gamma Contrast Normalization on the input tensor
-	the normalization algorithm is the gamma normalization, 
-	following the equation: I_N = I ** gamma
-	where I is the image normalized between 0 and 1
-
-	Inputs:
-		in_tensor:	tensor to be normalized. Must
-				either be 3D with format HxWxC or
-				4D with format NxHxWxC (N - Batch size
-				H - Height, W - Width, C - Channels)
-		f:	normalization factor. normal range lies 
-				between 0.5 and 2.0
-	Returns:
-		The normalized image batch
-	'''
-	def _normalize(in_tensor, f):
-
-		shape = in_tensor.get_shape().as_list()
-		gamma = tf.random_uniform([shape[0]], f[0], f[1], dtype = tf.float32)
-		gamma = tf.tile(gamma[:, tf.newaxis, tf.newaxis, tf.newaxis], [1, shape[1], shape[2], shape[3]])
-		new_tensor = tf.pow(in_tensor, gamma)#0.5 + alpha * (in_tensor - 0.5)
-
-		return tf.clip_by_value(new_tensor, 0.0, 1.0)
-	
-	def _one_channel(in_tensor, f):
-		
-		shape = in_tensor.get_shape().as_list()
-		gamma = tf.random_uniform([shape[0]], f[0], f[1], dtype = tf.float32)
-		gamma = tf.tile(gamma[:, tf.newaxis, tf.newaxis], [1, shape[1], shape[2]])
-		
-		c = tf.random_uniform([shape[0]], 0, 3, dtype = tf.int32)
-		c = tf.tile(c[:, tf.newaxis, tf.newaxis], [1, shape[1], shape[2]])
-
-		channels = tf.unstack(in_tensor, shape[3], 3)
-		new_channels = []
-		for i, channel in enumerate(channels):
-			new_channels.append(tf.where(tf.equal(i, c),
-				tf.pow(channel, gamma),
-				channel))
-
-		return tf.clip_by_value(tf.stack(new_channels, 3), 0.0, 1.0)
-
-	def _no_norm(in_tensor, f):
-		return in_tensor
-
-	prob = tf.random_uniform([], minval = 0.0, maxval = 1.0, dtype = tf.float32)
-
-	per_channel_prob = 0.3
-
-	return tf.case([(tf.less_equal(prob, 0.5*per_channel_prob), lambda: _normalize(in_tensor, f)),
-		(tf.less_equal(prob, 0.5), lambda: _one_channel(in_tensor, f))],
-		default = lambda: _no_norm(in_tensor, f))
-
 @map_decorator('multiply_brightness')
 def multiply_brightness(in_tensor, factor_range = [0.6, 1.4]):
 	'''
@@ -620,6 +587,37 @@ def multiply_brightness(in_tensor, factor_range = [0.6, 1.4]):
 		(tf.less_equal(prob, 0.5), aug2)],
 		default = aug3)
 
+@map_decorator('invert_color')
+def invert_color(in_tensor):
+
+	def _all_channels(in_tensor):
+		return 1.0 - in_tensor
+
+	def _one_channel(in_tensor):
+		channel = tf.random_uniform([], minval = 0, maxval = 3, dtype = tf.int32)
+		c = in_tensor.get_shape().as_list()[3]
+		channels = tf.unstack(in_tensor, c, 3)
+		new_channels = []
+		for i, tensor_channel in enumerate(channels):
+			new_channels.append(tf.where(tf.equal(i, channel),
+				1.0 - tensor_channel,
+				tensor_channel))
+
+		return tf.stack(new_channels, 3)
+
+	def _no_aug(in_tensor):
+		return in_tensor
+
+	prob = tf.random_uniform([], minval = 0.0, maxval = 1.0, dtype = tf.float32)
+
+	aug1 = lambda: _all_channels(in_tensor)
+	aug2 = lambda: _one_channel(in_tensor)
+	aug3 = lambda: _no_aug(in_tensor)
+
+	return tf.case([(tf.less_equal(prob, 0.25), aug1), 
+		(tf.less_equal(prob, 0.5), aug2)],
+		default = aug3)
+
 def main():
 	#bg_img = tf.random_uniform([100, 64, 64, 1], 0.0, 1.0, dtype=tf.float32)
 	in_image = tf.pad(tf.ones([10, 32, 32, 3], dtype = tf.float32)*0.5,
@@ -638,8 +636,8 @@ def main():
 	#alpha = tf.tile(alpha[:, tf.newaxis, tf.newaxis, tf.newaxis], [1, shape[1], shape[2], shape[3]])
 	#new_tensor = 0.5 + alpha * (in_image - 0.5)
 	#out_tensor = new_tensor
-	out_tensor = contrast_normalization(in_image)
-	# out_tensor = add_black_patches(in_image)
+	#out_tensor = invert_color(in_image)
+	out_tensor = contrast_normalization(in_image, [0.5, 2.0])
 
 	
 

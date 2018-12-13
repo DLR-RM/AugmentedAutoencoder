@@ -33,13 +33,12 @@ def main():
 
     cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
-    checkpoint_file = u.get_checkpoint_basefilename(log_dir)
+
+
     ckpt_dir = u.get_checkpoint_dir(log_dir)
     dataset_path = u.get_dataset_path(workspace_path)
 
-    print checkpoint_file
-    print ckpt_dir
-    print '#'*20
+
 
     if not os.path.exists(cfg_file_path):
         print 'Could not find config file:\n'
@@ -51,12 +50,30 @@ def main():
 
     with tf.variable_scope(experiment_name):
         dataset = factory.build_dataset(dataset_path, args)
+        # dataset._kw['model_path'] = [model_path]
+        # if 'cad' in model_path:
+        #     dataset._kw['model'] == 'cad' 
+        #     dataset.renderer
+        # elif 'reconst' in model_path:
+        #     dataset._kw['model'] == 'reconst' 
+        #     dataset.renderer
+        # else:
+        #     print 'neither cad nor reconst in model_path'
+        #     exit()
         queue = factory.build_queue(dataset, args)
         encoder = factory.build_encoder(queue.x, args)
         # decoder = factory.build_decoder(queue.y, encoder, args)
         # ae = factory.build_ae(encoder, decoder, args)
         codebook = factory.build_codebook(encoder, dataset, args)
-        saver = tf.train.Saver(save_relative_paths=True)
+        saver = tf.train.Saver(save_relative_paths=True, max_to_keep=100)
+
+
+    checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=args.getint('Training', 'NUM_ITER'))
+    target_checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path)
+    print target_checkpoint_file
+    print ckpt_dir
+    print '#'*20
+
 
     batch_size = args.getint('Training', 'BATCH_SIZE')
     model = args.get('Dataset', 'MODEL')
@@ -69,7 +86,8 @@ def main():
         print ckpt_dir
         print '#'*20
 
-        factory.restore_checkpoint(sess, saver, ckpt_dir, at_step=at_step)
+        # factory.restore_checkpoint(sess, saver, ckpt_dir, at_step=at_step)
+        saver.restore(sess, checkpoint_file_basename)
 
         # chkpt = tf.train.get_checkpoint_state(ckpt_dir)
         # if chkpt and chkpt.model_checkpoint_path:
@@ -87,7 +105,7 @@ def main():
 
         print 'Saving new checkoint ..',
 
-        saver.save(sess, checkpoint_file, global_step=encoder.global_step)
+        saver.save(sess, target_checkpoint_file, global_step=encoder.global_step)
 
         print 'done',
 

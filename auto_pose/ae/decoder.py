@@ -49,6 +49,7 @@ class Decoder(object):
         x = tf.reshape( x, [-1, layer_dimensions[0][0], layer_dimensions[0][1], self._num_filters[0] ] )
 
         for filters, layer_size in zip(self._num_filters[1:], layer_dimensions[1:]):
+            # shoudl have     align_corners=True
             x = tf.image.resize_nearest_neighbor(x, layer_size)
 
             x = tf.layers.conv2d(

@@ -57,12 +57,25 @@ def get_train_config_exp_file_path(log_dir, experiment_name):
         '{}.cfg'.format(experiment_name)
     )
 
-def get_checkpoint_basefilename(log_dir):
-    return os.path.join(
+def get_checkpoint_basefilename(log_dir, model_path=False, latest=False):
+    import glob
+
+    file_name = os.path.join(
         log_dir,
         'checkpoints',
         'chkpt'
     )
+    if model_path:
+        file_name += '-' + os.path.basename(model_path).split('.')[0]
+    if latest:
+        try:
+            file_name = file_name + '-' + str(latest)
+        except:
+            print model_path
+            print 'no checkpoint with embedding found'
+            exit()
+    return file_name
+
 
 def get_config_file_path(workspace_path, experiment_name, experiment_group=''):
     return os.path.join(

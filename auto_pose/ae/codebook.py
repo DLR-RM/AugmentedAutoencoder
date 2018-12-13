@@ -17,21 +17,20 @@ class Codebook(object):
         self._dataset = dataset
         self.embed_bb = embed_bb
         
-        J = encoder.latent_space_size
+        latent_dims = encoder.latent_space_size
         embedding_size = self._dataset.embedding_size
 
         self.normalized_embedding_query = tf.nn.l2_normalize(self._encoder.z, 1)
         self.embedding_normalized = tf.Variable(
-            np.zeros((embedding_size, J)),
+            np.zeros((embedding_size, latent_dims)),
             dtype=tf.float32,
             trainable=False,
             name='embedding_normalized'
         )
 
-        self.embedding = tf.placeholder(tf.float32, shape=[embedding_size, J])
+        self.embedding = tf.placeholder(tf.float32, shape=[embedding_size, latent_dims])
         self.embedding_assign_op = tf.assign(self.embedding_normalized, self.embedding)
         
-
         if embed_bb:
             self.embed_obj_bbs_var = tf.Variable(
                 np.zeros((embedding_size, 4)),
@@ -44,7 +43,6 @@ class Codebook(object):
             self.embed_obj_bbs_values = None
         
         self.cos_similarity = tf.matmul(self.normalized_embedding_query, self.embedding_normalized,transpose_b=True)
-        self.nearest_neighbor_idx = tf.argmax(self.cos_similarity, axis=1)
 
 
 
@@ -130,12 +128,6 @@ class Codebook(object):
         return (Rs_est, ts_est,None)
         
 
-
-
-    def nearest_rotation_batch(self, session, x):
-        idcs = session.run(self.nearest_neighbor_idx, {self._encoder.x: x})
-        return self._dataset.viewsphere_for_embedding[idcs]
-
     def test_embedding(self, sess, x, normalized=True):
         
         if x.dtype == 'uint8':
@@ -194,6 +186,9 @@ class Codebook(object):
     def update_embedding(self, session, batch_size, model_path):
 
         self._dataset._kw['model_path'] = list([str(model_path)])
+        self._dataset._kw['model'] = 'cad' if 'cad' in model_path else 'reconst'
+        self._dataset._kw['model'] = 'reconst' if 'reconst' in model_path else 'cad'
+
         embedding_size = self._dataset.embedding_size
         J = self._encoder.latent_space_size
         embedding_z = np.empty( (embedding_size, J) )

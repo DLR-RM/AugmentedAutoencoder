@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import threading
-
 import tensorflow as tf
 
 from utils import lazy_property
@@ -13,7 +11,7 @@ import glob
 
 class MultiQueue(object):
 
-    def __init__(self, dataset, batch_size, noof_training_imgs, model_paths, shape):
+    def __init__(self, dataset, batch_size, noof_training_imgs, model_paths, shape, aug_args):
 
         self._dataset = dataset
         self._batch_size = batch_size
@@ -23,9 +21,24 @@ class MultiQueue(object):
 
         self._num_objects = len(self._model_paths)
         self.next_element = None
+
+        self.zoom_range = eval(aug_args['zoom_pad'])
+        self.g_noise = eval(aug_args['gaussian_noise'])
+        self.contrast_norm_range = eval(aug_args['contrast_norm'])
+        self.mult_brightness = eval(aug_args['mult_brightness'])
+        self.max_off_brightness = eval(aug_args['max_off_brightness'])
+        self.invert = eval(aug_args['invert'])
+
+        print self.zoom_range
+        print self.g_noise 
+        print self.contrast_norm_range
+        print self.mult_brightness
+        print self.max_off_brightness
+        print self.invert
     
         self.bg_img_init = None
         self.next_bg_element = None
+        
 
     def serialize_tfrecord(self, train_x, mask_x, train_y, writer, output_file='train.tfrecord'):
         train_x_bytes = train_x.tostring()
@@ -72,17 +85,19 @@ class MultiQueue(object):
 
     def _tf_augmentations(self, train_x, mask_x, train_y, bg):
         # train_x = add_black_patches(train_x)
-        train_x = add_background(train_x,bg)
-        train_x = gaussian_noise(train_x)
-        train_x = random_brightness(train_x,0.1)
-        train_x = contrast_normalization(train_x)
-        train_x = multiply_brightness(train_x)
+        train_x = zoom_image_object(train_x,np.linspace(self.zoom_range[0],self.zoom_range[1],50).astype(np.float32))
+        train_x = add_background(train_x, bg)
+        train_x = gaussian_noise(train_x) if self.g_noise else train_x
+        train_x = random_brightness(train_x,self.max_off_brightness)
+        train_x = invert_color(train_x) if self.invert else train_x
+        train_x = multiply_brightness(train_x, self.mult_brightness)
+        train_x = contrast_normalization(train_x, self.contrast_norm_range)
         # train_x = gaussian_blur(train_x)
         return (train_x, mask_x, train_y)
 
     def load_bg_imgs(self, in_path):
 
-        return tf.image.resize_images(tf.to_float(tf.image.decode_jpeg(tf.read_file(in_path))),
+        return tf.image.resize_images(tf.image.convert_image_dtype(tf.image.decode_jpeg(tf.read_file(in_path)),tf.float32),
                     [self._shape[0],self._shape[1]],
                     method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
@@ -90,21 +105,11 @@ class MultiQueue(object):
     def create_background_image_iterator(self, bg_paths):
         # change to load from numpy array
         background_imgs_dataset = tf.data.Dataset.from_tensor_slices(bg_paths)
-        
+        background_imgs_dataset = background_imgs_dataset.map(map_func=self.load_bg_imgs, num_parallel_calls = 4)
+        background_imgs_dataset = background_imgs_dataset.cache()
         background_imgs_dataset = background_imgs_dataset.shuffle(self._dataset.noof_bg_imgs)
-        background_imgs_dataset = background_imgs_dataset.apply(tf.contrib.data.map_and_batch(
-            map_func=self.load_bg_imgs, 
-            batch_size=self._batch_size, 
-            num_parallel_calls = 2,
-            drop_remainder = True))
         background_imgs_dataset = background_imgs_dataset.repeat()
-        background_imgs_dataset = background_imgs_dataset.prefetch(buffer_size = 1)
-
-        # iterator_bg = tf.data.Iterator.from_structure(background_imgs_dataset.output_types, 
-        #                                         background_imgs_dataset.output_shapes)
-
-        # iterator_bg = background_imgs_dataset.make_initializable_iterator()
-
+        background_imgs_dataset = background_imgs_dataset.prefetch(1)
 
         self.bg_img_init = background_imgs_dataset.make_initializable_iterator()
 
@@ -125,11 +130,12 @@ class MultiQueue(object):
 
     def preprocess_pipeline(self, dataset):
         dataset = dataset.map(self.deserialize_tfrecord)  
-        dataset = dataset.shuffle(buffer_size=self._noof_training_imgs//10)
-        dataset = dataset.repeat()
-        dataset = dataset.batch(self._batch_size)
+        dataset = dataset.shuffle(buffer_size=self._noof_training_imgs//5)
         dataset = dataset.map(lambda train_x, mask_x, train_y : self._float_cast(train_x, mask_x, train_y))
-        dataset = dataset.map(lambda train_x, mask_x, train_y : self._tf_augmentations(train_x, mask_x, train_y,  self.bg_img_init.get_next()/255.))
+        dataset = dataset.repeat()
+        dataset = dataset.map(lambda train_x, mask_x, train_y : self._tf_augmentations(train_x, mask_x, train_y, self.bg_img_init.get_next()))
+        dataset = dataset.batch(self._batch_size)
+
         # dataset = dataset.map(lambda train_x, mask_x, train_y : tuple(tf.py_func(self._dataset.preprocess_aae, 
         #                                                                         [train_x, mask_x, train_y], 
         #                                                                         [tf.uint8, tf.uint8, tf.uint8])))
