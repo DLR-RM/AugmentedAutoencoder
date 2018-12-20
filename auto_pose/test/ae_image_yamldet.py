@@ -44,14 +44,15 @@ codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment
 
 
 import yaml
-yaml_files = sorted(glob.glob('/net/rmc-lx0318/home_local/public/dataset/201810_bosch/data_recorded/bboxes_manually/scene1/*.yaml'))
+# yaml_files = sorted(glob.glob('/net/rmc-lx0318/home_local/public/dataset/201810_bosch/data_recorded/bboxes_manually/scene1/*.yaml'))
+yaml_files = sorted(glob.glob('/volume/USERSTORE/proj_bosch_pose-estimation/bosch_zivid_data/RGB_only_for_detection/*.yaml'))
 bb_dicts = {}
 for y in yaml_files:
     with open(y) as file:
         bb_dicts[os.path.basename(y).split('yaml')[0]] = yaml.load(file)
 print bb_dicts
-
-K_test = np.array([[1073.4400634765625,0.0,640.0],[0.0,1073.4400634765625,480.0],[0.0,0.0,1.0]]).reshape(3,3)
+# [[2730.3754266211604,0.0,960.0],[0.0,2730.3754266211604,600.0],[0.0,0.0,1.0]]
+K_test = np.array([[2730.3754266211604,0.0,800.0],[0.0,2730.3754266211604,600.0],[0.0,0.0,1.0]])
 
 with tf.Session() as sess:
 
@@ -59,51 +60,56 @@ with tf.Session() as sess:
 
     for file in files:
         orig_im = cv2.imread(file)
-        H,W = orig_im.shape[:2]
+        
         if bb_dicts.has_key(os.path.basename(file).split('png')[0]):
             bb_dict = bb_dicts[os.path.basename(file).split('png')[0]]
-            x = int(W * bb_dict['labels'][0]['bbox']['minx']) 
-            y = int(H * bb_dict['labels'][0]['bbox']['miny'])
-            w = int(W * bb_dict['labels'][0]['bbox']['maxx'] - x)
-            h = int(H * bb_dict['labels'][0]['bbox']['maxy'] - y)
-            pixel_bb = np.array([x,y,w,h])
 
+            for bb in bb_dict['labels']:
+                if bb['class'] == '4':
+                    print orig_im.shape
+                    H,W = orig_im.shape[:2]
+                    x = int(W * bb['bbox']['minx']) -160
+                    y = int(H * bb['bbox']['miny'])
+                    w = int(W * bb['bbox']['maxx'] - 160 - x )
+                    h = int(H * bb['bbox']['maxy'] - y)
+                    pixel_bb = np.array([x,y,w,h])
+                    cropped_im = orig_im[:,160:orig_im.shape[1]-160,:]
+                    H,W =  cropped_im.shape[:2]
+                    img_crop = dataset.extract_square_patch(cropped_im,pixel_bb,train_args.getfloat('Dataset','PAD_FACTOR'),interpolation=cv2.INTER_LINEAR)
 
-            img_crop = dataset.extract_square_patch(orig_im,pixel_bb,train_args.getfloat('Dataset','PAD_FACTOR'))
+                    R,t,_ = codebook.auto_pose6d(sess, img_crop, pixel_bb,K_test,1,train_args)
+                    print R,t
 
-            R,t,_ = codebook.auto_pose6d(sess, img_crop, pixel_bb,K_test,1,train_args)
-            print R,t
+                    R = R.squeeze()
+                    t = t.squeeze()
 
-            R = R.squeeze()
-            t = t.squeeze()
+                    rendered_pose_est,_ = dataset.renderer.render(0, W, H, K_test, R, t, 10, 10000) 
 
-            rendered_pose_est2,_ = dataset.renderer.render(0, W, H, K_test, R, t, 10, 10000) 
+                    g_y = np.zeros_like(rendered_pose_est)
+                    g_y[:,:,1]= rendered_pose_est[:,:,1]
+                    cropped_im[rendered_pose_est > 0] = g_y[rendered_pose_est > 0]*2./3. + cropped_im[rendered_pose_est > 0]*1./3.
+                    cv2.rectangle(cropped_im, (x,y),(x+w,y+h), (255,0,0), 3)
+                
+                    cv2.imshow('img crop', cv2.resize(img_crop,(512,512)))
+                    cv2.imshow('orig img', cropped_im)
+                    # cv2.imshow('pred_pose', cv2.resize(pred_view,(512,512)))
 
-            g_y = np.zeros_like(rendered_pose_est)
-            g_y[:,:,1]= rendered_pose_est[:,:,1]
-            orig_im[rendered_pose_est > 0] = g_y[rendered_pose_est > 0]*2./3. + orig_im[rendered_pose_est > 0]*1./3.
-            cv2.rectangle(orig_im, (x,y),(x+w,y+h), (255,0,0), 3)
-        
-            cv2.imshow('img crop', cv2.resize(img_crop,(512,512)))
-            cv2.imshow('orig img', orig_im)
-            cv2.imshow('pred_pose', cv2.resize(pred_view,(512,512)))
-
-            cv2.imshow('orig_R', rendered_pose_est2)
-            # cv2.imshow('corrected_R', rendered_pose_est)
-            # key = cv2.waitKey(0)
-            # if key == ord('a'):
-            # 	t[0]-=10
-            # if key == ord('d'):
-            # 	t[0]+=10
-            # if key == ord('s'):
-            # 	t[1]-=10
-            # if key == ord('w'):
-            # 	t[1]+=10
-            	
-            
-            if cv2.waitKey(0) == ord('k'):
-            	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/img_crop_%s.jpg' % os.path.basename(file).split('png')[0],cv2.resize(img_crop,(512,512)))
-            	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/pred_pose_%s.jpg' % os.path.basename(file).split('png')[0],orig_im)
-            	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/pred_rot%s.jpg' % os.path.basename(file).split('png')[0],cv2.resize(pred_view,(512,512)))
+                    # cv2.imshow('orig_R', rendered_pose_est2)
+                    # cv2.imshow('corrected_R', rendered_pose_est)
+                    # key = cv2.waitKey(0)
+                    # if key == ord('a'):
+                    # 	t[0]-=10
+                    # if key == ord('d'):
+                    # 	t[0]+=10
+                    # if key == ord('s'):
+                    # 	t[1]-=10
+                    # if key == ord('w'):
+                    # 	t[1]+=10
+                    	
+                    
+                    if cv2.waitKey(0) == ord('k'):
+                    	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/img_crop_%s.jpg' % os.path.basename(file).split('png')[0],cv2.resize(img_crop,(512,512)))
+                    	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/pred_pose_%s.jpg' % os.path.basename(file).split('png')[0],orig_im)
+                    	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/pred_rot%s.jpg' % os.path.basename(file).split('png')[0],cv2.resize(pred_view,(512,512)))
 
 
