@@ -51,12 +51,12 @@ Tensorflow >= 1.6
 OpenCV >= 3.1  
 
 ```bash
-pip install --pre --upgrade PyOpenGL PyOpenGL_accelerate
-pip install cython
-pip install cyglfw3
-pip install pyassimp
-pip install imgaug
-pip install progressbar
+pip install --user --pre --upgrade PyOpenGL PyOpenGL_accelerate
+pip install --user cython
+pip install --user cyglfw3
+pip install --user pyassimp
+pip install --user imgaug
+pip install --user progressbar
 ```
 
 
@@ -65,7 +65,7 @@ pip install progressbar
 
 *1. Pip installation*
 ```bash
-pip install .
+pip install --user .
 ```
 
 *2. Set Workspace path, consider to put this into your bash profile, will always be required*
@@ -73,7 +73,7 @@ pip install .
 export AE_WORKSPACE_PATH=/path/to/autoencoder_ws  
 ```
 
-*3. Create Workspace, Init Workspace*
+*3. Create Workspace, Init Workspace (if installed locally, make sure .local/bin/ is in your PATH)*
 ```bash
 mkdir $AE_WORKSPACE_PATH
 cd $AE_WORKSPACE_PATH
@@ -214,8 +214,8 @@ NOOF_BG_IMGS: 10000
 [Augmentation]
 # Using real object masks for occlusion (not really necessary)
 REALISTIC_OCCLUSION: False
-# During training an offset is sampled from Normal(0, CROP_OFFSET_SIGMA) and added to the ground truth crop.
-CROP_OFFSET_SIGMA: 20
+# Maximum relative translational offset of input views, sampled uniformly  
+MAX_REL_OFFSET: 0.20
 # Random augmentations at random strengths from imgaug library
 CODE: Sequential([
     #Sometimes(0.5, PerspectiveTransform(0.05)),

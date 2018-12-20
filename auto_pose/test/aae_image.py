@@ -5,8 +5,9 @@ import glob
 import os
 import time
 import argparse
+import configparser
 
-from auto_pose.ae import factory,utils
+from auto_pose.ae import factory, utils
 
 
 

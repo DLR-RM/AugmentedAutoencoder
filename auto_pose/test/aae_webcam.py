@@ -1,10 +1,9 @@
-# import pygame
-# import pygame.camera
 import cv2
 import argparse
 import tensorflow as tf
 import numpy as np
 import os
+import configparser
 
 from auto_pose.ae import factory
 from auto_pose.ae import utils as u
@@ -25,7 +24,7 @@ workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 log_dir = u.get_log_dir(workspace_path,experiment_name,experiment_group)
 ckpt_dir = u.get_checkpoint_dir(log_dir)
 
-train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
+train_cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
 train_args = configparser.ConfigParser()
 train_args.read(train_cfg_file_path)  
 
@@ -42,7 +41,8 @@ with tf.Session() as sess:
         
         # try your detector here:
         # bb_xywh = detector.detect(image)
-        # image = dataset.extract_square_patch(image, bb_xywh, train_args.getfloat('Dataset','PAD_FACTOR'))
+        # image_crop = dataset.extract_square_patch(image, bb_xywh, train_args.getfloat('Dataset','PAD_FACTOR'))
+        # Rs, ts = codebook.auto_pose6d(sess, image_crop, bb_xywh, K_test, 1, train_args)
 
         img = cv2.resize(image,(128,128))
 
