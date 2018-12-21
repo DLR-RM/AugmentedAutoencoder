@@ -106,3 +106,5 @@ class Encoder(object):
     @lazy_property
     def global_step(self):
         return tf.Variable(0, dtype=tf.int64, trainable=False, name='global_step')
+
+    
