@@ -105,12 +105,23 @@ class Codebook(object):
                 z = depth_pred
 
             # object center in image plane (bb center =/= object center)
-            center_obj_x = predicted_bb[0] + predicted_bb[2]/2 - K_test[0,2] - (rendered_bb[0] + rendered_bb[2]/2. - K_train[0,2])
-            center_obj_y = predicted_bb[1] + predicted_bb[3]/2 - K_test[1,2] - (rendered_bb[1] + rendered_bb[3]/2. - K_train[1,2])
+            # center_obj_x = predicted_bb[0] + predicted_bb[2]/2 - K_test[0,2] - (rendered_bb[0] + rendered_bb[2]/2. - K_train[0,2])
+            # center_obj_y = predicted_bb[1] + predicted_bb[3]/2 - K_test[1,2] - (rendered_bb[1] + rendered_bb[3]/2. - K_train[1,2])
 
             # t = K_test_cam_inv * center_bb * depth_pred
-            center_mm_tx = center_obj_x * z / K_test[0,0]
-            center_mm_ty = center_obj_y * z / K_test[1,1]
+            # center_mm_tx = center_obj_x * z / K_test[0,0]
+            # center_mm_ty = center_obj_y * z / K_test[1,1]
+
+            center_obj_x_train = rendered_bb[0] + rendered_bb[2]/2. - K_train[0,2]
+            center_obj_y_train = rendered_bb[1] + rendered_bb[3]/2. - K_train[1,2]
+
+            center_obj_x_test = predicted_bb[0] + predicted_bb[2]/2 - K_test[0,2]
+            center_obj_y_test = predicted_bb[1] + predicted_bb[3]/2 - K_test[1,2]
+
+            center_mm_tx = center_obj_x_test * z / K_test[0,0] - center_obj_x_train * render_radius / K_train[0,0]  
+            center_mm_ty = center_obj_y_test * z / K_test[1,1] - center_obj_y_train * render_radius / K_train[1,1]  
+
+
             t_est = np.array([center_mm_tx, center_mm_ty, z])
             ts_est[i] = t_est
             
