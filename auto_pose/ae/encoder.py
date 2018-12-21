@@ -4,10 +4,11 @@ import tensorflow as tf
 import numpy as np
 
 from utils import lazy_property
+from auto_pose.ae import deeplab_v3_encoder
 
 class Encoder(object):
 
-    def __init__(self, input, latent_space_size, num_filters, kernel_size, strides, batch_norm, is_training=False):
+    def __init__(self, input, latent_space_size, num_filters, kernel_size, strides, batch_norm, resnet50_aspp, is_training=False):
         
         self._input = input #tf.concat([inp[0] for inp in input],0)
         print self._input.shape
@@ -16,6 +17,7 @@ class Encoder(object):
         self._kernel_size = kernel_size
         self._strides = strides
         self._batch_normalization = batch_norm
+        self._resnet50_aspp = resnet50_aspp
         self._is_training = is_training
         self.encoder_out
         self.z
@@ -36,20 +38,24 @@ class Encoder(object):
     @lazy_property
     def encoder_out(self):
         x = self._input
-
-        for filters, stride in zip(self._num_filters, self._strides):
-            padding = 'same'
-            x = tf.layers.conv2d(
-                inputs=x,
-                filters=filters,
-                kernel_size=self._kernel_size,
-                strides=stride,
-                padding=padding,
-                kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
-                activation=tf.nn.relu
-            )
-            if self._batch_normalization:
-                x = tf.layers.batch_normalization(x, training=self._is_training)
+        
+        if self._resnet50_aspp:
+            params = {'output_stride':16, 'base_architecture':'resnet_v2_50', 'pre_trained_model':None, 'batch_norm_decay':None}
+            x = deeplab_v3_encoder.deeplab_v3_encoder(x, params,is_training=self._is_training, depth=self._num_filters[-1])
+        else:
+            for filters, stride in zip(self._num_filters, self._strides):
+                padding = 'same'
+                x = tf.layers.conv2d(
+                    inputs=x,
+                    filters=filters,
+                    kernel_size=self._kernel_size,
+                    strides=stride,
+                    padding=padding,
+                    kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
+                    activation=tf.nn.relu
+                )
+                if self._batch_normalization:
+                    x = tf.layers.batch_normalization(x, training=self._is_training)
 
         encoder_out = tf.contrib.layers.flatten(x)
         
