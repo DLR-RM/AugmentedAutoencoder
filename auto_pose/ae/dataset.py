@@ -202,17 +202,20 @@ class Dataset(object):
             random_light=False
         )
 
-        ys, xs = np.nonzero(depth_y > 0)
-        obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
-        x, y, w, h = obj_bb
+        try:
+            ys, xs = np.nonzero(depth_y > 0)
+            obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
+            x, y, w, h = obj_bb
 
-        size = int(np.maximum(h, w) * pad_factor)
-        left = x+w/2-size/2
-        right = x+w/2+size/2
-        top = y+h/2-size/2
-        bottom = y+h/2+size/2
+            size = int(np.maximum(h, w) * pad_factor)
+            left = x+w/2-size/2
+            right = x+w/2+size/2
+            top = y+h/2-size/2
+            bottom = y+h/2+size/2
 
-        bgr_y = bgr_y[top:bottom, left:right]
+            bgr_y = bgr_y[top:bottom, left:right]
+        except:
+            print 'error in extracting bounding box from rendered object'
         return cv2.resize(bgr_y, self.shape[:2])
 
 
