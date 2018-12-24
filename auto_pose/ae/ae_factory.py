@@ -53,7 +53,7 @@ def build_encoder(x, args, is_training=False):
     KERNEL_SIZE_ENCODER = args.getint('Network', 'KERNEL_SIZE_ENCODER')
     STRIDES = eval(args.get('Network', 'STRIDES'))
     BATCH_NORM = args.getboolean('Network', 'BATCH_NORMALIZATION')
-    BATCRESNET50_ASPPH_NORM = args.getboolean('Network', 'RESNET50_ASPP')
+    RESNET50_ASPP = args.getboolean('Network', 'RESNET50_ASPP')
     encoder = Encoder(
         x,
         LATENT_SPACE_SIZE, 

@@ -4,7 +4,6 @@ import tensorflow as tf
 import numpy as np
 
 from utils import lazy_property
-from auto_pose.ae import deeplab_v3_encoder
 
 class Encoder(object):
 
@@ -40,6 +39,8 @@ class Encoder(object):
         x = self._input
         
         if self._resnet50_aspp:
+            from auto_pose.ae import deeplab_v3_encoder
+
             params = {'output_stride':16, 'base_architecture':'resnet_v2_50', 'pre_trained_model':None, 'batch_norm_decay':None}
             x = deeplab_v3_encoder.deeplab_v3_encoder(x, params,is_training=self._is_training, depth=self._num_filters[-1])
         else:

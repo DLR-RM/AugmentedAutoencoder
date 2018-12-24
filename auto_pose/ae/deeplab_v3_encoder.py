@@ -80,12 +80,6 @@ def deeplab_v3_encoder(inputs, params, is_training = False, depth=512):
     The model function that takes in `inputs` and `is_training` and
     returns the output tensor of the DeepLab v3 model.
   """
-  import tensorflow as tf
-
-  from tensorflow.contrib.slim.nets import resnet_v2
-  from tensorflow.contrib import layers as layers_lib
-  from tensorflow.contrib.framework.python.ops import arg_scope
-  from tensorflow.contrib.layers.python.layers import layers
 
   output_stride = params['output_stride']
   base_architecture = params['base_architecture']
