@@ -346,8 +346,8 @@ def invert_color(in_tensor):
 	aug2 = lambda: _one_channel(in_tensor)
 	aug3 = lambda: _no_aug(in_tensor)
 
-	return tf.case([(tf.less_equal(prob, 0.25), aug1), 
-		(tf.less_equal(prob, 0.5), aug2)],
+	return tf.case([(tf.less_equal(prob, 0.1), aug1), 
+		(tf.less_equal(prob, 0.3), aug2)],
 		default = aug3)
 
 	
@@ -389,12 +389,12 @@ def random_brightness(in_tensor, max_offset):
 	#aug_tensor = tf.case([(tf.less_equal(prob, 0.33), color1),
 	#	(tf.less_equal(prob, 0.66), color2)],
 	#	default = color3)
-	aug_tensor = tf.case([(tf.less_equal(prob, 0.5), color1)],
+	aug_tensor = tf.case([(tf.less_equal(prob, 0.3), color1),(tf.less_equal(prob, 0.5), color2)],
 		default = color3)
 
-	prob = tf.random_uniform([], minval = 0.0, maxval = 1.0, dtype = tf.float32)
-	aug_tensor = tf.case([(tf.less_equal(prob, 0.5), color2)],
-		default = color3)
+	# prob = tf.random_uniform([], minval = 0.0, maxval = 1.0, dtype = tf.float32)
+	# aug_tensor = tf.case([(tf.less_equal(prob, 0.5), color2)],
+	# 	default = color3)
 
 	aug_tensor.set_shape(shape)
 	return tf.maximum(tf.minimum(aug_tensor, 1.0), 0.0)
@@ -437,13 +437,20 @@ def gaussian_blur(in_tensor, size = 5):
 
 		normalized_gauss_kernel = normalized_gauss_kernel[:, :, tf.newaxis, tf.newaxis]
 
-		channels = in_tensor.get_shape().as_list()[3]
-		tensor_channel = tf.unstack(in_tensor, num = channels, axis = 3)
+		# normalized_gauss_kernel = tf.stack([normalized_gauss_kernel,normalized_gauss_kernel,normalized_gauss_kernel],axis=2)
+		tensor_channels = tf.unstack(in_tensor, num = 3, axis = 3)
 		new_channels = []
-		for c in tensor_channel:
-			new_channels.append(tf.squeeze(tf.nn.conv2d(c[:, :, :, tf.newaxis], normalized_gauss_kernel, strides = [1, 1, 1, 1], padding = 'SAME'), axis = 3))
-
-		return tf.stack(new_channels, axis=3)
+		for c in tensor_channels:
+			print (c.shape)
+			out_channel = tf.nn.conv2d(c[:, :, :, tf.newaxis], normalized_gauss_kernel, strides = [1, 1, 1, 1], use_cudnn_on_gpu=False, data_format='NHWC',
+ padding = 'SAME')
+			print(out_channel.shape)
+			new_channels.append(out_channel)
+		out = tf.concat(new_channels, axis=3)
+		print(out.shape)
+		return out
+		# in_tensor = tf.nn.conv2d(in_tensor, normalized_gauss_kernel, strides = [1,1,1,1], padding="SAME")
+		# return in_tensor
 	def _no_blur(in_tensor, size = 5):
 		return in_tensor
 
@@ -616,7 +623,7 @@ def multiply_brightness(in_tensor, factor_range = [0.6, 1.4]):
 	aug2 = lambda: _one_channel(in_tensor, factor)
 	aug3 = lambda: _no_aug(in_tensor)
 
-	return tf.case([(tf.less_equal(prob, 0.25), aug1), 
+	return tf.case([(tf.less_equal(prob, 0.35), aug1), 
 		(tf.less_equal(prob, 0.5), aug2)],
 		default = aug3)
 

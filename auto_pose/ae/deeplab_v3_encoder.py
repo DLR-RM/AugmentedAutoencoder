@@ -15,6 +15,7 @@ from tensorflow.contrib.layers.python.layers import layers
 _BATCH_NORM_DECAY = 0.9997
 _WEIGHT_DECAY = 5e-4
 
+#https://github.com/rishizek/tensorflow-deeplab-v3/blob/master/deeplab_model.py
 
 def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_training, depth=256):
   """Atrous Spatial Pyramid Pooling.

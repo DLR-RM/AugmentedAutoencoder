@@ -54,6 +54,8 @@ def build_encoder(x, args, is_training=False):
     STRIDES = eval(args.get('Network', 'STRIDES'))
     BATCH_NORM = args.getboolean('Network', 'BATCH_NORMALIZATION')
     RESNET50_ASPP = args.getboolean('Network', 'RESNET50_ASPP')
+    RESNET101_ASPP = args.getboolean('Network', 'RESNET101_ASPP')
+    PRE_TRAINED_MODEL = args.get('Training', 'PRE_TRAINED_MODEL')
     encoder = Encoder(
         x,
         LATENT_SPACE_SIZE, 
@@ -62,6 +64,8 @@ def build_encoder(x, args, is_training=False):
         STRIDES,
         BATCH_NORM,
         RESNET50_ASPP,
+        RESNET101_ASPP,
+        PRE_TRAINED_MODEL,
         is_training=is_training
     )
     return encoder
@@ -96,13 +100,25 @@ def build_ae(encoder, decoder, args):
     return ae
 
 def build_train_op(ae, args):
+    import tensorflow as tf
+
     LEARNING_RATE = args.getfloat('Training', 'LEARNING_RATE')
+    LEARNING_RATE_SCHEDULE = args.get('Training','LEARNING_RATE_SCHEDULE')
+
+    if LEARNING_RATE_SCHEDULE=='poly':
+        FINAL_LEARNING_RATE = args.getfloat('Training','FINAL_LEARNING_RATE')
+        NUM_ITER = args.getfloat('Training','NUM_ITER')
+        print 'using poly learning rate schedule'
+        LEARNING_RATE = tf.train.polynomial_decay(LEARNING_RATE, ae._encoder.global_step,
+                                                NUM_ITER, FINAL_LEARNING_RATE, power=0.9)
+    
+
     OPTIMIZER_NAME = args.get('Training', 'OPTIMIZER')
-    import tensorflow
-    optimizer = eval('tensorflow.train.{}Optimizer'.format(OPTIMIZER_NAME))
+
+    optimizer = eval('tf.train.{}Optimizer'.format(OPTIMIZER_NAME))
     optim = optimizer(LEARNING_RATE)
 
-    train_op = tensorflow.contrib.training.create_train_op(ae.loss, optim, global_step=ae._encoder.global_step)
+    train_op = tf.contrib.training.create_train_op(ae.loss, optim, global_step=ae._encoder.global_step)
 
     return train_op
 

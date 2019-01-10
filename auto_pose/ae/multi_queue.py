@@ -27,6 +27,7 @@ class MultiQueue(object):
         self.contrast_norm_range = eval(aug_args['contrast_norm'])
         self.mult_brightness = eval(aug_args['mult_brightness'])
         self.max_off_brightness = eval(aug_args['max_off_brightness'])
+        self.gaussian_blur = eval(aug_args['gaussian_blur'])
         self.invert = eval(aug_args['invert'])
 
         print self.zoom_range
@@ -34,6 +35,7 @@ class MultiQueue(object):
         print self.contrast_norm_range
         print self.mult_brightness
         print self.max_off_brightness
+        print self.gaussian_blur
         print self.invert
     
         self.bg_img_init = None
@@ -88,8 +90,10 @@ class MultiQueue(object):
         train_x = zoom_image_object(train_x,np.linspace(self.zoom_range[0],self.zoom_range[1],50).astype(np.float32))
         train_x = add_background(train_x, bg)
         train_x = gaussian_noise(train_x) if self.g_noise else train_x
-        train_x = random_brightness(train_x,self.max_off_brightness)
+        # train_x = gaussian_blur(train_x) if self.gaussian_blur else train_x
+        train_x = random_brightness(train_x, self.max_off_brightness)
         train_x = invert_color(train_x) if self.invert else train_x
+        train_x = multiply_brightness(train_x, self.mult_brightness)
         train_x = multiply_brightness(train_x, self.mult_brightness)
         train_x = contrast_normalization(train_x, self.contrast_norm_range)
         # train_x = gaussian_blur(train_x)

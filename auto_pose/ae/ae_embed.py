@@ -20,7 +20,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_name")
-    parser.add_argument('--at_step', default=None, required=False)
+    parser.add_argument('--at_step', default=None,  type=int, required=False)
     parser.add_argument('--model_path', type=str, required=True)
     arguments = parser.parse_args()
     full_name = arguments.experiment_name.split('/')
@@ -67,8 +67,11 @@ def main():
         codebook = factory.build_codebook(encoder, dataset, args)
         saver = tf.train.Saver(save_relative_paths=True, max_to_keep=100)
 
+    if at_step is None:
+        checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=args.getint('Training', 'NUM_ITER'))
+    else:
+        checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=at_step)
 
-    checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=args.getint('Training', 'NUM_ITER'))
     target_checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path)
     print target_checkpoint_file
     print ckpt_dir

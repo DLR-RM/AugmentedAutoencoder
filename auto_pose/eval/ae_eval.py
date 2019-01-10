@@ -25,7 +25,7 @@ def main():
     parser.add_argument('experiment_name')
     parser.add_argument('evaluation_name')
     parser.add_argument('--eval_cfg', default='eval.cfg', required=False)
-    parser.add_argument('--at_step', default=None, required=False)
+    parser.add_argument('--at_step', default=None, type=str, required=False)
     parser.add_argument('--model_path', default=None, required=True)
     arguments = parser.parse_args()
     full_name = arguments.experiment_name.split('/')
@@ -53,6 +53,7 @@ def main():
     data_params = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
     #[BBOXES]
     estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
+    gt_masks = eval_args.getboolean('BBOXES','gt_masks')
     #[METRIC]
     top_nn = eval_args.getint('METRIC','TOP_N')
     #[EVALUATION]
@@ -67,8 +68,12 @@ def main():
     data = dataset_name + '_' + cam_type if len(cam_type) > 0 else dataset_name
 
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
-    checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path, latest=train_args.getint('Training', 'NUM_ITER'))
 
+    if at_step is None:
+        checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path, latest=train_args.getint('Training', 'NUM_ITER'))
+    else:
+        checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path, latest=at_step)
+    print checkpoint_file
     eval_dir = u.get_eval_dir(log_dir, evaluation_name, data)
 
     if not os.path.exists(eval_dir):
@@ -130,7 +135,7 @@ def main():
 
             test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.generate_scene_crops(test_imgs, test_imgs_depth, bb_preds, eval_args, train_args)
         else:
-            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.get_gt_scene_crops(scene_id, eval_args, train_args)
+            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.get_gt_scene_crops(scene_id, eval_args, train_args,load_gt_masks = gt_masks)
 
         if len(test_img_crops) == 0:
             print 'ERROR: object %s not in scene %s' % (obj_id,scene_id)

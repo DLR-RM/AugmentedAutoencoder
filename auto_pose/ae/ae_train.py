@@ -151,10 +151,10 @@ def main():
                     # this_x, this_y = sess.run([queue.x, queue.y])
                     # reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
 
-                    this = sess.run(multi_queue.next_element)
-                    reconstr_train = sess.run([decoder.x for decoder in decoders])
+                    this, reconstr_train = sess.run([multi_queue.next_element,[decoder.x for decoder in decoders]])
                     this_x = np.concatenate([el[0] for el in this])
                     this_y = np.concatenate([el[2] for el in this])
+                    # reconstr_train = sess.run(,feed_dict={queue.x:this_x})
                     reconstr_train = np.concatenate(reconstr_train)
                     np.random.seed(0)
                     np.random.shuffle(this_x)
@@ -170,8 +170,8 @@ def main():
                 # print np.min(this_x), np.max(this_x)
                 # print np.min(this_y), np.max(this_y)
                 # print np.min(reconstr_train), np.max(reconstr_train)
-                this,_ = sess.run([multi_queue.next_element,multi_queue.next_bg_element])
-                reconstr_train = sess.run([decoder.x for decoder in decoders])
+                this,_,reconstr_train  = sess.run([multi_queue.next_element,multi_queue.next_bg_element,[decoder.x for decoder in decoders]])
+                # reconstr_train = sess.run([decoder.x for decoder in decoders])
                 
 
                 this_x = np.concatenate([el[0] for el in this])
