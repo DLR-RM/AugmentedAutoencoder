@@ -10,7 +10,9 @@ from sixd_toolkit.pysixd import inout
 from auto_pose.ae import utils as u
 
 
-def get_gt_scene_crops(scene_id, eval_args, train_args):
+import glob
+
+def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
     
 
     dataset_name = eval_args.get('DATA','DATASET')
@@ -28,7 +30,6 @@ def get_gt_scene_crops(scene_id, eval_args, train_args):
     current_config_hash = hashlib.md5(cfg_string).hexdigest()
 
     current_file_name = os.path.join(dataset_path, current_config_hash + '.npz')
-    
 
     if os.path.exists(current_file_name):
         data = np.load(current_file_name)
@@ -46,10 +47,15 @@ def get_gt_scene_crops(scene_id, eval_args, train_args):
         # only available for primesense, sixdtoolkit can generate
         visib_gt = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, delta))
         
-        bb_gt = inout.load_gt(data_params['scene_gt_mpath'].format(scene_id))
+        gt = inout.load_gt(data_params['scene_gt_mpath'].format(scene_id))
 
-        test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis = generate_scene_crops(test_imgs, test_imgs_depth, bb_gt, eval_args, 
-                                                                                            train_args, visib_gt=visib_gt)
+        gt_inst_masks = None
+        if load_gt_masks:
+            mask_paths = glob.glob('/net/rmc-lx0314/home_local_nvme/sund_ma/data/scene_renderings/tless_scene_masks/{:02d}/masks/*.npy'.format(scene_id))
+            gt_inst_masks = [np.load(mp) for mp in mask_paths] 
+
+        test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis = generate_scene_crops(test_imgs, test_imgs_depth, gt, eval_args, 
+                                                                                            train_args, visib_gt=visib_gt,gt_inst_masks=gt_inst_masks)
 
         np.savez(current_file_name, test_img_crops=test_img_crops, test_img_depth_crops=test_img_depth_crops, bbs = bbs, bb_scores=bb_scores, visib_gt=bb_vis)
         
@@ -66,10 +72,9 @@ def get_gt_scene_crops(scene_id, eval_args, train_args):
     return (test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis)
 
 
-def generate_scene_crops(test_imgs, test_depth_imgs, bboxes, eval_args, train_args, visib_gt = None):
+def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, train_args, visib_gt = None, gt_inst_masks=None):
 
 
-    scenes = eval(eval_args.get('DATA','SCENES'))
     obj_id = eval_args.getint('DATA','OBJ_ID')
     estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
     pad_factor = eval_args.getfloat('BBOXES','PAD_FACTOR')
@@ -77,7 +82,6 @@ def generate_scene_crops(test_imgs, test_depth_imgs, bboxes, eval_args, train_ar
 
     W_AE = train_args.getint('Dataset','W')
     H_AE = train_args.getint('Dataset','H')
-
 
     test_img_crops, test_img_depth_crops, bb_scores, bb_vis, bbs = {}, {}, {}, {}, {}
 
@@ -88,13 +92,18 @@ def generate_scene_crops(test_imgs, test_depth_imgs, bboxes, eval_args, train_ar
             test_img_depth_crops[view] = {}
 
         test_img_crops[view], bb_scores[view], bb_vis[view], bbs[view] = {}, {}, {}, {}
-        if len(bboxes[view]) > 0:
-            for bbox_idx,bbox in enumerate(bboxes[view]):
+        if len(gt[view]) > 0:
+            for bbox_idx,bbox in enumerate(gt[view]):
                 if bbox['obj_id'] == obj_id:
                     bb = np.array(bbox['obj_bb'])
                     obj_id = bbox['obj_id']
                     bb_score = bbox['score'] if estimate_bbs else 1.0
                     vis_frac = None if estimate_bbs else visib_gt[view][bbox_idx]['visib_fract']
+
+                    if gt_inst_masks is not None:
+                        mask = gt_inst_masks[view]
+                        img[mask != (bbox_idx+1)] = 0
+
                     #print bb
                     ## uebler hack: remove!
                     # xmin, ymin, xmax, ymax = bb
@@ -102,6 +111,7 @@ def generate_scene_crops(test_imgs, test_depth_imgs, bboxes, eval_args, train_ar
                     # bb = np.array([x, y, w, h])
                     ##
                     x,y,w,h = bb
+
                     
                     size = int(np.maximum(h,w) * pad_factor)
                     left = int(np.max([x+w/2-size/2, 0]))
@@ -122,6 +132,7 @@ def generate_scene_crops(test_imgs, test_depth_imgs, bboxes, eval_args, train_ar
                     bbs[view].setdefault(obj_id,[]).append(bb)
 
     return (test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis)
+
 
 
 def noof_scene_views(scene_id, eval_args):
