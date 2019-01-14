@@ -88,7 +88,7 @@ def main():
     dataset._kw['model'] = 'cad' if 'cad' in model_path else 'reconst'
     dataset._kw['model'] = 'reconst' if 'reconst' in model_path else 'cad'
 
-    dataset.renderer
+    #dataset.renderer
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.5)
     config = tf.ConfigProto(gpu_options=gpu_options)
 
