@@ -71,6 +71,7 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
     return (test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis)
 
 
+
 def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, train_args, visib_gt = None, gt_inst_masks=None):
 
 
@@ -98,19 +99,7 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, train_args, 
                     obj_id = bbox['obj_id']
                     bb_score = bbox['score'] if estimate_bbs else 1.0
                     vis_frac = None if estimate_bbs else visib_gt[view][bbox_idx]['visib_fract']
-
-                    if gt_inst_masks is not None:
-                        mask = gt_inst_masks[view]
-                        img[mask != (bbox_idx+1)] = 0
-
-                    #print bb
-                    ## uebler hack: remove!
-                    # xmin, ymin, xmax, ymax = bb
-                    # x, y, w, h = xmin, ymin, xmax-xmin, ymax-ymin 
-                    # bb = np.array([x, y, w, h])
-                    ##
                     x,y,w,h = bb
-
                     
                     size = int(np.maximum(h,w) * pad_factor)
                     left = int(np.max([x+w/2-size/2, 0]))
@@ -118,12 +107,30 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, train_args, 
                     top = int(np.max([y+h/2-size/2, 0]))
                     bottom = int(np.min([y+h/2+size/2, H]))
 
-                    crop = img[top:bottom, left:right].copy()
-                    # print 'Original Crop Size: ', crop.shape
-                    resized_crop = cv2.resize(crop, (H_AE,W_AE))
+                    if gt_inst_masks is None:
+                        crop = img[top:bottom, left:right].copy()
+                        if icp:
+                            depth_crop = depth[top:bottom, left:right]
+                    else:
+                        mask = gt_inst_masks[view]
+                        img_copy = np.zeros_like(img)
+                        img_copy[mask == (bbox_idx+1)] = img[mask == (bbox_idx+1)]
+                        crop = img_copy[top:bottom, left:right].copy()
+                        if icp:
+                            depth_copy = np.zeros_like(depth)
+                            depth_copy[mask == (bbox_idx+1)] = depth[mask == (bbox_idx+1)]
+                            depth_crop = depth_copy[top:bottom, left:right]
 
+                    #print bb
+                    ## uebler hack: remove!
+                    # xmin, ymin, xmax, ymax = bb
+                    # x, y, w, h = xmin, ymin, xmax-xmin, ymax-ymin 
+                    # bb = np.array([x, y, w, h])
+                    ##
+
+
+                    resized_crop = cv2.resize(crop, (H_AE,W_AE))
                     if icp:
-                        depth_crop = depth[top:bottom, left:right]
                         test_img_depth_crops[view].setdefault(obj_id,[]).append(depth_crop)
                     test_img_crops[view].setdefault(obj_id,[]).append(resized_crop)
                     bb_scores[view].setdefault(obj_id,[]).append(bb_score)
@@ -131,6 +138,7 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, train_args, 
                     bbs[view].setdefault(obj_id,[]).append(bb)
 
     return (test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis)
+
 
 
 def noof_scene_views(scene_id, eval_args):
