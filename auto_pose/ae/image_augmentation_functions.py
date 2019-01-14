@@ -205,7 +205,12 @@ def add_black_patches(in_tensor, max_area_cov = 0.25, max_patch_nb = 5):
 		max_x = tf.subtract(in_tensor_shape[1], patch_edge_len)
 		max_y = tf.subtract(in_tensor_shape[2], patch_edge_len)
 
-		x_offset = tf.random_uniform([in_tensor_shape[0], 1], 0, max_x, dtype = tf.int32)
+
+		# shape = in_tensor.get_shape().as_list()
+		# #print(shape)
+		# brightness_offset = tf.random_uniform([shape[0]], minval = -max_offset, maxval = max_offset, dtype = tf.float32)
+		
+		x_offset = tf.random_uniform([in_tensor_shape_list[0], 1], 0, max_x, dtype = tf.int32)
 		y_offset = tf.random_uniform([in_tensor_shape_list[0], 1], 0, max_y, dtype = tf.int32)
 
 		patch = tf.ones([in_tensor_shape[0], patch_edge_len, patch_edge_len, in_tensor_shape[3]], dtype=tf.float32)

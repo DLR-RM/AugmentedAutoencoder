@@ -8,7 +8,7 @@ from utils import lazy_property
 
 class Encoder(object):
 
-    def __init__(self, input, latent_space_size, num_filters, kernel_size, strides, batch_norm, resnet50_aspp, resnet101_aspp, pre_trained_model, is_training=False):
+    def __init__(self, input, latent_space_size, num_filters, kernel_size, strides, batch_norm, resnet50, resnet101, aspp, pre_trained_model, is_training=False):
         
         self._input = input #tf.concat([inp[0] for inp in input],0)
         print self._input.shape
@@ -17,8 +17,9 @@ class Encoder(object):
         self._kernel_size = kernel_size
         self._strides = strides
         self._batch_normalization = batch_norm
-        self._resnet50_aspp = resnet50_aspp
-        self._resnet101_aspp = resnet101_aspp
+        self._resnet50 = resnet50
+        self._resnet101 = resnet101
+        self._aspp = aspp
         self._pre_trained_model = pre_trained_model
         self._is_training = is_training
         self.encoder_out
@@ -41,12 +42,16 @@ class Encoder(object):
     def encoder_out(self):
         x = self._input
         
-        if self._resnet50_aspp or self._resnet101_aspp:
+        if self._resnet50 or self._resnet101:
             from auto_pose.ae import deeplab_v3_encoder
-            base_architecture = 'resnet_v2_50' if self._resnet50_aspp else 'resnet_v2_101'
+            base_architecture = 'resnet_v2_50' if self._resnet50 else 'resnet_v2_101'
             pre_trained_model = self._pre_trained_model if os.path.exists(self._pre_trained_model) else None
             params = {'output_stride':16, 'base_architecture':base_architecture, 'pre_trained_model':pre_trained_model, 'batch_norm_decay':None}
-            x = deeplab_v3_encoder.deeplab_v3_encoder(x, params,is_training=self._is_training, depth=self._num_filters[-1])
+            x = deeplab_v3_encoder.deeplab_v3_encoder(x, 
+                params,
+                is_training=self._is_training, 
+                depth=self._num_filters[-1], 
+                atrous_rates=self._aspp)
         else:
             for filters, stride in zip(self._num_filters, self._strides):
                 padding = 'same'

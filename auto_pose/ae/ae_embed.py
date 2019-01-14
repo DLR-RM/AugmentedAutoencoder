@@ -38,8 +38,6 @@ def main():
     ckpt_dir = u.get_checkpoint_dir(log_dir)
     dataset_path = u.get_dataset_path(workspace_path)
 
-
-
     if not os.path.exists(cfg_file_path):
         print 'Could not find config file:\n'
         print '{}\n'.format(cfg_file_path)

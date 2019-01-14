@@ -53,8 +53,9 @@ def build_encoder(x, args, is_training=False):
     KERNEL_SIZE_ENCODER = args.getint('Network', 'KERNEL_SIZE_ENCODER')
     STRIDES = eval(args.get('Network', 'STRIDES'))
     BATCH_NORM = args.getboolean('Network', 'BATCH_NORMALIZATION')
-    RESNET50_ASPP = args.getboolean('Network', 'RESNET50_ASPP')
-    RESNET101_ASPP = args.getboolean('Network', 'RESNET101_ASPP')
+    RESNET50 = args.getboolean('Network', 'RESNET50')
+    RESNET101 = args.getboolean('Network', 'RESNET101')
+    ASPP = eval(args.get('Network', 'ASPP'))
     PRE_TRAINED_MODEL = args.get('Training', 'PRE_TRAINED_MODEL')
     encoder = Encoder(
         x,
@@ -63,8 +64,9 @@ def build_encoder(x, args, is_training=False):
         KERNEL_SIZE_ENCODER, 
         STRIDES,
         BATCH_NORM,
-        RESNET50_ASPP,
-        RESNET101_ASPP,
+        RESNET50,
+        RESNET101,
+        ASPP,
         PRE_TRAINED_MODEL,
         is_training=is_training
     )

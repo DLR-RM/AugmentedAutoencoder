@@ -32,7 +32,8 @@ class Dataset(object):
         self.noof_obj_pixels = np.empty( (self.noof_training_imgs,), dtype= bool)
         self.train_y = np.empty( (self.noof_training_imgs,) + self.shape, dtype=np.uint8 )
         self.bg_imgs = np.empty( (self.noof_bg_imgs,) + self.shape, dtype=np.float32 )
-        if np.float(eval(self._kw['realistic_occlusion'])):
+
+        if 'realistic_occlusion' in self._kw and np.float(eval(self._kw['realistic_occlusion'])):
             self.random_syn_masks
 
 
@@ -477,7 +478,7 @@ class Dataset(object):
         batch_x, masks, batch_y = self.train_x[rand_idcs], self.mask_x[rand_idcs], self.train_y[rand_idcs]
         rand_vocs = self.bg_imgs[rand_idcs_bg]
 
-        if eval(self._kw['realistic_occlusion']):
+        if 'realistic_occlusion' in self._kw and eval(self._kw['realistic_occlusion']):
             masks = self.augment_occlusion_mask(masks.copy(),max_occl=np.float(self._kw['realistic_occlusion']))
         
         if eval(self._kw['square_occlusion']):

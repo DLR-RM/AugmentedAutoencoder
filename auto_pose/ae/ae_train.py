@@ -33,6 +33,9 @@ def main():
     parser.add_argument("experiment_name")
     parser.add_argument("-d", action='store_true', default=False)
     parser.add_argument("-gen", action='store_true', default=False)
+    parser.add_argument('--at_step', default=None,  type=int, required=False)
+
+
     arguments = parser.parse_args()
 
     full_name = arguments.experiment_name.split('/')
@@ -42,6 +45,7 @@ def main():
     
     debug_mode = arguments.d
     generate_data = arguments.gen
+    at_step = arguments.at_step
 
     cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
@@ -116,16 +120,22 @@ def main():
 
         merged_loss_summary = tf.summary.merge_all()
         summary_writer = tf.summary.FileWriter(ckpt_dir, sess.graph)
-        print 'summary'
+
 
         chkpt = tf.train.get_checkpoint_state(ckpt_dir)
         if chkpt and chkpt.model_checkpoint_path:
-            print 'loading ', chkpt.model_checkpoint_path
-            saver.restore(sess, chkpt.model_checkpoint_path)
+            try:
+                if at_step is None:
+                    checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=args.getint('Training', 'NUM_ITER'))
+                else:
+                    checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=at_step)
+                print 'loading ', checkpoint_file_basename
+                saver.restore(sess, checkpoint_file_basename)
+            except:
+                print 'loading ', chkpt.model_checkpoint_path
+                saver.restore(sess, chkpt.model_checkpoint_path)
         else:
-            print 'run global'
             sess.run(tf.global_variables_initializer())
-            print 'ran global'
 
                 
         if not debug_mode:
