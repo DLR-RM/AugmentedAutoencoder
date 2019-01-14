@@ -65,15 +65,12 @@ def get_checkpoint_basefilename(log_dir, model_path=False, latest=False):
         'checkpoints',
         'chkpt'
     )
+    
     if model_path:
         file_name += '-' + os.path.basename(model_path).split('.')[0]
     if latest:
-        try:
-            file_name = file_name + '-' + str(latest)
-        except:
-            print model_path
-            print 'no checkpoint with embedding found'
-            exit()
+        file_name = file_name + '-' + str(latest)
+
     return file_name
 
 
