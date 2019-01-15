@@ -128,6 +128,7 @@ def main():
 			sixd_recall = error_score_dict['obj_recalls'][obj_id]
 		except:
 			continue
+			print 'did not find error dict'
 		
 
 
