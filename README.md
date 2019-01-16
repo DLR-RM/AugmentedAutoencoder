@@ -9,7 +9,7 @@
 
 # Usage
 ### Preparatory Steps
-*1.1 rmpm environment (right now only inference)*
+*1.1 rmpm environment*
 ```bash
 eval `rmpm_do env --env-format embed_sh auto_pose`
 ```
