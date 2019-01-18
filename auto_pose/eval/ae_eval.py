@@ -62,6 +62,7 @@ def main():
     evaluation_name = evaluation_name + '_icp' if icp else evaluation_name
     evaluation_name = evaluation_name + '_bbest' if estimate_bbs else evaluation_name
     evaluation_name = evaluation_name + '_gttrans' if gt_trans else evaluation_name
+    evaluation_name = evaluation_name + '_gtmask' if gt_masks else evaluation_name
 
     data = dataset_name + '_' + cam_type if len(cam_type) > 0 else dataset_name
 
@@ -201,8 +202,12 @@ def main():
                 # print ts_est
                 # print Rs_est.shape
 
-                run_time = ae_time + bb_preds[view][0]['det_time'] if estimate_bbs else ae_time
-
+                run_time = ae_time
+                if estimate_bbs:
+                    try:
+                        run_time += bb_preds[view][0]['det_time'] 
+                    except:
+                        pass
                 # icp = False if view<350 else True
                 #TODO: 
                 Rs_est_old, ts_est_old = Rs_est.copy(), ts_est.copy()
