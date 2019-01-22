@@ -169,6 +169,8 @@ def main():
 			if not data_paper_vsd.has_key(int(data[3])):
 				data_paper_vsd[int(data[3])] = {}
 				data_paper_vsd[int(data[3])]['eval_obj'] = int(data[3])
+			if 'obj' in eval_name:
+				joint_eval_name = eval_name
 			data_paper_vsd[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1])] = float(sixd_recall)*100
 
 		elif error_type=='cou':
