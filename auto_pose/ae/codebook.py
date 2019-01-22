@@ -82,14 +82,12 @@ class Codebook(object):
         #         x = np.expand_dims(x, 0)
         #     normalized_test_code = session.run(self.normalized_embedding_query, {self._encoder.x: x})
 
-        # test_depth = f_test / f_train * render_radius * diag_bb_ratio
+        # test_depth = f_test / f_train * render_radius * bb_diag_ratio
         K_train = np.array(eval(train_args.get('Dataset','K'))).reshape(3,3)
         render_radius = train_args.getfloat('Dataset','RADIUS')
 
-        K00_ratio = K_test[0,0] / K_train[0,0]  
-        K11_ratio = K_test[1,1] / K_train[1,1]  
-        
-        mean_K_ratio = np.mean([K00_ratio,K11_ratio])
+        K_diag_ratio = np.sqrt(K_test[0,0]**2 + K_test[1,1]**2) / np.sqrt(K_train[0,0]**2 + K_train[1,1]**2)  
+        # mean_K_ratio = np.mean([K00_ratio,K11_ratio])
 
         if self.embed_obj_bbs_values is None:
             self.embed_obj_bbs_values = session.run(self.embed_obj_bbs_var)
@@ -99,8 +97,8 @@ class Codebook(object):
 
             rendered_bb = self.embed_obj_bbs_values[idx].squeeze()
             if depth_pred is None:
-                diag_bb_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
-                z = diag_bb_ratio * mean_K_ratio * render_radius
+                bb_diag_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
+                z = bb_diag_ratio * K_diag_ratio * render_radius
             else:
                 z = depth_pred
 
