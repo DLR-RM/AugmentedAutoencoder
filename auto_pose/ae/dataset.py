@@ -355,7 +355,7 @@ class Dataset(object):
             batch[i] = resized_bgr_y / 255.
         return (batch, obj_bbs)
 
-    def extract_square_patch(self, scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST):
+    def extract_square_patch(self, scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST, black_borders=False):
 
         x, y, w, h = np.array(bb_xywh).astype(np.int32)
         size = int(np.maximum(h, w) * pad_factor)
@@ -365,7 +365,14 @@ class Dataset(object):
         top = np.maximum(y+h/2-size/2, 0)
         bottom = y+h/2+size/2
 
-        scene_crop = scene_img[top:bottom, left:right]
+        scene_crop = scene_img[top:bottom, left:right].copy()
+
+        if black_borders:
+            scene_crop[:(y-top),:] = 0
+            scene_crop[(y+h-top):,:] = 0
+            scene_crop[:,:(x-left)] = 0
+            scene_crop[:,(x+w-left):] = 0
+
         scene_crop = cv2.resize(scene_crop, resize, interpolation = interpolation)
         return scene_crop
 
