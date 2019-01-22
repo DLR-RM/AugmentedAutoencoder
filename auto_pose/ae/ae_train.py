@@ -81,7 +81,8 @@ def main():
         all_object_views = tf.concat([inp[0] for inp in multi_queue.next_element],0)
         encoder = factory.build_encoder(all_object_views, args, is_training=True)
         decoders = []
-        encoding_splits = tf.split(encoder.z,multi_queue._num_objects,0)
+        encoding_splits = tf.split(encoder.z, multi_queue._num_objects,0)
+
         for i in xrange(multi_queue._num_objects):            
             decoders.append(factory.build_decoder(multi_queue.next_element[i], encoding_splits[i], args, is_training=True))
 

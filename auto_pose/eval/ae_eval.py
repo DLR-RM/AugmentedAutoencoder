@@ -64,6 +64,7 @@ def main():
     evaluation_name = evaluation_name + '_icp' if icp else evaluation_name
     evaluation_name = evaluation_name + '_bbest' if estimate_bbs else evaluation_name
     evaluation_name = evaluation_name + '_gttrans' if gt_trans else evaluation_name
+    evaluation_name = evaluation_name + '_gtmasks' if gt_masks else evaluation_name
 
     data = dataset_name + '_' + cam_type if len(cam_type) > 0 else dataset_name
 

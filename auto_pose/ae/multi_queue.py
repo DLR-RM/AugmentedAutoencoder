@@ -137,7 +137,7 @@ class MultiQueue(object):
 
     def preprocess_pipeline(self, dataset):
         dataset = dataset.map(self.deserialize_tfrecord)  
-        dataset = dataset.shuffle(buffer_size=self._noof_training_imgs//5)
+        dataset = dataset.shuffle(buffer_size=self._noof_training_imgs//self._num_objects)
         dataset = dataset.map(lambda train_x, mask_x, train_y : self._float_cast(train_x, mask_x, train_y))
         dataset = dataset.repeat()
         dataset = dataset.map(lambda train_x, mask_x, train_y : self._tf_augmentations(train_x, mask_x, train_y, self.bg_img_init.get_next()))
