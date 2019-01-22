@@ -119,7 +119,6 @@ class Codebook(object):
             center_mm_tx = center_obj_x_test * z / K_test[0,0] - center_obj_x_train * render_radius / K_train[0,0]  
             center_mm_ty = center_obj_y_test * z / K_test[1,1] - center_obj_y_train * render_radius / K_train[1,1]  
 
-
             t_est = np.array([center_mm_tx, center_mm_ty, z])
             ts_est[i] = t_est
             
