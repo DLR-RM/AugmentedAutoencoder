@@ -64,12 +64,12 @@ with tf.Session() as sess:
         # arr = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
         img = image[:,(width-height)/2:width-(width-height)/2,:]/255.0
         # img = cv2.resize(arr,(128,128))
-        img = cv2.resize(img,(128,128))
-
-
-
-        R = codebook.nearest_rotation(sess, img)
-        pred_view = dataset.render_rot(R,downSample = 1)
+        try:
+            img = cv2.resize(img,(128,128))
+            R = codebook.nearest_rotation(sess, img)
+            pred_view = dataset.render_rot(R,downSample = 1)
+        except:
+            print 'empty img'
         print R
         cv2.imshow('webcam input', image)
         cv2.imshow('pred view rendered', pred_view)
