@@ -95,12 +95,13 @@ def main():
         print 'exiting...'
         exit()
 
-    bar = progressbar.ProgressBar(
-        maxval=num_iter, 
-        widgets=[' [', progressbar.Timer(), ' | ', progressbar.Counter('%0{}d / {}'.format(len(str(num_iter)), num_iter)), ' ] ', 
-        progressbar.Bar(), 
-        ' (', progressbar.ETA(), ') ']
-    )
+
+    widgets = ['Training: ', progressbar.Percentage(),
+         ' ', progressbar.Bar(),
+         ' ', progressbar.Counter(), ' / %s' % num_iter,
+         ' ', progressbar.ETA(), ' ']
+    bar = progressbar.ProgressBar(maxval=num_iter,widgets=widgets)
+
 
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.9)
     config = tf.ConfigProto(gpu_options=gpu_options)
