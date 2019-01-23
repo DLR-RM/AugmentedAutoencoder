@@ -232,12 +232,12 @@ class Dataset(object):
         max_rel_offset = float(kw['max_rel_offset'])
         t = np.array([0, 0, float(kw['radius'])])
 
-        bar = progressbar.ProgressBar(
-            maxval=self.noof_training_imgs, 
-            widgets=[' [', progressbar.Timer(), ' | ', 
-                            progressbar.Counter('%0{}d / {}'.format(len(str(self.noof_training_imgs)), 
-                                self.noof_training_imgs)), ' ] ', progressbar.Bar(), ' (', progressbar.ETA(), ') ']
-            )
+
+        widgets = ['Training: ', progressbar.Percentage(),
+             ' ', progressbar.Bar(),
+             ' ', progressbar.Counter(), ' / %s' % self.noof_training_imgs,
+             ' ', progressbar.ETA(), ' ']
+        bar = progressbar.ProgressBar(maxval=self.noof_training_imgs,widgets=widgets)
         bar.start()
 
         for i in np.arange(self.noof_training_imgs):
