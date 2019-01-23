@@ -171,7 +171,7 @@ def main():
 				data_paper_vsd[int(data[3])] = {}
 				data_paper_vsd[int(data[3])]['eval_obj'] = int(data[3])
 			if 'obj' in eval_name:
-				eval_name = re.sub('\d','',eval_name)
+				eval_name = re.sub('\d','',eval_name) + exp_name
 			data_paper_vsd[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1])] = float(sixd_recall)*100
 
 		elif error_type=='cou':
@@ -190,7 +190,7 @@ def main():
 				data_paper_proj[int(data[3])] = {}
 				data_paper_proj[int(data[3])]['eval_obj'] = int(data[3])
 			if 'obj' in eval_name:
-				eval_name = re.sub('\d','',eval_name)
+				eval_name = re.sub('\d','',eval_name) + exp_name
 			data_paper_proj[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1])] = float(sixd_recall)*100
 
 		elif error_type=='adi':
