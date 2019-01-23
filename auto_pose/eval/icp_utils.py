@@ -176,11 +176,10 @@ def icp(A, B, init_pose=None, max_iterations=100, tolerance=0.001, verbose=False
 
 
 class SynRenderer(object):
-    def __init__(self,train_args):
-        MODEL_PATH = train_args.get('Paths','MODEL_PATH')
+    def __init__(self,train_args,model_path):
         self.model = train_args.get('Dataset','MODEL')
         
-        self.model_path = MODEL_PATH.replace(self.model,'cad')
+        self.model_path = model_path.replace(self.model,'cad')
         self.renderer
 
     @lazy_property

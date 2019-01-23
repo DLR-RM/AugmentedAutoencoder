@@ -151,7 +151,7 @@ def main():
         #######
         W_test, H_test = data_params['test_im_size']
 
-        icp_renderer = icp_utils.SynRenderer(train_args) if icp else None
+        icp_renderer = icp_utils.SynRenderer(train_args, dataset._kw['model_path'][0]) if icp else None
         noof_scene_views = eval_utils.noof_scene_views(scene_id, eval_args)
 
         test_embeddings.append([])
