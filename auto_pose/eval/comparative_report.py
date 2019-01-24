@@ -263,6 +263,8 @@ def main():
 		cols = ['eval_obj']  + [col for col in df_paper if col != 'eval_obj']
 		df_paper = df_paper[cols]
 		df_paper = df_paper.sort_index(axis=1)
+
+		df_paper = df_paper.loc[:, df_paper.isnull().mean() <= .9]
 		df_paper.loc['mean'] = df_paper.mean(axis=0)
 		# df_paper.loc['mean'][0] = 0
 
@@ -279,6 +281,7 @@ def main():
 		cols = ['eval_obj']  + [col for col in df_paper if col != 'eval_obj']
 		df_paper = df_paper[cols]
 		df_paper = df_paper.sort_index(axis=1)
+		df_paper = df_paper.loc[:, df_paper.isnull().mean() <= .9]
 		df_paper.loc['mean'] = df_paper.mean(axis=0)
 		# df_paper.loc['mean'][0] = 0
 

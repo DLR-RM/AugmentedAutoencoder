@@ -222,7 +222,7 @@ def get_all_scenes_for_obj(eval_args):
         obj_scene_dict = {}
         scene_gts = []
         for scene_id in xrange(1,p['scene_count']+1):
-            print scene_id
+            # print scene_id
             scene_gts.append(inout.load_yaml(p['scene_gt_mpath'].format(scene_id)))
 
         for obj in xrange(1,p['obj_count']+1):
@@ -233,7 +233,7 @@ def get_all_scenes_for_obj(eval_args):
                         eval_scenes.add(scene_i+1)
             obj_scene_dict[obj] = list(eval_scenes)
         np.save(current_file_name,obj_scene_dict)
-    print obj_scene_dict
+    # print obj_scene_dict
 
     eval_scenes = obj_scene_dict[obj_id]
 
