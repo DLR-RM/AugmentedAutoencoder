@@ -188,6 +188,7 @@ def main():
 
                 this_x = np.concatenate([el[0] for el in this])
                 this_y = np.concatenate([el[2] for el in this])
+                print this_x.shape
                 reconstr_train = np.concatenate(reconstr_train)
                 np.random.seed(0)
                 np.random.shuffle(this_x)

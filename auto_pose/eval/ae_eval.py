@@ -212,9 +212,10 @@ def main():
                                     
                 # print ts_est
                 # print Rs_est.shape
-
-                run_time = ae_time + bb_preds[view][0]['det_time'] if estimate_bbs else ae_time
-
+                try:
+                    run_time = ae_time + bb_preds[view][0]['det_time'] if estimate_bbs else ae_time
+                except:
+                    run_time = ae_time
                 # icp = False if view<350 else True
                 #TODO: 
                 Rs_est_old, ts_est_old = Rs_est.copy(), ts_est.copy()

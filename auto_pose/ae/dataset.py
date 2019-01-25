@@ -233,7 +233,7 @@ class Dataset(object):
         t = np.array([0, 0, float(kw['radius'])])
 
 
-        widgets = ['Training: ', progressbar.Percentage(),
+        widgets = ['Rendering Training Data: ', progressbar.Percentage(),
              ' ', progressbar.Bar(),
              ' ', progressbar.Counter(), ' / %s' % self.noof_training_imgs,
              ' ', progressbar.ETA(), ' ']
@@ -247,7 +247,7 @@ class Dataset(object):
             # start_time = time.time()
             R = transform.random_rotation_matrix()[:3,:3]
             bgr_x, depth_x = self.renderer.render( 
-                obj_id=0,
+                obj_id=obj_id,
                 W=render_dims[0], 
                 H=render_dims[1],
                 K=K.copy(), 
@@ -258,7 +258,7 @@ class Dataset(object):
                 random_light=True
             )
             bgr_y, depth_y = self.renderer.render( 
-                obj_id=0,
+                obj_id=obj_id,
                 W=render_dims[0], 
                 H=render_dims[1],
                 K=K.copy(), 
