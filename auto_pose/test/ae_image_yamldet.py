@@ -69,13 +69,12 @@ for i,exp_name in enumerate(arguments.experiment_names):
     train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
     train_args = configparser.ConfigParser()
     train_args.read(train_cfg_file_path)  
-    h_train, w_train, c = train_args.getint('Dataset','H'),train_args.getint('Dataset','W'), train_args.getint('Dataset','C')
+    # h_train, w_train, c = train_args.getint('Dataset','H'),train_args.getint('Dataset','W'), train_args.getint('Dataset','C')
     model_paths.append(train_args.get('Paths','MODEL_PATH'))
 
     all_train_args.append(train_args)
     cb,dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
     all_codebooks.append(cb)
-
 
     factory.restore_checkpoint(sess, tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=experiment_name)), ckpt_dir)
 
@@ -88,7 +87,7 @@ renderer = meshrenderer.Renderer(
 
 
 
-
+    
 # log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
 # ckpt_dir = utils.get_checkpoint_dir(log_dir)
    
@@ -107,7 +106,6 @@ bb_dicts = {}
 for y in yaml_files:
     with open(y) as file:
         bb_dicts[os.path.basename(y).split('yaml')[0]] = yaml.load(file)
-print bb_dicts
 # [[2730.3754266211604,0.0,960.0],[0.0,2730.3754266211604,600.0],[0.0,0.0,1.0]]
 K_test = np.array([[2730.3754266211604,0.0,960.0],[0.0,2730.3754266211604,600.0],[0.0,0.0,1.0]])
 
@@ -128,36 +126,37 @@ for file in files:
         for bb in bb_dict['labels']:
             
 
-            k = 0 if bb['class'] == 9 else 1
-
-            if bb['class'] == 10 or bb['class'] == 9:
+            k = bb['class']-1 if bb['class']<8 else bb['class']-2 #0 if  == 9 else 1
+            if not k in range(9):
+                continue
+            # if bb['class'] == 10 or bb['class'] == 9:
                 
-                im_show =orig_im.copy()
-                print orig_im.shape
-                H,W = orig_im.shape[:2]
-                x = int(W * bb['bbox']['minx'])
-                y = int(H * bb['bbox']['miny'])
-                w = int(W * bb['bbox']['maxx'] - x)
-                h = int(H * bb['bbox']['maxy'] - y)
-                pixel_bb = np.array([x,y,w,h])
-                pixel_bbs.append(pixel_bb)
+            im_show =orig_im.copy()
+            print orig_im.shape
+            H,W = orig_im.shape[:2]
+            x = int(W * bb['bbox']['minx'])
+            y = int(H * bb['bbox']['miny'])
+            w = int(W * bb['bbox']['maxx'] - x)
+            h = int(H * bb['bbox']['maxy'] - y)
+            pixel_bb = np.array([x,y,w,h])
+            pixel_bbs.append(pixel_bb)
 
-                # cropped_im = orig_im[:,:orig_im.shape[1],:]
-                H,W =  orig_im.shape[:2]
-                img_crop = extract_square_patch(orig_im,pixel_bb,train_args.getfloat('Dataset','PAD_FACTOR'),interpolation=cv2.INTER_LINEAR)
+            # cropped_im = orig_im[:,:orig_im.shape[1],:]
+            H,W =  orig_im.shape[:2]
+            img_crop = extract_square_patch(orig_im,pixel_bb,train_args.getfloat('Dataset','PAD_FACTOR'),interpolation=cv2.INTER_LINEAR)
 
-                R, t, _ = all_codebooks[k].auto_pose6d(sess, img_crop, pixel_bb, K_test, 1, all_train_args[k], upright=False)
-                Rs.append(R.squeeze())
-                ts.append(t.squeeze())
+            R, t, _ = all_codebooks[k].auto_pose6d(sess, img_crop, pixel_bb, K_test, 1, all_train_args[k], upright=False)
+            Rs.append(R.squeeze())
+            ts.append(t.squeeze())
 
 
-                det_objects_k.append(k)
+            det_objects_k.append(k)
 
-                # R,t,_ = codebook.auto_pose6d(sess, img_crop, pixel_bb,K_test,1,train_args)
-                # print R,t
+            # R,t,_ = codebook.auto_pose6d(sess, img_crop, pixel_bb,K_test,1,train_args)
+            # print R,t
 
-                # R = R.squeeze()
-                # t = t.squeeze()
+            # R = R.squeeze()
+            # t = t.squeeze()
 
         
         rendered_pose_ests = {}
@@ -180,7 +179,7 @@ for file in files:
             x,y,w,h = pixel_bb
             cv2.rectangle(im_show, (x,y),(x+w,y+h),(255,0,0), 3)
             g_y = np.zeros_like(rendered_pose_est)
-            g_y[:,:,key+1]= rendered_pose_est[:,:,key+1]
+            g_y[:,:,key%3]= rendered_pose_est[:,:,key%3]
             im_show[rendered_pose_est > 0] = g_y[rendered_pose_est > 0]*2./3. + orig_im[rendered_pose_est > 0]*1./3.
             # im_show[rendered_pose_est > 0] = rendered_pose_est[rendered_pose_est > 0]
             
@@ -205,20 +204,20 @@ for file in files:
 
 
         # if key == ord('a'):
-        # 	t[0]-=10
+        #   t[0]-=10
         # if key == ord('d'):
-        # 	t[0]+=10
+        #   t[0]+=10
         # if key == ord('s'):
-        # 	t[1]-=10
+        #   t[1]-=10
         # if key == ord('w'):
-        # 	t[1]+=10
+        #   t[1]+=10
         # if key == ord('e'):
         #     t[2]-=10
         # if key == ord('r'):
         #     t[2]+=10
-        	
+            
         
         # if cv2.waitKey(0) == ord('k'):
-        # 	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/img_crop_%s.jpg' % os.path.basename(file).split('png')[0],cv2.resize(img_crop,(512,512)))
-        # 	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/pred_pose_%s.jpg' % os.path.basename(file).split('png')[0],orig_im)
-        # 	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/pred_rot%s.jpg' % os.path.basename(file).split('png')[0],cv2.resize(pred_view,(512,512)))
+        #   cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/img_crop_%s.jpg' % os.path.basename(file).split('png')[0],cv2.resize(img_crop,(512,512)))
+        #   cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/pred_pose_%s.jpg' % os.path.basename(file).split('png')[0],orig_im)
+        #   cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/pred_rot%s.jpg' % os.path.basename(file).split('png')[0],cv2.resize(pred_view,(512,512)))
