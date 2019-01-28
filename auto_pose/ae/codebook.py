@@ -204,8 +204,7 @@ class Codebook(object):
         J = self._encoder.latent_space_size
         embedding_z = np.empty( (embedding_size, J) )
         obj_bbs = np.empty( (embedding_size, 4) )
-        print 'Creating embedding ..'
-        widgets = ['Training: ', progressbar.Percentage(),
+        widgets = ['Creating Embedding: ', progressbar.Percentage(),
              ' ', progressbar.Bar(),
              ' ', progressbar.Counter(), ' / %s' % embedding_size,
              ' ', progressbar.ETA(), ' ']
