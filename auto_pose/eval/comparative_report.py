@@ -85,6 +85,8 @@ def main():
 	data_proj = []
 	data_paper_vsd = {}
 	data_paper_auc = {}
+	data_paper_add = {}
+	data_paper_adi = {}
 	latex_content = []
 
 	for error_score_file in error_score_files:
@@ -154,8 +156,8 @@ def main():
 				if not data_paper_auc.has_key(int(data[3])):
 					data_paper_auc[int(data[3])] = {}
 					data_paper_auc[int(data[3])]['eval_obj'] = int(data[3])
-				data_paper_auc[int(data[3])][eval_name+'_'+'auc_re'+'_'+str(data[1])] = float(auc_re)*100
-				data_paper_auc[int(data[3])][eval_name+'_'+'auc_rerect'+'_'+str(data[1])] = float(auc_rerect)*100
+				data_paper_auc[int(data[3])][eval_name+'_'+'auc_re'+'_'+str(data[1]) + occl] = float(auc_re)*100
+				data_paper_auc[int(data[3])][eval_name+'_'+'auc_rerect'+'_'+str(data[1])+ occl] = float(auc_rerect)*100
 			except:
 				print err_file, 'not found'
 			
@@ -170,7 +172,7 @@ def main():
 			if not data_paper_vsd.has_key(int(data[3])):
 				data_paper_vsd[int(data[3])] = {}
 				data_paper_vsd[int(data[3])]['eval_obj'] = int(data[3])
-			data_paper_vsd[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1])] = float(sixd_recall)*100
+			data_paper_vsd[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1]) + occl] = float(sixd_recall)*100
 
 		elif error_type=='cou':
 			data_cou.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
@@ -180,6 +182,12 @@ def main():
 			data_add.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
+			if int(data[3]) not in [3,7]:
+				if not data_paper_add.has_key(int(data[3])):
+					data_paper_add[int(data[3])] = {}
+					data_paper_add[int(data[3])]['eval_obj'] = int(data[3])
+				data_paper_add[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1]) + occl] = float(sixd_recall)*100
+
 		elif error_type=='proj':
 			data_proj.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
@@ -188,6 +196,11 @@ def main():
 			data_adi.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
+			if int(data[3]) not in [3,7]:
+				if not data_paper_adi.has_key(int(data[3])):
+					data_paper_adi[int(data[3])] = {}
+					data_paper_adi[int(data[3])]['eval_obj'] = int(data[3])
+				data_paper_adi[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1]) + occl] = float(sixd_recall)*100
 		else:
 			print 'error not known: ', error_type
 
@@ -251,6 +264,38 @@ def main():
 		latex_content.append('\n')
 	if len(data_paper_vsd) > 0:
 		df_paper = pd.DataFrame.from_dict(data_paper_vsd, orient='index')
+		cols = ['eval_obj']  + [col for col in df_paper if col != 'eval_obj']
+		df_paper = df_paper[cols]
+		df_paper = df_paper.sort_index(axis=1)
+		df_paper.loc['mean'] = df_paper.mean(axis=0)
+		# df_paper.loc['mean'][0] = 0
+
+		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
+		latex_list = df_paper.to_latex(index=False, multirow=True, float_format='%.2f').splitlines()
+		latex_list.insert(len(latex_list)-3, '\midrule')
+		latex_new = '\n'.join(latex_list)
+		latex_content.append(latex_new)
+		latex_content.append('\\end{adjustbox}')
+		latex_content.append('\n')
+		latex_content.append('\n')
+	if len(data_paper_add) > 0:
+		df_paper = pd.DataFrame.from_dict(data_paper_add, orient='index')
+		cols = ['eval_obj']  + [col for col in df_paper if col != 'eval_obj']
+		df_paper = df_paper[cols]
+		df_paper = df_paper.sort_index(axis=1)
+		df_paper.loc['mean'] = df_paper.mean(axis=0)
+		# df_paper.loc['mean'][0] = 0
+
+		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
+		latex_list = df_paper.to_latex(index=False, multirow=True, float_format='%.2f').splitlines()
+		latex_list.insert(len(latex_list)-3, '\midrule')
+		latex_new = '\n'.join(latex_list)
+		latex_content.append(latex_new)
+		latex_content.append('\\end{adjustbox}')
+		latex_content.append('\n')
+		latex_content.append('\n')
+	if len(data_paper_adi) > 0:
+		df_paper = pd.DataFrame.from_dict(data_paper_adi, orient='index')
 		cols = ['eval_obj']  + [col for col in df_paper if col != 'eval_obj']
 		df_paper = df_paper[cols]
 		df_paper = df_paper.sort_index(axis=1)

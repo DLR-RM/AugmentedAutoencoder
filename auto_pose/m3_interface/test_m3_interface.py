@@ -28,25 +28,29 @@ if workspace_path == None:
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 # example input, replace with camera stream
-img = cv2.imread(os.path.join(this_dir,'sample_data','cup.png'))
+# img = cv2.imread(os.path.join(this_dir,'sample_data','cup.png'))
 
 # img = cv2.imread('/home_local/sund_ma/data/t-less/t-less_v2/test_primesense/01/rgb/0205.png')
 # depth_img = load_depth2('/home_local/sund_ma/data/t-less/t-less_v2/test_primesense/01/depth/0205.png')
 
+img = cv2.imread('/volume/USERSTORE/project_indu/sixd/test_sr300/01/rgb/100.png')
+depth_img = load_depth2('/volume/USERSTORE/project_indu/sixd/test_sr300/01/depth/100.png')
+
 H,W,_ = img.shape
 # replace with a detector
 # bb = BoundingBox(xmin=0.517,xmax=0.918,ymin=0.086,ymax=0.592,classes={'benchviseblue':1.0}) 
-bb2 = BoundingBox(xmin=0.517,xmax=0.918,ymin=0.086,ymax=0.592,classes={'obj25':1.0}) 
+bb2 = BoundingBox(xmin=0.517,xmax=0.918,ymin=0.086,ymax=0.592,classes={'1':1.0}) 
 # test camera matrix
 camK = np.array([[1075.65,0,W//2],[0,1073.90,H//2],[0,0,1]]) 
 
 
 ae_pose_est = AePoseEstimator(os.path.join(workspace_path,'cfg_m3vision/test_config.cfg'))
-pose_ests = ae_pose_est.process([bb2],img,camK)#,depth_img=depth_img)
+pose_ests = ae_pose_est.process([bb2],img,camK,depth_img=depth_img)
 
-
-print pose_ests[0].trafo
-
+try:
+    print pose_ests[0].trafo
+except:
+    print 'nothing detected'
 if args.vis:
     ply_model_paths = [str(train_args.get('Paths','MODEL_PATH')) for train_args in ae_pose_est.all_train_args]
     cad_reconst = [str(train_args.get('Dataset','MODEL')) for train_args in ae_pose_est.all_train_args]

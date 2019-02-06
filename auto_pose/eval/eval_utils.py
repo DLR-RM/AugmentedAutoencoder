@@ -38,6 +38,7 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
         bb_scores = data['bb_scores'].item()
         bb_vis = data['visib_gt'].item()
         bbs = data['bbs'].item()
+        
     if not os.path.exists(current_file_name) or len(test_img_crops) == 0 or len(test_img_depth_crops) == 0:
         test_imgs = load_scenes(scene_id, eval_args)
         test_imgs_depth = load_scenes(scene_id, eval_args, depth=True) if icp else None

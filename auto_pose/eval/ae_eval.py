@@ -78,7 +78,7 @@ def main():
     print eval_args
 
     codebook, dataset, decoder = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True, return_decoder = True)
-    dataset.renderer
+    # dataset.renderer
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.5)
     config = tf.ConfigProto(gpu_options=gpu_options)
 
@@ -285,7 +285,7 @@ def main():
         eval_plots.plot_t_err_hist(np.array(t_errors), eval_dir)
         eval_plots.plot_t_err_hist2(np.array(t_errors), eval_dir)
     if eval_args.getboolean('PLOT','CUM_R_ERROR_HIST'):
-        eval_plots.plot_R_err_hist(eval_args, eval_dir, scenes)
+        eval_plots.plot_R_err_recall(eval_args, eval_dir, scenes)
         eval_plots.plot_R_err_hist2(np.array(R_errors), eval_dir)
     if eval_args.getboolean('PLOT','CUM_VSD_ERROR_HIST'):
         eval_plots.plot_vsd_err_hist(eval_args, eval_dir, scenes)
@@ -309,7 +309,7 @@ def main():
     report.write_configuration(train_cfg_file_path,eval_cfg_file_path)
     report.merge_all_tex_files()
     report.include_all_figures()
-    report.save(open_pdf=False)
+    report.save(open_pdf=True)
 
 if __name__ == '__main__':
     main()

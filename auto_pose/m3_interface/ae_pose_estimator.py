@@ -72,12 +72,12 @@ class AePoseEstimator(PoseEstInterface):
             factory.restore_checkpoint(self.sess, saver, ckpt_dir)
 
 
-            if test_args.getboolean('MODEL','icp'):
-                assert len(self.all_experiments) == 1, 'icp currently only works for one object'
+            if test_args.getboolean('ICP','icp'):
+                # assert len(self.all_experiments) == 1, 'icp currently only works for one object'
                 # currently works only for one object
                 from auto_pose.icp import icp
                 self._process_requirements.append('depth_img')
-                self.icp_handle = icp.ICP(train_args)
+                self.icp_handle = icp.ICP(test_args)
 
 
 
@@ -145,12 +145,13 @@ class AePoseEstimator(PoseEstInterface):
 
             if 'depth_img' in self.query_process_requirements():
                 assert H == depth_img.shape[0]
+                print depth_img.shape
                 depth_crop = self.extract_square_patch(depth_img, 
                                                     box_xywh,
                                                     self.pad_factors[clas_idx],
                                                     resize=self.patch_sizes[clas_idx], 
                                                     interpolation=cv2.INTER_NEAREST)
-                R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H))
+                R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H), clas_idx)
 
             H_est[:3,:3] = R_est
             H_est[:3,3] = t_est / 1000. #mm in m

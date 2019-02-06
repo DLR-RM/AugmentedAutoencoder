@@ -44,13 +44,22 @@ with tf.Session() as sess:
     factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir)
 
     if os.path.isdir(file_str):
-        files = glob.glob(os.path.join(str(file_str),'*.png'))+glob.glob(os.path.join(str(file_str),'*.jpg'))
+        files = glob.glob(os.path.join(str(file_str),'*.png'))+glob.glob(os.path.join(str(file_str),'*.jpg'))+glob.glob(os.path.join(str(file_str),'*.pgm'))
     else:
         files = [file_str]
 
     for file in files*10:
 
         im = cv2.imread(file)
+        h,w = im.shape[:2]
+        size = int(np.maximum(h, w))
+        
+        left = np.maximum(w/2-size/2, 0)
+        right = np.minimum(w/2+size/2,w)
+        top = np.maximum(h/2-size/2, 0)
+        bottom = np.minimum(h/2+size/2,h)
+
+        im = im[top:bottom,left:right,:]
         im = cv2.resize(im,(128,128))
         if train_args.getint('Dataset','C')==1:
             im=cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)[:,:,None]

@@ -229,6 +229,7 @@ class Dataset(object):
         clip_far = float(kw['clip_far'])
         pad_factor = float(kw['pad_factor'])
         max_rel_offset = float(kw['max_rel_offset'])
+        lighting = eval(kw['lighting']) if kw.has_key('lighting') else None
         t = np.array([0, 0, float(kw['radius'])])
 
 
@@ -245,17 +246,31 @@ class Dataset(object):
             # print '%s/%s' % (i,self.noof_training_imgs)
             # start_time = time.time()
             R = transform.random_rotation_matrix()[:3,:3]
-            bgr_x, depth_x = self.renderer.render( 
-                obj_id=0,
-                W=render_dims[0], 
-                H=render_dims[1],
-                K=K.copy(), 
-                R=R, 
-                t=t,
-                near=clip_near,
-                far=clip_far,
-                random_light=True
-            )
+            if lighting is None:
+                bgr_x, depth_x = self.renderer.render( 
+                    obj_id=0,
+                    W=render_dims[0], 
+                    H=render_dims[1],
+                    K=K.copy(), 
+                    R=R, 
+                    t=t,
+                    near=clip_near,
+                    far=clip_far,
+                    random_light=True,
+                )
+            else:
+                bgr_x, depth_x = self.renderer.render( 
+                    obj_id=0,
+                    W=render_dims[0], 
+                    H=render_dims[1],
+                    K=K.copy(), 
+                    R=R, 
+                    t=t,
+                    near=clip_near,
+                    far=clip_far,
+                    random_light=True,
+                    phong = lighting
+                )
             bgr_y, depth_y = self.renderer.render( 
                 obj_id=0,
                 W=render_dims[0], 
@@ -474,7 +489,7 @@ class Dataset(object):
         if eval(self._kw['realistic_occlusion']):
             masks = self.augment_occlusion_mask(masks.copy(),max_occl=np.float(self._kw['realistic_occlusion']))
         
-        if eval(self._kw['square_occlusion']):
+        if 'square_occlusion' in self._kw and eval(self._kw['square_occlusion']):
             masks = self.augment_squares(masks.copy(),rand_idcs,max_occl=np.float(self._kw['square_occlusion']))
 
         batch_x[masks] = rand_vocs[masks]

@@ -12,8 +12,8 @@ angle_change_limit = 0.35 # = 20 deg #0.5236=30 deg
 
 
 class ICP():
-    def __init__(self, train_args):
-        self.syn_renderer = SynRenderer(train_args)
+    def __init__(self, test_args):
+        self.syn_renderer = SynRenderer(test_args)
 
     def best_fit_transform(self,A, B, depth_only=False, no_depth=False):
         '''
@@ -157,8 +157,8 @@ class ICP():
         return T, distances, i
 
 
-    def icp_refinement(self,depth_crop, R_est, t_est, K_test, test_render_dims, depth_only=False, no_depth=False):
-        synthetic_pts = self.syn_renderer.generate_synthetic_depth(K_test, R_est, t_est, test_render_dims)
+    def icp_refinement(self,depth_crop, R_est, t_est, K_test, test_render_dims, depth_only=False, no_depth=False,clas_idx=0):
+        synthetic_pts = self.syn_renderer.generate_synthetic_depth(K_test, R_est, t_est, test_render_dims,clas_idx=clas_idx)
         centroid_synthetic_pts = np.mean(synthetic_pts, axis=0)
         max_mean_dist = np.max(np.linalg.norm(synthetic_pts - centroid_synthetic_pts,axis=1))
         # print 'max_mean_dist', max_mean_dist
