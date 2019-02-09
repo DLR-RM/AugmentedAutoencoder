@@ -20,6 +20,7 @@ class SynRenderer(object):
     @lazy_property
     def renderer(self):
         if self.has_vertex_color:
+            # meshrenderer works also for models with vertex color
             return meshrenderer_phong.Renderer(self.model_paths,1,'.')
         else:
             return meshrenderer.Renderer(self.model_paths,1,'.',vertex_scale=self.vertex_scale)
