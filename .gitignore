@@ -3,3 +3,4 @@ ae.sublime-project
 ae.sublime-workspace
 *.npy
 *.pyc
+.vscode
