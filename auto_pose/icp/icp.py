@@ -7,7 +7,7 @@ from renderer import SynRenderer
 # Constants
 N = 3000                                 # number of random points in the dataset
 dim = 3                                     # number of dimensions of the points
-max_mean_dist_factor = 5.0
+max_mean_dist_factor = 4.0
 angle_change_limit = 0.35 # = 20 deg #0.5236=30 deg
 
 
@@ -166,10 +166,10 @@ class ICP():
         K_test_crop[0,2] = depth_crop.shape[0]/2
         K_test_crop[1,2] = depth_crop.shape[1]/2
         real_depth_pts = misc.rgbd_to_point_cloud(K_test_crop,depth_crop)[0]
-
+        print 'noofpoints real/syn: ', len(real_depth_pts)
         real_synmean_dist = np.linalg.norm(real_depth_pts-centroid_synthetic_pts,axis=1)
         real_depth_pts = real_depth_pts[real_synmean_dist < max_mean_dist_factor*max_mean_dist]
-
+        print 'noofpoints real/syn: ', len(real_depth_pts), len(synthetic_pts)
         if len(real_depth_pts) < len(synthetic_pts)/8.:
             print 'not enough visible points'
             R_refined = R_est
@@ -198,4 +198,3 @@ class ICP():
             t_refined = H_est_refined[:3,3]
 
         return (R_refined, t_refined)
-

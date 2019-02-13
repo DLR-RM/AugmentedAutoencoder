@@ -39,6 +39,8 @@ class AePoseEstimator(PoseEstInterface):
                               'color_data_type': eval(test_args.get('MODEL','color_data_type')),
                               'depth_data_type': eval(test_args.get('MODEL','depth_data_type')) }
 
+        self.vis = test_args.getboolean('MODEL','pose_visualization')
+
         self.all_experiments = eval(test_args.get('MODEL','experiments'))
         self.class_names = eval(test_args.get('MODEL','class_names'))
         self.all_codebooks = []
@@ -144,17 +146,29 @@ class AePoseEstimator(PoseEstInterface):
             t_est = ts_est.squeeze()
 
             if 'depth_img' in self.query_process_requirements():
+                print 'depth im shape:', depth_img.shape
+                print 'color im shape:', color_img.shape
                 assert H == depth_img.shape[0]
-                print depth_img.shape
+                depth_crop = depth_img
                 depth_crop = self.extract_square_patch(depth_img, 
                                                     box_xywh,
                                                     self.pad_factors[clas_idx],
                                                     resize=self.patch_sizes[clas_idx], 
-                                                    interpolation=cv2.INTER_NEAREST)
-                R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H), clas_idx)
+                                                    interpolation=cv2.INTER_NEAREST) * 1000.
+                R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H), clas_idx=clas_idx)
 
+	            if self.vis:
+	                bgr, depth = self.icp_handle.syn_renderer.render_trafo(camK, R_est, t_est, (W,H), clas_idx=clas_idx)
+	                img_show = color_img.copy()
+	                g_y = np.zeros_like(bgr)
+	                g_y[:,:,1]= bgr[:,:,1]
+	                g_y = g_y/255.    
+	                img_show[depth > 0] = g_y[depth > 0]*2./3. + img_show[depth > 0]*1./3.
+	                cv2.imshow('pose est, obj %s' % clas_idx,img_show)
+                    
+           
             H_est[:3,:3] = R_est
-            H_est[:3,3] = t_est / 1000. #mm in m
+            H_est[:3,3] = t_est / 1000.
             print 'translation from camera: ',  H_est[:3,3]
 
             if self._camPose:
@@ -165,5 +179,4 @@ class AePoseEstimator(PoseEstInterface):
 
 
         return all_pose_estimates
-
 

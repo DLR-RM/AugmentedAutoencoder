@@ -1,6 +1,6 @@
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D 
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib2tikz import save as tikz_save
 import cv2
 import os
@@ -13,7 +13,7 @@ import glob
 import pickle as pl
 
 from meshrenderer import box3d_renderer
-from sixd_toolkit.pysixd import inout,pose_error
+from sixd_toolkit.pysixd import inout,pose_error,transform,view_sampler
 from sixd_toolkit.params import dataset_params
 
 view_idx = 0
@@ -285,14 +285,21 @@ def compute_pca_plot_embedding(eval_dir, z_train, z_test=None, save=True):
         plt.savefig(os.path.join(eval_dir,'figures','pca_embedding.pdf'))
 
 
-def plot_viewsphere_for_embedding(Rs_viewpoints, eval_dir):
+def plot_viewsphere_for_embedding(Rs_viewpoints, eval_dir, errors=None,save=True):
     fig = plt.figure()
     ax = Axes3D(fig)
-    c=np.linspace(0, 1, len(Rs_viewpoints))
-    ax.scatter(Rs_viewpoints[:,2,0],Rs_viewpoints[:,2,1],Rs_viewpoints[:,2,2], c=c, marker='.', label='embed viewpoints')
+    if errors is not None:
+        c= errors/180.
+    else:
+        c=np.linspace(0, 1, len(Rs_viewpoints))
+    ax.scatter(Rs_viewpoints[:,2,0],Rs_viewpoints[:,2,1],Rs_viewpoints[:,2,2], c=c, s=50, marker='.', label='embed viewpoints')
+    # ax.plot_surface(Rs_viewpoints[:,2,0],Rs_viewpoints[:,2,1],Rs_viewpoints[:,2,2], rstride=1, cstride=1, color=c, shade=0)
+
     plt.title('Embedding Viewpoints')
     plt.legend()
-    plt.savefig(os.path.join(eval_dir,'figures','embedding_viewpoints.pdf'))
+    if save:
+
+        plt.savefig(os.path.join(eval_dir,'figures','embedding_viewpoints.pdf'))
 
 
 
@@ -374,7 +381,7 @@ def plot_t_err_hist2(t_errors, eval_dir, bins=15):
     plt.bar(middle_bin,bin_count,100*0.5/bins)
     tikz_save(os.path.join(eval_dir,'latex','t_err_hist2.tex'), figurewidth ='0.45\\textheight', figureheight='0.45\\textheight', show_info=False)
 
-def plot_R_err_hist2(R_errors, eval_dir, bins=15):
+def plot_R_err_hist2(R_errors, eval_dir, bins=15, save=True):
 
     fig = plt.figure()
     plt.title('Rotation Error Histogram')
@@ -388,7 +395,8 @@ def plot_R_err_hist2(R_errors, eval_dir, bins=15):
     middle_bin = bounds[:-1] + (bounds[1]-bounds[0])/2.
     plt.bar(middle_bin,bin_count,180*0.5/bins)
     plt.xlim((0, 180))
-    tikz_save(os.path.join(eval_dir,'latex','R_err_hist2.tex'), figurewidth ='0.45\\textheight', figureheight='0.45\\textheight', show_info=False)
+    if save:
+        tikz_save(os.path.join(eval_dir,'latex','R_err_hist2.tex'), figurewidth ='0.45\\textheight', figureheight='0.45\\textheight', show_info=False)
 
 def plot_R_err_hist_vis(eval_args, eval_dir, scene_ids, bins=20):
     top_n_eval = eval_args.getint('EVALUATION','TOP_N_EVAL')
@@ -779,10 +787,37 @@ def main():
     log_dir = get_log_dir(workspace_path, experiment_name, experiment_group)
     eval_dir = get_eval_dir(log_dir, evaluation_name, data)
     
-    plot_R_err_hist_vis(eval_args, eval_dir, scenes,bins=19)
-    plot_t_err_hist_vis(eval_args, eval_dir, scenes,bins=19)
+    plot_R_err_hist_vis(eval_args, eval_dir, scenes,bins=15)
+    plot_t_err_hist_vis(eval_args, eval_dir, scenes,bins=15)
     plt.show()
 
+def main2():
+    R_errors = []
+    
+    for R in xrange(100000):
+        R_gt = transform.random_rotation_matrix()[:3,:3]
+        R_est = transform.random_rotation_matrix()[:3,:3]
+        R_errors.append(pose_error.re(R_est,R_gt))
+    plot_R_err_hist2(R_errors,'',bins=90,save=False)
+
+    azimuth_range = (0, 2 * np.pi)
+    elev_range = (-0.5 * np.pi, 0.5 * np.pi)
+    views, _ = view_sampler.sample_views(
+        2563, 
+        100, 
+        azimuth_range, 
+        elev_range
+    )
+        
+    Rs = []
+    for view in views:
+        R_errors.append(pose_error.re(view['R'],views[np.random.randint(0,len(views))]['R']))
+        Rs.append(view['R'])
+    plot_R_err_hist2(R_errors,'',bins=45,save=False)
+
+    plot_viewsphere_for_embedding(np.array(Rs),'',np.array(R_errors),save=False)
+
+    plt.show()
 
 if __name__ == "__main__":
     main()

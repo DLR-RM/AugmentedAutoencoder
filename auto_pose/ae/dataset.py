@@ -51,7 +51,7 @@ class Dataset(object):
         Rs = np.empty( (len(views)*num_cyclo, 3, 3) )
         i = 0
         for view in views:
-            for cyclo in np.linspace(0, 2.*np.pi, num_cyclo):
+            for cyclo in np.linspace(0, 2.*np.pi, num_cyclo, endpoint=False):
                 rot_z = np.array([[np.cos(-cyclo), -np.sin(-cyclo), 0], [np.sin(-cyclo), np.cos(-cyclo), 0], [0, 0, 1]])
                 Rs[i,:,:] = rot_z.dot(view['R'])
                 i += 1

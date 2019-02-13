@@ -47,19 +47,19 @@ class SynRenderer(object):
 
         return pts
 
-    def render_trafo(self, K_test, R_est, t_est, test_shape, downSample = 1):
+    def render_trafo(self, K_test, R_est, t_est, test_shape, clas_idx=0):
         W_test, H_test = test_shape[:2]
 
         bgr, depth_x = self.renderer.render( 
-                        obj_id=0,
-                        W=W_test,#/downSample, 
-                        H=H_test,#/downSample,
+                        obj_id=clas_idx,
+                        W=W_test, 
+                        H=H_test,
                         K=K_test, 
                         R=R_est, 
-                        t=np.array(t_est),
+                        t=t_est,
                         near=10,
                         far=10000,
                         random_light=False
                     )
-        return bgr
+        return bgr,depth_x
 
