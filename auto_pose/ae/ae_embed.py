@@ -64,7 +64,6 @@ def main():
     with tf.Session(config=config) as sess:
 
         print ckpt_dir
-        print '#'*20
 
         factory.restore_checkpoint(sess, saver, ckpt_dir, at_step=at_step)
 
