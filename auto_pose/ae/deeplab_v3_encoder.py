@@ -103,14 +103,6 @@ def deeplab_v3_encoder(inputs, params, is_training = False, depth=512, atrous_ra
                                     global_pool=False,
                                     output_stride=output_stride)
 
-  if is_training and pre_trained_model is not None:
-      exclude = [base_architecture + '/logits', 'global_step']
-      variables_to_restore = tf.contrib.slim.get_variables_to_restore(exclude=exclude)
-      tf.train.init_from_checkpoint(pre_trained_model,
-                                    {v.name.split(':')[0]: v for v in variables_to_restore})
-
-  inputs_size = tf.shape(inputs)[1:3]
-
   net = end_points[tf.get_default_graph().get_name_scope() + '/' + base_architecture + '/block4']
   if atrous_rates is not None:
     encoder_output = atrous_spatial_pyramid_pooling(net, output_stride, batch_norm_decay, is_training, depth=depth, atrous_rates=atrous_rates)

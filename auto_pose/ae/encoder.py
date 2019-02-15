@@ -25,6 +25,13 @@ class Encoder(object):
         self.encoder_out
         self.z
         self.global_step
+
+        if self._pre_trained_model != 'False':
+            exclude = ['resnet_v2_101' + '/logits', 'resnet_v2_50' + '/logits', 'global_step']
+            self.variables_to_restore = tf.contrib.slim.get_variables_to_restore(exclude=exclude)
+        else:
+            self.variables_to_restore = None
+
         # self.q_sigma
         # self.sampled_z
         # self.reg_loss

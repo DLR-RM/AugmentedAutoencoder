@@ -80,6 +80,7 @@ def main():
         iterator = multi_queue.create_iterator(dataset_path, args)
         all_object_views = tf.concat([inp[0] for inp in multi_queue.next_element],0)
         encoder = factory.build_encoder(all_object_views, args, is_training=True)
+
         decoders = []
         encoding_splits = tf.split(encoder.z, multi_queue._num_objects,0)
 
@@ -116,13 +117,15 @@ def main():
     config = tf.ConfigProto(gpu_options=gpu_options)
 
     with tf.Session(config=config) as sess:
-
+        
         sess.run(multi_queue.bg_img_init.initializer)
         sess.run(iterator.initializer)
 
         merged_loss_summary = tf.summary.merge_all()
         summary_writer = tf.summary.FileWriter(ckpt_dir, sess.graph)
 
+        if encoder.variables_to_restore is not None:
+            
 
         chkpt = tf.train.get_checkpoint_state(ckpt_dir)
         if chkpt and chkpt.model_checkpoint_path:
