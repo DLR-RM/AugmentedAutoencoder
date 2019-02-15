@@ -48,16 +48,6 @@ def main():
 
     with tf.variable_scope(experiment_name):
         dataset = factory.build_dataset(dataset_path, args)
-        # dataset._kw['model_path'] = [model_path]
-        # if 'cad' in model_path:
-        #     dataset._kw['model'] == 'cad' 
-        #     dataset.renderer
-        # elif 'reconst' in model_path:
-        #     dataset._kw['model'] == 'reconst' 
-        #     dataset.renderer
-        # else:
-        #     print 'neither cad nor reconst in model_path'
-        #     exit()
         queue = factory.build_queue(dataset, args)
         encoder = factory.build_encoder(queue.x, args)
         # decoder = factory.build_decoder(queue.y, encoder, args)
