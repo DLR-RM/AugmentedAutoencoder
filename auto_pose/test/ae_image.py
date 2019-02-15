@@ -47,22 +47,25 @@ with tf.Session() as sess:
         files = glob.glob(os.path.join(str(file_str),'*.png'))+glob.glob(os.path.join(str(file_str),'*.jpg'))+glob.glob(os.path.join(str(file_str),'*.pgm'))
     else:
         files = [file_str]
-
+    print files
     for file in files*10:
 
         im = cv2.imread(file)
+        
+        im = cv2.copyMakeBorder(im,50,50,50,50,cv2.BORDER_CONSTANT,value=[0,0,0])
         h,w = im.shape[:2]
-        size = int(np.maximum(h, w))
+        size = int(np.minimum(h, w)*1.2)
         
         left = np.maximum(w/2-size/2, 0)
         right = np.minimum(w/2+size/2,w)
         top = np.maximum(h/2-size/2, 0)
         bottom = np.minimum(h/2+size/2,h)
 
-        im = im[top:bottom,left:right,:]
+        im = im[top:bottom, left:right, :]
         im = cv2.resize(im,(128,128))
+
         if train_args.getint('Dataset','C')==1:
-            im=cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)[:,:,None]
+            im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)[:,:,None]
         st = time.time()
         R = codebook.nearest_rotation(sess, im)
         print time.time()-st

@@ -52,7 +52,7 @@ class MultiQueue(object):
         feature = {}
         feature['train_x'] = tf.train.Feature(bytes_list=tf.train.BytesList(value=[train_x_bytes]))
         feature['train_y'] = tf.train.Feature(bytes_list=tf.train.BytesList(value=[train_y_bytes]))
-        feature['mask'] =  tf.train.Feature(bytes_list=tf.train.BytesList(value=[mask_x_bytes]))
+        feature['mask'] = tf.train.Feature(bytes_list=tf.train.BytesList(value=[mask_x_bytes]))
 
         example = tf.train.Example(features=tf.train.Features(feature=feature))
         serialized = example.SerializeToString()
@@ -84,8 +84,6 @@ class MultiQueue(object):
                 print 'generated tfrecord for training images', model
             else:
                 print 'tfrecord exists for', model
-
-            
 
     def _tf_augmentations(self, train_x, mask_x, train_y, bg):
         # train_x = add_black_patches(train_x)
