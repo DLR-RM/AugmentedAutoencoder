@@ -35,7 +35,6 @@ def main():
     dataset_path = u.get_dataset_path(workspace_path)
 
     print checkpoint_file
-    print ckpt_dir
     print '#'*20
 
     if not os.path.exists(cfg_file_path):
