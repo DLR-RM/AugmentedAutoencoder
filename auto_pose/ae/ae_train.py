@@ -125,7 +125,7 @@ def main():
         summary_writer = tf.summary.FileWriter(ckpt_dir, sess.graph)
 
         if encoder.variables_to_restore is not None:
-            
+            encoder.restore_variables()
 
         chkpt = tf.train.get_checkpoint_state(ckpt_dir)
         if chkpt and chkpt.model_checkpoint_path:

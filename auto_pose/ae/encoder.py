@@ -130,4 +130,7 @@ class Encoder(object):
     def global_step(self):
         return tf.Variable(0, dtype=tf.int64, trainable=False, name='global_step')
 
+    def restore_variables(self):
+        tf.train.init_from_checkpoint(self._pre_trained_model,
+                                {v.name.split(':')[0]: v for v in self.variables_to_restore})
     
