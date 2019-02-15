@@ -229,12 +229,11 @@ class Dataset(object):
         max_rel_offset = float(kw['max_rel_offset'])
         t = np.array([0, 0, float(kw['radius'])])
 
-        bar = progressbar.ProgressBar(
-            maxval=self.noof_training_imgs, 
-            widgets=[' [', progressbar.Timer(), ' | ', 
-                            progressbar.Counter('%0{}d / {}'.format(len(str(self.noof_training_imgs)), 
-                                self.noof_training_imgs)), ' ] ', progressbar.Bar(), ' (', progressbar.ETA(), ') ']
-            )
+        widgets = ['Training: ', progressbar.Percentage(),
+             ' ', progressbar.Bar(),
+             ' ', progressbar.Counter(), ' / %s' % self.noof_training_imgs,
+             ' ', progressbar.ETA(), ' ']
+        bar = progressbar.ProgressBar(maxval=self.noof_training_imgs,widgets=widgets)
         bar.start()
 
         for i in np.arange(self.noof_training_imgs):
@@ -353,17 +352,24 @@ class Dataset(object):
             batch[i] = resized_bgr_y / 255.
         return (batch, obj_bbs)
 
-    def extract_square_patch(self, scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST):
+    def extract_square_patch(self, scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST,black_borders=False):
 
         x, y, w, h = np.array(bb_xywh).astype(np.int32)
         size = int(np.maximum(h, w) * pad_factor)
-        
+
         left = np.maximum(x+w/2-size/2, 0)
         right = np.minimum(x+w/2+size/2, scene_img.shape[1])
         top = np.maximum(y+h/2-size/2, 0)
         bottom = np.minimum(y+h/2+size/2, scene_img.shape[0])
 
-        scene_crop = scene_img[top:bottom, left:right]
+        scene_crop = scene_img[top:bottom, left:right].copy()
+
+        if black_borders:
+            scene_crop[:(y-top),:] = 0
+            scene_crop[(y+h-top):,:] = 0
+            scene_crop[:,:(x-left)] = 0
+            scene_crop[:,(x+w-left):] = 0
+
         scene_crop = cv2.resize(scene_crop, resize, interpolation = interpolation)
         return scene_crop
 

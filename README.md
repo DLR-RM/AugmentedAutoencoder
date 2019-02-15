@@ -130,16 +130,26 @@ python aae_image.py exp_group/my_autoencoder -f /path/to/image/file/or/folder
 python aae_webcam.py exp_group/my_autoencoder
 ```
 
-*Multi-object real-time RGB-based 6D Object Detection from a Webcam stream*  
+### Multi-object RGB-based 6D Object Detection from a Webcam stream*  
+
+*Option 1: Train a RetinaNet Model from https://github.com/fizyr/keras-retinanet*
+
+adapt $AE_WORKSPACE_PATH/eval_cfg/aae_retina_webcam.cfg
+
+```bash
+python auto_pose/test/aae_retina_webcam_pose.py -test_config aae_retina_webcam.cfg -vis
+```
+
+
+*Option 2: Using the Google Detection API with Fixes*
+
 Train a 2D detector following https://github.com/naisy/train_ssd_mobilenet  
 adapt /auto_pose/test/googledet_utils/googledet_config.yml  
 
 ```bash
-python aae_googledet_webcam_multi.py exp_group/my_autoencoder exp_group/my_autoencoder2 exp_group/my_autoencoder3
+python auto_pose/test/aae_googledet_webcam_multi.py exp_group/my_autoencoder exp_group/my_autoencoder2 exp_group/my_autoencoder3
 ```
-might need a bit effort to get running but results are worth it:  
 
-[embed a video demonstration]
 
 ### Evaluate a model
 
