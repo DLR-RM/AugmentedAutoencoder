@@ -117,15 +117,12 @@ def main():
     config = tf.ConfigProto(gpu_options=gpu_options)
 
     with tf.Session(config=config) as sess:
-        
+
         sess.run(multi_queue.bg_img_init.initializer)
         sess.run(iterator.initializer)
 
         merged_loss_summary = tf.summary.merge_all()
         summary_writer = tf.summary.FileWriter(ckpt_dir, sess.graph)
-
-        if encoder.variables_to_restore is not None:
-            encoder.restore_variables()
 
         chkpt = tf.train.get_checkpoint_state(ckpt_dir)
         if chkpt and chkpt.model_checkpoint_path:
@@ -141,6 +138,8 @@ def main():
                 saver.restore(sess, chkpt.model_checkpoint_path)
         else:
             sess.run(tf.global_variables_initializer())
+            if encoder.variables_to_restore is not None:
+                encoder.restore_pretrained_weights()
 
                 
         if not debug_mode:

@@ -27,7 +27,7 @@ class Encoder(object):
         self.global_step
 
         if self._pre_trained_model != 'False':
-            exclude = ['resnet_v2_101' + '/logits', 'resnet_v2_50' + '/logits', 'global_step']
+            exclude = ['resnet_v2_101' + '/logits', 'resnet_v2_50' + '/logits', 'global_step', 'aspp*']
             self.variables_to_restore = tf.contrib.slim.get_variables_to_restore(exclude=exclude)
         else:
             self.variables_to_restore = None
@@ -130,7 +130,13 @@ class Encoder(object):
     def global_step(self):
         return tf.Variable(0, dtype=tf.int64, trainable=False, name='global_step')
 
-    def restore_variables(self):
-        tf.train.init_from_checkpoint(self._pre_trained_model,
-                                {v.name.split(':')[0]: v for v in self.variables_to_restore})
+    def restore_pretrained_weights(self):
+        var_scope = tf.get_variable_scope()
+        print var_scope
+        varis = {}
+        for v in self.variables_to_restore:
+            if not 'aspp' in v.name.split(':')[0] and not var_scope in v.name.split(':')[0]:
+                varis[v.name.split(':')[0]] = v
+
+        tf.train.init_from_checkpoint(self._pre_trained_model, varis)
     
