@@ -22,7 +22,7 @@ year = {2018}
 
 We propose a real-time RGB-based pipeline for object detection and 6D pose estimation. Our novel 3D orientation estimation is based on a variant of the Denoising Autoencoder that is trained on simulated views of a 3D model using Domain Randomization. This so-called Augmented Autoencoder has several advantages over existing methods: It does not require real, pose-annotated training data, generalizes to various test sensors and inherently handles object and view symmetries.  
 
-![](docs/pipeline_with_scene_vertical_ext.pdf)
+![](docs/pipeline_with_scene_vertical_ext.jpeg)
 
 1.) Train AAE using only a 3D model to predict 3D Object Orientations from RGB image crops \
 2.) For full RGB-based 6D pose estimation, also train a 2D Object Detector \
