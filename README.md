@@ -26,12 +26,12 @@ We propose a real-time RGB-based pipeline for object detection and 6D pose estim
 <img src='docs/pipeline_with_scene_vertical_ext.jpeg' width='600'>
 <p>
 
-1.) Train the Augmented Autoencoder using only a 3D model to predict 3D Object Orientations from RGB image crops \
+1.) Train the Augmented Autoencoder(s) using only a 3D model to predict 3D Object Orientations from RGB image crops \
 2.) For full RGB-based 6D pose estimation, also train a 2D Object Detector (e.g. https://github.com/fizyr/keras-retinanet) \
 3.) Optionally, use our standard depth-based ICP to refine the 6D Pose
 
 ## Requirements: Hardware
-### Training
+### For Training
 Nvidia GPU with >4GB memory (or adjust the batch size)  
 RAM >8GB  
 Duration depending on Configuration and Hardware: ~3h per Object
@@ -61,9 +61,7 @@ pip install --user imgaug
 pip install --user progressbar
 ```
 
-
-## Usage
-### Preparatory Steps
+## Preparatory Steps
 
 *1. Pip installation*
 ```bash
@@ -82,7 +80,7 @@ cd $AE_WORKSPACE_PATH
 ae_init_workspace
 ```
 
-### Train an Augmented Autoencoder
+## Train an Augmented Autoencoder
 ```diff
 - Currently remote training is not supported since glfw 3.2. does not allow headless rendering
 ```
@@ -111,14 +109,16 @@ ae_train exp_group/my_autoencoder
 ```bash
 $AE_WORKSPACE_PATH/experiments/exp_group/my_autoencoder/train_figures/training_images_29999.png  
 ```
-Middle part should show reconstructions of the input object (if all black, try with higher bootstrap_ratio / auxilliary_mask in training config)  
+Middle part should show reconstructions of the input object (if all black, set higher bootstrap_ratio / auxilliary_mask in training config)  
 
 *4. Create the embedding*
 ```bash
 ae_embed exp_group/my_autoencoder
 ```
 
-### Testing
+## Testing
+
+### Augmented Autoencoder only
 
 have a look at /auto_pose/test/   
 
@@ -132,7 +132,7 @@ python aae_image.py exp_group/my_autoencoder -f /path/to/image/file/or/folder
 python aae_webcam.py exp_group/my_autoencoder
 ```
 
-### Multi-object RGB-based 6D Object Detection from a Webcam stream*  
+### Multi-object RGB-based 6D Object Detection from a Webcam stream
 
 *Option 1: Train a RetinaNet Model from https://github.com/fizyr/keras-retinanet*
 
@@ -141,7 +141,6 @@ adapt $AE_WORKSPACE_PATH/eval_cfg/aae_retina_webcam.cfg
 ```bash
 python auto_pose/test/aae_retina_webcam_pose.py -test_config aae_retina_webcam.cfg -vis
 ```
-
 
 *Option 2: Using the Google Detection API with Fixes*
 
@@ -153,12 +152,10 @@ python auto_pose/test/aae_googledet_webcam_multi.py exp_group/my_autoencoder exp
 ```
 
 
-### Evaluate a model
+## Evaluate a model
 
 *For the evaluation you will also need*
 https://github.com/thodan/sixd_toolkit + our extensions, see sixd_toolkit_extension/help.txt  
-
-### Evaluate and visualize 6D pose estimation of AAE with ground truth bounding boxes
 
 *Create the evaluation config file*
 ```bash
@@ -166,23 +163,33 @@ mkdir $AE_WORKSPACE_PATH/eval_cfg/eval_group
 cp $AE_WORKSPACE_PATH/eval_cfg/eval_template.cfg $AE_WORKSPACE_PATH/eval_cfg/eval_group/eval_my_autoencoder.cfg
 gedit $AE_WORKSPACE_PATH/cfg/eval_group/eval_my_autoencoder.cfg
 ```
+
+### Evaluate and visualize 6D pose estimation of AAE with ground truth bounding boxes
+
 Set estimate_bbs=False in the evaluation config  
 
 ```bash
 ae_eval exp_group/my_autoencoder name_of_evaluation --eval_cfg eval_group/eval_my_autoencoder.cfg
 e.g.
-ae_eval tless_nobn/obj5 trained_without_batchnorm --eval_cfg tless/5.cfg
+ae_eval tless_nobn/obj5 eval_name --eval_cfg tless/5.cfg
 ```
 
-
 ### Evaluate 6D Object Detection with a 2D Object Detector
+
+Set estimate_bbs=True in the evaluation config  
+
 *Generate a training dataset for T-Less using detection_utils/generate_sixd_train.py*
 ```bash
 python detection_utils/generate_sixd_train.py
 ```
+
 Train https://github.com/fizyr/keras-retinanet or https://github.com/balancap/SSD-Tensorflow
 
-Then continue as stated above  
+```bash
+ae_eval exp_group/my_autoencoder name_of_evaluation --eval_cfg eval_group/eval_my_autoencoder.cfg
+e.g.
+ae_eval tless_nobn/obj5 eval_name --eval_cfg tless/5.cfg
+```
 
 
 # Config file parameters
