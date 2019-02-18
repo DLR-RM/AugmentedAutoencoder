@@ -83,7 +83,7 @@ def main():
 
         decoders = []
         encoding_splits = tf.split(encoder.z, multi_queue._num_objects,0)
-
+        
         for i in xrange(multi_queue._num_objects):            
             decoders.append(factory.build_decoder(multi_queue.next_element[i], encoding_splits[i], args, is_training=True))
 
@@ -91,6 +91,7 @@ def main():
         codebook = factory.build_codebook(encoder, dataset, args)
         train_op = factory.build_train_op(ae, args)
         saver = tf.train.Saver(save_relative_paths=True)
+
 
     num_iter = args.getint('Training', 'NUM_ITER') if not debug_mode else np.iinfo(np.int32).max
     save_interval = args.getint('Training', 'SAVE_INTERVAL')
@@ -136,12 +137,14 @@ def main():
             except:
                 print 'loading ', chkpt.model_checkpoint_path
                 saver.restore(sess, chkpt.model_checkpoint_path)
-        else:
-            sess.run(tf.global_variables_initializer())
-            if encoder.variables_to_restore is not None:
-                encoder.restore_pretrained_weights()
+        else:            
+            if encoder._pre_trained_model != 'False':
+                encoder.saver.restore(sess,encoder._pre_trained_model)
+                all_vars = set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
+                var_list = all_vars.symmetric_difference([v[1] for v in encoder.fil_var_list.items()])
+                sess.run(tf.variables_initializer(var_list))
+                print sess.run(tf.report_uninitialized_variables())
 
-                
         if not debug_mode:
             print 'Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))
             bar.start()
@@ -170,36 +173,23 @@ def main():
                     this_y = np.concatenate([el[2] for el in this])
                     # reconstr_train = sess.run(,feed_dict={queue.x:this_x})
                     reconstr_train = np.concatenate(reconstr_train)
-                    np.random.seed(0)
-                    np.random.shuffle(this_x)
-                    np.random.seed(0)
-                    np.random.shuffle(this_y)
-                    np.random.seed(0)
-                    np.random.shuffle(reconstr_train)
+                    for imgs in [this_x,this_y,reconstr_train]:
+                        np.random.seed(0)
+                        np.random.shuffle(imgs)
                     train_imgs = np.hstack(( u.tiles(this_x, 4, 4), u.tiles(reconstr_train, 4,4),u.tiles(this_y, 4, 4)))
                     cv2.imwrite(os.path.join(train_fig_dir,'training_images_%s.png' % i), train_imgs*255)
             else:
-                # this_x, this_y = sess.run([queue.x, queue.y])
-                # reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
-                # print np.min(this_x), np.max(this_x)
-                # print np.min(this_y), np.max(this_y)
-                # print np.min(reconstr_train), np.max(reconstr_train)
+
                 this,_,reconstr_train  = sess.run([multi_queue.next_element,multi_queue.next_bg_element,[decoder.x for decoder in decoders]])
-                # reconstr_train = sess.run([decoder.x for decoder in decoders])
-                
 
                 this_x = np.concatenate([el[0] for el in this])
                 this_y = np.concatenate([el[2] for el in this])
                 print this_x.shape
                 reconstr_train = np.concatenate(reconstr_train)
-                np.random.seed(0)
-                np.random.shuffle(this_x)
-                np.random.seed(0)
-                np.random.shuffle(this_y)
-                np.random.seed(0)
-                np.random.shuffle(reconstr_train)
+                for imgs in [this_x,this_y,reconstr_train]:
+                    np.random.seed(0)
+                    np.random.shuffle(imgs)
                 print this_x.shape
-
                 cv2.imshow('sample batch', np.hstack(( u.tiles(this_x, 4, 6), u.tiles(reconstr_train, 4,6),u.tiles(this_y, 4, 6))) )
                 k = cv2.waitKey(0)
                 if k == 27:
@@ -208,7 +198,6 @@ def main():
             if gentle_stop[0]:
                 break
 
-        # queue.stop(sess)
         if not debug_mode:
             bar.finish()
         if not gentle_stop[0] and not debug_mode:

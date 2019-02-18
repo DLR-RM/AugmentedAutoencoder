@@ -45,9 +45,9 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_t
         # (a) one 1x1 convolution and three 3x3 convolutions with rates = (6, 12, 18) when output stride = 16.
         # the rates are doubled when output stride = 8.
         conv_1x1 = layers_lib.conv2d(inputs, depth, [1, 1], stride=1, scope="conv_1x1")
-        conv_3x3_1 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, rate=atrous_rates[0], scope='conv_3x3_1')
-        conv_3x3_2 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, rate=atrous_rates[1], scope='conv_3x3_2')
-        conv_3x3_3 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, rate=atrous_rates[2], scope='conv_3x3_3')
+        conv_3x3_1 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, scope='conv_3x3_1')
+        conv_3x3_2 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, scope='conv_3x3_2')
+        conv_3x3_3 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, scope='conv_3x3_3')
 
         # (b) the image-level features
         with tf.variable_scope("image_level_features"):
@@ -104,6 +104,7 @@ def deeplab_v3_encoder(inputs, params, is_training = False, depth=512, atrous_ra
                                     output_stride=output_stride)
 
   net = end_points[tf.get_default_graph().get_name_scope() + '/' + base_architecture + '/block4']
+  
   if atrous_rates is not None:
     encoder_output = atrous_spatial_pyramid_pooling(net, output_stride, batch_norm_decay, is_training, depth=depth, atrous_rates=atrous_rates)
   else:

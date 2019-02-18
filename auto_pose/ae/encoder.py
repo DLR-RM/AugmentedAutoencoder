@@ -24,13 +24,11 @@ class Encoder(object):
         self._is_training = is_training
         self.encoder_out
         self.z
-        self.global_step
+        self.global_step   
 
         if self._pre_trained_model != 'False':
-            exclude = ['resnet_v2_101' + '/logits', 'resnet_v2_50' + '/logits', 'global_step', 'aspp*']
-            self.variables_to_restore = tf.contrib.slim.get_variables_to_restore(exclude=exclude)
-        else:
-            self.variables_to_restore = None
+            self.fil_var_list = self.load_ckpt_varlist()
+            self.saver = tf.train.Saver(var_list = self.fil_var_list)
 
         # self.q_sigma
         # self.sampled_z
@@ -130,13 +128,26 @@ class Encoder(object):
     def global_step(self):
         return tf.Variable(0, dtype=tf.int64, trainable=False, name='global_step')
 
-    def restore_pretrained_weights(self):
+    def load_ckpt_varlist(self, exclude = ['/logits','/global_step','/dense','/aspp']):
         var_scope = tf.get_variable_scope()
-        print var_scope
-        varis = {}
-        for v in self.variables_to_restore:
-            if not 'aspp' in v.name.split(':')[0] and not var_scope in v.name.split(':')[0]:
-                varis[v.name.split(':')[0]] = v
-
-        tf.train.init_from_checkpoint(self._pre_trained_model, varis)
+        print var_scope.name
+        if self._resnet50: 
+            model = '/resnet_v2_50'
+        elif self._resnet101:
+            model = '/resnet_v2_101'
+        else:
+            print 'must load either resnet50 or resnet101'
+            exit()
+        var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=var_scope.name + model)
+        fil_var_list = {}
+        tmp = False
+        for e in var_list:
+            for ex in exclude:
+                if ex in e.name:
+                    tmp = True
+            if tmp:
+                tmp = False
+            else:
+                fil_var_list[str(e.name.split(':')[0].split(var_scope.name+'/')[1])] = e
+        return fil_var_list
     
