@@ -1,3 +1,4 @@
 install
 *.npy
 *.pyc
+*.vscode
