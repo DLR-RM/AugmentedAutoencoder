@@ -139,11 +139,13 @@ def main():
                 saver.restore(sess, chkpt.model_checkpoint_path)
         else:            
             if encoder._pre_trained_model != 'False':
-                encoder.saver.restore(sess,encoder._pre_trained_model)
+                encoder.saver.restore(sess, encoder._pre_trained_model)
                 all_vars = set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
                 var_list = all_vars.symmetric_difference([v[1] for v in encoder.fil_var_list.items()])
                 sess.run(tf.variables_initializer(var_list))
                 print sess.run(tf.report_uninitialized_variables())
+            else:
+                sess.run(tf.global_variables_initializer())
 
         if not debug_mode:
             print 'Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))
