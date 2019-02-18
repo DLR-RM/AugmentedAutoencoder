@@ -1,4 +1,4 @@
-## Augmented Autoencoder  
+## Augmented Autoencoders  
 
 ### Implicit 3D Orientation Learning for 6D Object Detection from RGB Images   
 Martin Sundermeyer, Zoltan-Csaba Marton, Maximilian Durner, Manuel Brucker, Rudolph Triebel  
@@ -22,18 +22,13 @@ year = {2018}
 
 We propose a real-time RGB-based pipeline for object detection and 6D pose estimation. Our novel 3D orientation estimation is based on a variant of the Denoising Autoencoder that is trained on simulated views of a 3D model using Domain Randomization. This so-called Augmented Autoencoder has several advantages over existing methods: It does not require real, pose-annotated training data, generalizes to various test sensors and inherently handles object and view symmetries.  
 
-### Network Structure
 <p align="center">
 <img src='docs/pipeline_with_scene_vertical_ext.jpeg' width='600'>
 <p>
 
-1.) Train AAE using only a 3D model to predict 3D Object Orientations from RGB image crops \
-2.) For full RGB-based 6D pose estimation, also train a 2D Object Detector \
-    e.g. using the optimized google detection API: https://github.com/naisy/train_ssd_mobilenet  
-    or like in the paper  
-    https://github.com/fizyr/keras-retinanet  
-    https://github.com/balancap/SSD-Tensorflow  
-3.) Optionally, use the standard depth-based ICP to refine the 6D Pose
+1.) Train the Augmented Autoencoder using only a 3D model to predict 3D Object Orientations from RGB image crops \
+2.) For full RGB-based 6D pose estimation, also train a 2D Object Detector (e.g. https://github.com/fizyr/keras-retinanet) \
+3.) Optionally, use our standard depth-based ICP to refine the 6D Pose
 
 ## Requirements: Hardware
 ### Training
