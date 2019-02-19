@@ -72,7 +72,7 @@ def build_encoder(x, args, is_training=False):
     )
     return encoder
 
-def build_decoder(reconstruction_target, encoder_z_split, args, is_training=False):
+def build_decoder(reconstruction_target, encoder_z_split, args, is_training=False,idx=0):
     NUM_FILTER = eval(args.get('Network', 'NUM_FILTER'))
     KERNEL_SIZE_DECODER = args.getint('Network', 'KERNEL_SIZE_DECODER')
     STRIDES = eval(args.get('Network', 'STRIDES'))
@@ -91,7 +91,8 @@ def build_decoder(reconstruction_target, encoder_z_split, args, is_training=Fals
         BOOTSTRAP_RATIO,
         AUXILIARY_MASK,
         BATCH_NORM,
-        is_training=is_training
+        is_training=is_training,
+        idx=idx
     )
     return decoder
 
@@ -106,6 +107,7 @@ def build_train_op(ae, args):
 
     LEARNING_RATE = args.getfloat('Training', 'LEARNING_RATE')
     LEARNING_RATE_SCHEDULE = args.get('Training','LEARNING_RATE_SCHEDULE')
+    LAYERS_TO_FREEZE = eval(args.get('Training', 'LAYERS_TO_FREEZE'))
 
     if LEARNING_RATE_SCHEDULE=='poly':
         FINAL_LEARNING_RATE = args.getfloat('Training','FINAL_LEARNING_RATE')
@@ -119,8 +121,23 @@ def build_train_op(ae, args):
 
     optimizer = eval('tf.train.{}Optimizer'.format(OPTIMIZER_NAME))
     optim = optimizer(LEARNING_RATE)
+    if len(LAYERS_TO_FREEZE)>0:
+        freeze_vars = []
+        all_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+        for layer_to_freeze in LAYERS_TO_FREEZE:
+            freeze_vars += [v for v in all_vars if layer_to_freeze in v.name]
+        train_vars = all_vars.symmetric_difference(freeze_vars)
 
-    train_op = tf.contrib.training.create_train_op(ae.loss, optim, global_step=ae._encoder.global_step)
+        train_op = tf.contrib.training.create_train_op(ae.loss, 
+                                                        optim, 
+                                                        global_step=ae._encoder.global_step, 
+                                                        variables_to_train=train_vars,
+                                                        colocate_gradients_with_ops=True)
+    else:
+        train_op = tf.contrib.training.create_train_op(ae.loss, 
+                                                        optim, 
+                                                        global_step=ae._encoder.global_step, 
+                                                        colocate_gradients_with_ops=True)
 
     return train_op
 

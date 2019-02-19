@@ -10,7 +10,7 @@ class Decoder(object):
 
     def __init__(self, reconstruction_target, latent_code, num_filters, 
                 kernel_size, strides, loss, bootstrap_ratio, 
-                auxiliary_mask, batch_norm, is_training=False):
+                auxiliary_mask, batch_norm, is_training=False,idx=0):
 	
         self._reconstruction_target = reconstruction_target[2]
         self._latent_code = latent_code
@@ -24,7 +24,8 @@ class Decoder(object):
         self._bootstrap_ratio = bootstrap_ratio
         self._batch_normalization = batch_norm
         self._is_training = is_training
-        self.reconstr_loss
+        with tf.variable_scope('decoder_' + str(idx)):
+            self.reconstr_loss
 
     @property
     def reconstruction_target(self):
@@ -132,7 +133,7 @@ class Decoder(object):
             print 'ERROR: UNKNOWN LOSS ', self._loss
             exit()
         
-        tf.summary.scalar('reconst_loss', loss)
+        #tf.summary.scalar('reconst_loss', loss)
         if self._auxiliary_mask:
             mask_loss = tf.losses.mean_squared_error (
                 tf.cast(tf.greater(tf.reduce_sum(self._reconstruction_target,axis=3,keepdims=True),0.0001),tf.float32),

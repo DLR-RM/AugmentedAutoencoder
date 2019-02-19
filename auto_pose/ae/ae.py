@@ -12,7 +12,7 @@ class AE(object):
         self._norm_regularize = norm_regularize
         self._variational = variational
         self.loss
-        tf.summary.scalar('total_loss', self.loss)
+        # tf.summary.scalar('total_loss', self.loss)
         
 
     @property
@@ -42,7 +42,8 @@ class AE(object):
         #     loss +=  self._encoder.kl_div_loss * tf.constant(self._variational, dtype=tf.float32)
         #     tf.summary.scalar('KL_loss', self._encoder.kl_div_loss)
         #     tf.summary.histogram('Variance', self._encoder.q_sigma)
-        tf.summary.histogram('Mean', self._encoder.z)
+        
+        # tf.summary.histogram('Mean', self._encoder.z)
         return loss
 
 

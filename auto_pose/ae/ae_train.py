@@ -72,34 +72,44 @@ def main():
 
     shutil.copy2(cfg_file_path, log_dir)
 
+    num_iter = args.getint('Training', 'NUM_ITER') if not debug_mode else np.iinfo(np.int32).max
+    save_interval = args.getint('Training', 'SAVE_INTERVAL')
+    num_gpus = args.getint('Training', 'NUM_GPUS')
+    model_type = args.get('Dataset', 'MODEL')
+
+
     with tf.variable_scope(experiment_name):
+        
         dataset = factory.build_dataset(dataset_path, args)
         # queue = factory.build_queue(dataset, args)
         multi_queue = factory.build_multi_queue(dataset, args)
 
         iterator = multi_queue.create_iterator(dataset_path, args)
         all_object_views = tf.concat([inp[0] for inp in multi_queue.next_element],0)
-        encoder = factory.build_encoder(all_object_views, args, is_training=True)
-
-        decoders = []
-        encoding_splits = tf.split(encoder.z, multi_queue._num_objects,0)
+        with tf.device('/device:GPU:0'):    
+            encoder = factory.build_encoder(all_object_views, args, is_training=True)
+            encoding_splits = tf.split(encoder.z, multi_queue._num_objects,0)
         
-        for i in xrange(multi_queue._num_objects):            
-            decoders.append(factory.build_decoder(multi_queue.next_element[i], encoding_splits[i], args, is_training=True))
+        decoders = []
+        for i in xrange(multi_queue._num_objects):
+            dev = i % (num_gpus - 1) + 1 if num_gpus > 1 else 0
+            with tf.device('/device:GPU:%s' % dev):      
+                decoders.append(factory.build_decoder(multi_queue.next_element[i], encoding_splits[i], args, is_training=True, idx=i))
 
         ae = factory.build_ae(encoder, decoders, args)
         codebook = factory.build_codebook(encoder, dataset, args)
         train_op = factory.build_train_op(ae, args)
         saver = tf.train.Saver(save_relative_paths=True)
 
+        tf.summary.histogram('Mean', ae._encoder.z)
+        tf.summary.scalar('total_loss', ae.loss)
 
-    num_iter = args.getint('Training', 'NUM_ITER') if not debug_mode else np.iinfo(np.int32).max
-    save_interval = args.getint('Training', 'SAVE_INTERVAL')
-    model_type = args.get('Dataset', 'MODEL')
 
         # dataset.get_training_images(dataset_path, args)
     dataset.load_bg_images(dataset_path)
     multi_queue.create_tfrecord_training_images(dataset_path, args)
+
+    
 
     if generate_data:
         print 'finished generating synthetic training data for ' + experiment_name
@@ -115,7 +125,7 @@ def main():
 
 
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.9)
-    config = tf.ConfigProto(gpu_options=gpu_options)
+    config = tf.ConfigProto(gpu_options=gpu_options,log_device_placement=True)
 
     with tf.Session(config=config) as sess:
 
