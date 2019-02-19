@@ -106,15 +106,19 @@ def main():
         train_op = factory.build_train_op(ae, args)
         saver = tf.train.Saver(save_relative_paths=True)
 
-        tf.summary.histogram('Mean', ae._encoder.z)
+        tf.summary.histogram('mean_loss', ae._encoder.z)
         tf.summary.scalar('total_loss', ae.loss)
-
+        for j,d in enumerate(decoders):
+            tf.summary.scalar('reconst_loss_%s' % j, d.reconstr_loss)
+            
+        #TODO: Shuffle and concatenate!!
+        tf.summary.image('input', tf.concat([el[0] for el in multi_queue.next_element],0), max_outputs=12)
+        tf.summary.image('reconstruction_target', tf.concat([el[2] for el in multi_queue.next_element],0), max_outputs=12)
+        tf.summary.image('reconstruction', tf.concat([decoder.x for decoder in decoders],0), max_outputs=12)
 
         # dataset.get_training_images(dataset_path, args)
     dataset.load_bg_images(dataset_path)
     multi_queue.create_tfrecord_training_images(dataset_path, args)
-
-    
 
     if generate_data:
         print 'finished generating synthetic training data for ' + experiment_name
@@ -174,9 +178,9 @@ def main():
                 # print 'before optimize'
                 sess.run([train_op,multi_queue.next_bg_element])
                 # print 'after optimize'
-                if i % 10 == 0:
-                    loss = sess.run(merged_loss_summary)
-                    summary_writer.add_summary(loss, i)
+                if i % 50 == 0:
+                    merged_summaries = sess.run(merged_loss_summary)
+                    summary_writer.add_summary(merged_summaries, i)
 
                 bar.update(i)
                 if (i+1) % save_interval == 0:
