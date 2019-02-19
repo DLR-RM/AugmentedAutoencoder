@@ -22,8 +22,11 @@ class Encoder(object):
         self._aspp = aspp
         self._pre_trained_model = pre_trained_model
         self._is_training = is_training
+
+        
         self.encoder_out
         self.z
+
         self.global_step   
 
         if self._pre_trained_model != 'False':

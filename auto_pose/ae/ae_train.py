@@ -78,23 +78,28 @@ def main():
     model_type = args.get('Dataset', 'MODEL')
 
 
-    with tf.variable_scope(experiment_name):
+    with tf.variable_scope(experiment_name, reuse=tf.AUTO_REUSE):
         
         dataset = factory.build_dataset(dataset_path, args)
-        # queue = factory.build_queue(dataset, args)
         multi_queue = factory.build_multi_queue(dataset, args)
+        dev_splits = np.array_split(np.arange(multi_queue._num_objects), num_gpus)
 
         iterator = multi_queue.create_iterator(dataset_path, args)
         all_object_views = tf.concat([inp[0] for inp in multi_queue.next_element],0)
-        with tf.device('/device:GPU:0'):    
-            encoder = factory.build_encoder(all_object_views, args, is_training=True)
-            encoding_splits = tf.split(encoder.z, multi_queue._num_objects,0)
-        
+
+        bs = multi_queue._batch_size
+        encoding_splits = []
+        for dev in xrange(num_gpus):
+            with tf.device('/device:GPU:%s' % dev):   
+                encoder = factory.build_encoder(all_object_views[dev_splits[dev][0]*bs:(dev_splits[dev][-1]+1)*bs], args, is_training=True)
+                encoding_splits.append(tf.split(encoder.z, len(dev_splits[dev]),0))
+
+    with tf.variable_scope(experiment_name):
         decoders = []
-        for i in xrange(multi_queue._num_objects):
-            dev = i % (num_gpus - 1) + 1 if num_gpus > 1 else 0
-            with tf.device('/device:GPU:%s' % dev):      
-                decoders.append(factory.build_decoder(multi_queue.next_element[i], encoding_splits[i], args, is_training=True, idx=i))
+        for dev in xrange(num_gpus):     
+            with tf.device('/device:GPU:%s' % dev):  
+                for j,i in enumerate(dev_splits[dev]):
+                    decoders.append(factory.build_decoder(multi_queue.next_element[i], encoding_splits[dev][j], args, is_training=True, idx=i))
 
         ae = factory.build_ae(encoder, decoders, args)
         codebook = factory.build_codebook(encoder, dataset, args)
