@@ -198,13 +198,13 @@ class Codebook(object):
         J = self._encoder.latent_space_size
         embedding_z = np.empty( (embedding_size, J) )
         obj_bbs = np.empty( (embedding_size, 4) )
-        print 'Creating embedding ..'
-        bar = progressbar.ProgressBar(
-            maxval=embedding_size, 
-            widgets=[' [', progressbar.Timer(), ' | ', progressbar.Counter('%0{}d / {}'.format(len(str(embedding_size)), embedding_size)), ' ] ', 
-            progressbar.Bar(), 
-            ' (', progressbar.ETA(), ') ']
-        )
+
+        widgets = ['Creating embedding ..: ', progressbar.Percentage(),
+         ' ', progressbar.Bar(),
+         ' ', progressbar.Counter(), ' / %s' % embedding_size,
+         ' ', progressbar.ETA(), ' ']
+        bar = progressbar.ProgressBar(maxval=embedding_size,widgets=widgets)
+
         bar.start()
         for a, e in u.batch_iteration_indices(embedding_size, batch_size):
 
