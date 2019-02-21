@@ -115,6 +115,9 @@ class AePoseEstimator(PoseEstInterface):
 
         all_Rs, all_ts = [],[]
         all_pose_estimates = []
+        if self.vis:
+            img_show = color_img.copy()
+            depth_img_show = np.dstack((depth_img.copy(),depth_img.copy(),depth_img.copy()))
 
         for j,box in enumerate(bboxes):
             H_est = np.eye(4)
@@ -155,16 +158,37 @@ class AePoseEstimator(PoseEstInterface):
                                                     self.pad_factors[clas_idx],
                                                     resize=self.patch_sizes[clas_idx], 
                                                     interpolation=cv2.INTER_NEAREST) * 1000.
-                R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H), clas_idx=clas_idx)
+                R_est_auto = R_est.copy()
+                t_est_auto = t_est.copy()
 
-	            if self.vis:
-	                bgr, depth = self.icp_handle.syn_renderer.render_trafo(camK, R_est, t_est, (W,H), clas_idx=clas_idx)
-	                img_show = color_img.copy()
-	                g_y = np.zeros_like(bgr)
-	                g_y[:,:,1]= bgr[:,:,1]
-	                g_y = g_y/255.    
-	                img_show[depth > 0] = g_y[depth > 0]*2./3. + img_show[depth > 0]*1./3.
-	                cv2.imshow('pose est, obj %s' % clas_idx,img_show)
+                R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H), clas_idx=clas_idx, depth_only=True)
+                _, ts_est, _ = self.all_codebooks[clas_idx].auto_pose6d(self.sess, 
+                                                                            det_img, 
+                                                                            box_xywh, 
+                                                                            camK,
+                                                                            self._topk, 
+                                                                            self.all_train_args[clas_idx], 
+                                                                            upright=self._upright,
+                                                                            depth_pred=t_est[2])
+                t_est = ts_est.squeeze()
+                R_est, _ = self.icp_handle.icp_refinement(depth_crop, R_est, ts_est.squeeze(), camK, (W,H), clas_idx=clas_idx, no_depth=True)
+
+                if self.vis:
+                    bgr, depth = self.icp_handle.syn_renderer.render_trafo(camK, R_est, t_est, (W,H), clas_idx=clas_idx)
+                    bgr_auto, depth_auto = self.icp_handle.syn_renderer.render_trafo(camK, R_est_auto, t_est_auto, (W,H), clas_idx=clas_idx)
+                    g_y = np.zeros_like(bgr)
+                    g_y[:,:,1]= bgr[:,:,1]
+                    g_y = g_y/255.   
+                    r_y = np.zeros_like(bgr_auto)
+                    r_y[:,:,0]= bgr_auto[:,:,0]
+                    r_y = r_y/255.   
+                    img_show[depth > 0] = g_y[depth > 0]*2./3. + img_show[depth > 0]*1./3.
+                    img_show[depth_auto > 0] = r_y[depth_auto > 0]*2./3. + img_show[depth_auto > 0]*1./3.
+
+                    depth_img_show[depth > 0] = g_y[depth > 0]*2./3. + depth_img_show[depth > 0]*1./3.
+                    depth_img_show[depth_auto > 0] = r_y[depth_auto > 0]*2./3. + depth_img_show[depth_auto > 0]*1./3.
+                    cv2.imshow('pose est',img_show)
+                    cv2.imshow('pose est depth',depth_img_show)  
                     
            
             H_est[:3,:3] = R_est
