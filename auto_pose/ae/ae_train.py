@@ -111,10 +111,10 @@ def main():
         for j,d in enumerate(decoders):
             tf.summary.scalar('reconst_loss_%s' % j, d.reconstr_loss)
             
-        #TODO: Shuffle and concatenate!!
-        tf.summary.image('input', tf.concat([el[0] for el in multi_queue.next_element],0), max_outputs=12)
-        tf.summary.image('reconstruction_target', tf.concat([el[2] for el in multi_queue.next_element],0), max_outputs=12)
-        tf.summary.image('reconstruction', tf.concat([decoder.x for decoder in decoders],0), max_outputs=12)
+        rand_idcs = tf.random_shuffle(tf.range(bs * multi_queue._num_objects), seed=0)
+        tf.summary.image('input', tf.gather(tf.concat([el[0] for el in multi_queue.next_element],0),rand_idcs), max_outputs=4)
+        tf.summary.image('reconstruction_target', tf.gather(tf.concat([el[2] for el in multi_queue.next_element],0),rand_idcs), max_outputs=4)
+        tf.summary.image('reconstruction', tf.gather(tf.concat([decoder.x for decoder in decoders],0),rand_idcs), max_outputs=4)
 
         # dataset.get_training_images(dataset_path, args)
     dataset.load_bg_images(dataset_path)
@@ -134,7 +134,7 @@ def main():
 
 
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.9)
-    config = tf.ConfigProto(gpu_options=gpu_options,log_device_placement=True)
+    config = tf.ConfigProto(gpu_options=gpu_options,log_device_placement=True,allow_soft_placement=True)
 
     with tf.Session(config=config) as sess:
 
@@ -146,16 +146,16 @@ def main():
 
         chkpt = tf.train.get_checkpoint_state(ckpt_dir)
         if chkpt and chkpt.model_checkpoint_path:
-            try:
-                if at_step is None:
-                    checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=args.getint('Training', 'NUM_ITER'))
-                else:
-                    checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=at_step)
-                print 'loading ', checkpoint_file_basename
-                saver.restore(sess, checkpoint_file_basename)
-            except:
-                print 'loading ', chkpt.model_checkpoint_path
-                saver.restore(sess, chkpt.model_checkpoint_path)
+            if at_step is None:
+                checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=args.getint('Training', 'NUM_ITER'))
+                # checkpoint_file_basename = chkpt.model_checkpoint_path
+            else:
+                checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=at_step)
+            print 'loading ', checkpoint_file_basename
+            saver.restore(sess, checkpoint_file_basename)
+            # except:
+            #     print 'loading ', chkpt.model_checkpoint_path
+            #     saver.restore(sess, chkpt.model_checkpoint_path)
         else:            
             if encoder._pre_trained_model != 'False':
                 encoder.saver.restore(sess, encoder._pre_trained_model)
@@ -178,7 +178,7 @@ def main():
                 # print 'before optimize'
                 sess.run([train_op,multi_queue.next_bg_element])
                 # print 'after optimize'
-                if i % 50 == 0:
+                if i % 100 == 0:
                     merged_summaries = sess.run(merged_loss_summary)
                     summary_writer.add_summary(merged_summaries, i)
 

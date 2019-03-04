@@ -297,11 +297,20 @@ def main():
         eval_plots.plot_R_err_hist(eval_args, eval_dir, scenes)
         eval_plots.plot_R_err_hist2(np.array(R_errors), eval_dir)
     if eval_args.getboolean('PLOT','CUM_VSD_ERROR_HIST'):
-        eval_plots.plot_vsd_err_hist(eval_args, eval_dir, scenes)
+        try:
+            eval_plots.plot_vsd_err_hist(eval_args, eval_dir, scenes)
+        except:
+            pass
     if eval_args.getboolean('PLOT','VSD_OCCLUSION'):
-        eval_plots.plot_vsd_occlusion(eval_args, eval_dir, scenes, np.array(all_test_visibs))
+        try:    
+            eval_plots.plot_vsd_occlusion(eval_args, eval_dir, scenes, np.array(all_test_visibs))
+        except:
+            pass
     if eval_args.getboolean('PLOT','R_ERROR_OCCLUSION'):
-        eval_plots.plot_re_rect_occlusion(eval_args, eval_dir, scenes, np.array(all_test_visibs))
+        try:  
+            eval_plots.plot_re_rect_occlusion(eval_args, eval_dir, scenes, np.array(all_test_visibs))
+        except:
+            pass
     if eval_args.getboolean('PLOT','ANIMATE_EMBEDDING_PCA'):
         eval_plots.animate_embedding_path(test_embeddings[0])
     # if eval_args.getboolean('PLOT','RECONSTRUCTION_TEST_BATCH'):

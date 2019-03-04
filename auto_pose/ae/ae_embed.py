@@ -52,7 +52,10 @@ def main():
         encoder = factory.build_encoder(queue.x, args)
         # decoder = factory.build_decoder(queue.y, encoder, args)
         # ae = factory.build_ae(encoder, decoder, args)
+        # before_cb = set(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES))
+        restore_saver = tf.train.Saver(save_relative_paths=True, max_to_keep=100)
         codebook = factory.build_codebook(encoder, dataset, args)
+        # inters_vars = before_cb.intersection(set(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)))
         saver = tf.train.Saver(save_relative_paths=True, max_to_keep=100)
 
     if at_step is None:
@@ -61,6 +64,7 @@ def main():
         checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=at_step)
 
     target_checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path)
+    print checkpoint_file_basename
     print target_checkpoint_file
     print ckpt_dir
     print '#'*20
@@ -73,13 +77,15 @@ def main():
     config = tf.ConfigProto(gpu_options=gpu_options)
 
     with tf.Session(config=config) as sess:
-
         print ckpt_dir
+        # print sess.run(encoder.global_step)
         print '#'*20
 
         # factory.restore_checkpoint(sess, saver, ckpt_dir, at_step=at_step)
-        saver.restore(sess, checkpoint_file_basename)
+        sess.run(tf.global_variables_initializer())
+        restore_saver.restore(sess, checkpoint_file_basename)
 
+        print '#'*20
         # chkpt = tf.train.get_checkpoint_state(ckpt_dir)
         # if chkpt and chkpt.model_checkpoint_path:
         #     print chkpt.model_checkpoint_path
@@ -95,8 +101,8 @@ def main():
             codebook.update_embedding(sess, batch_size, model_path)
 
         print 'Saving new checkoint ..',
-
-        saver.save(sess, target_checkpoint_file, global_step=encoder.global_step)
+        
+        saver.save(sess, target_checkpoint_file, global_step=args.getint('Training', 'NUM_ITER') if at_step is None else at_step)
 
         print 'done',
 

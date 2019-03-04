@@ -146,7 +146,8 @@ def noof_scene_views(scene_id, eval_args):
     cam_type = eval_args.get('DATA','CAM_TYPE')
 
     p = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
-    noof_imgs = len(os.listdir(os.path.join(p['base_path'], p['test_dir'], '{:02d}', 'rgb').format(scene_id)))
+    noof_imgs = len(os.listdir(os.path.dirname(p['test_rgb_mpath']).format(scene_id)))
+    
 
     return noof_imgs
 

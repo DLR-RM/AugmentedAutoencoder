@@ -123,11 +123,10 @@ def build_train_op(ae, args):
     optim = optimizer(LEARNING_RATE)
     if len(LAYERS_TO_FREEZE)>0:
         freeze_vars = []
-        all_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+        all_vars = set([var for var in tf.trainable_variables()])
         for layer_to_freeze in LAYERS_TO_FREEZE:
             freeze_vars += [v for v in all_vars if layer_to_freeze in v.name]
-        train_vars = all_vars.symmetric_difference(freeze_vars)
-
+        train_vars = list(all_vars.symmetric_difference(freeze_vars))
         train_op = tf.contrib.training.create_train_op(ae.loss, 
                                                         optim, 
                                                         global_step=ae._encoder.global_step, 

@@ -102,6 +102,22 @@ def deeplab_v3_encoder(inputs, params, is_training = False, depth=512, atrous_ra
                                     is_training=is_training,
                                     global_pool=False,
                                     output_stride=output_stride)
+    # blocks = [
+    #     resnet_v2.resnet_v2_block('block1', base_depth=64, num_units=3, stride=2),
+    #     resnet_v2.resnet_v2_block('block2', base_depth=128, num_units=4, stride=2),
+    #     resnet_v2.resnet_v2_block('block3', base_depth=256, num_units=6, stride=2),
+    #     resnet_v2.resnet_v2_block('block4', base_depth=512, num_units=3, stride=1)
+    # ]
+    # resnet_v2.resnet_v2(inputs,
+    #                     blocks,
+    #                     num_classes=None,
+    #                     is_training=is_training,
+    #                     global_pool=False,
+    #                     output_stride=output_stride,
+    #                     include_root_block=True,
+    #                     reuse=None,
+    #                     scope=base_architecture)
+                                
 
   net = end_points[tf.get_default_graph().get_name_scope() + '/' + base_architecture + '/block4']
   
