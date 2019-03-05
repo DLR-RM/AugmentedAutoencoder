@@ -6,22 +6,50 @@ import progressbar as pb
 import glob
 
 from imgaug.augmenters import *
-from sixd_toolkit.pysixd import inout, misc
+from auto_pose.ae.pysixd_stuff import misc
 
 import yaml
 
+
+visualize = True
+gt_masks = False
+dataset = 'tless'
+num_train_imgs = 80000
+max_objects_in_scene = 6
+noofvoc_imgs = 15000
+min_visib = 0.6
+blackness_thres = 16
+vocpath = '/home_local_nvme/sund_ma/data/VOCdevkit/VOC2012/JPEGImages/*.jpg'
+voc_img_pathes = glob.glob(vocpath)
+output_path = '/home_local_nvme/sund_ma/data/scene_renderings/linemod_real_imgs_voc_rotated/01/rgb'  
+
+
+def load_info(path):
+    with open(path, 'r') as f:
+        info = yaml.load(f, Loader=yaml.CLoader)
+        for eid in info.keys():
+            if 'cam_K' in info[eid].keys():
+                info[eid]['cam_K'] = np.array(info[eid]['cam_K']).reshape((3, 3))
+            if 'cam_R_w2c' in info[eid].keys():
+                info[eid]['cam_R_w2c'] = np.array(info[eid]['cam_R_w2c']).reshape((3, 3))
+            if 'cam_t_w2c' in info[eid].keys():
+                info[eid]['cam_t_w2c'] = np.array(info[eid]['cam_t_w2c']).reshape((3, 1))
+    return info
+
+def load_gt(path):
+    with open(path, 'r') as f:
+        gts = yaml.load(f, Loader=yaml.CLoader)
+        for im_id, gts_im in gts.items():
+            for gt in gts_im:
+                if 'cam_R_m2c' in gt.keys():
+                    gt['cam_R_m2c'] = np.array(gt['cam_R_m2c']).reshape((3, 3))
+                if 'cam_t_m2c' in gt.keys():
+                    gt['cam_t_m2c'] = np.array(gt['cam_t_m2c']).reshape((3, 1))
+    return gts
+
+
+
 def main():
-    visualize = True
-    gt_masks = False
-    dataset = 'tless'
-    num_train_imgs = 80000
-    max_objects_in_scene = 6
-    noofvoc_imgs = 15000
-    min_visib = 0.6
-    blackness_thres = 16
-    vocpath = '/home_local_nvme/sund_ma/data/VOCdevkit/VOC2012/JPEGImages/*.jpg'
-    voc_img_pathes = glob.glob(vocpath)
-    output_path = '/home_local_nvme/sund_ma/data/scene_renderings/linemod_real_imgs_voc_rotated/01/rgb'  
 
     if dataset == 'linemod':
         sixd_train_path = '/home_local_nvme/sund_ma/data/train_linemod'
@@ -44,7 +72,7 @@ def main():
         )
         obj_gts = []
         for obj_id in xrange(1,noofobjects+1):
-            obj_gts.append(inout.load_gt(os.path.join(sixd_train_path,'{:02d}'.format(obj_id),'gt.yml')))
+            obj_gts.append(load_gt(os.path.join(sixd_train_path,'{:02d}'.format(obj_id),'gt.yml')))
 
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -57,7 +85,7 @@ def main():
 
     obj_infos = []
     for obj_id in xrange(1,noofobjects+1):
-        obj_infos.append(inout.load_info(os.path.join(sixd_train_path,'{:02d}'.format(obj_id),'info.yml')))
+        obj_infos.append(load_info(os.path.join(sixd_train_path,'{:02d}'.format(obj_id),'info.yml')))
 
 
     augmenters = Sequential([
@@ -93,7 +121,7 @@ def main():
             img_path = os.path.join(sixd_train_path,'{:02d}'.format(rand_obj_id+1),'rgb','{:04d}.png'.format(rand_view_id))
             
             rand_img = cv2.imread(img_path)
-            # rand_depth_img = inout.load_depth2(os.path.join(sixd_train_path,'{:02d}'.format(rand_obj_id+1),'depth','{:04d}.png'.format(rand_view_id)))
+            # rand_depth_img = load_depth2(os.path.join(sixd_train_path,'{:02d}'.format(rand_obj_id+1),'depth','{:04d}.png'.format(rand_view_id)))
             
             # random rotate in-plane
             rot_angle= np.random.rand()*360

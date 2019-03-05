@@ -159,9 +159,9 @@ https://github.com/thodan/sixd_toolkit + our extensions, see sixd_toolkit_extens
 
 *Create the evaluation config file*
 ```bash
-mkdir $AE_WORKSPACE_PATH/eval_cfg/eval_group
-cp $AE_WORKSPACE_PATH/eval_cfg/eval_template.cfg $AE_WORKSPACE_PATH/eval_cfg/eval_group/eval_my_autoencoder.cfg
-gedit $AE_WORKSPACE_PATH/cfg/eval_group/eval_my_autoencoder.cfg
+mkdir $AE_WORKSPACE_PATH/cfg_eval/eval_group
+cp $AE_WORKSPACE_PATH/cfg_eval/eval_template.cfg $AE_WORKSPACE_PATH/cfg_eval/eval_group/eval_my_autoencoder.cfg
+gedit $AE_WORKSPACE_PATH/cfg_eval/eval_group/eval_my_autoencoder.cfg
 ```
 
 ### Evaluate and visualize 6D pose estimation of AAE with ground truth bounding boxes
