@@ -39,6 +39,8 @@ class AePoseEstimator(PoseEstInterface):
                               'color_data_type': eval(test_args.get('MODEL','color_data_type')),
                               'depth_data_type': eval(test_args.get('MODEL','depth_data_type')) }
 
+        self.vis = test_args.getboolean('MODEL','pose_visualization')
+
         self.all_experiments = eval(test_args.get('MODEL','experiments'))
         self.class_names = eval(test_args.get('MODEL','class_names'))
         self.all_codebooks = []
@@ -72,12 +74,12 @@ class AePoseEstimator(PoseEstInterface):
             factory.restore_checkpoint(self.sess, saver, ckpt_dir)
 
 
-            if test_args.getboolean('MODEL','icp'):
-                assert len(self.all_experiments) == 1, 'icp currently only works for one object'
+            if test_args.getboolean('ICP','icp'):
+                # assert len(self.all_experiments) == 1, 'icp currently only works for one object'
                 # currently works only for one object
                 from auto_pose.icp import icp
                 self._process_requirements.append('depth_img')
-                self.icp_handle = icp.ICP(train_args)
+                self.icp_handle = icp.ICP(test_args)
 
 
 
@@ -113,6 +115,9 @@ class AePoseEstimator(PoseEstInterface):
 
         all_Rs, all_ts = [],[]
         all_pose_estimates = []
+        if self.vis:
+            img_show = color_img.copy()
+            depth_img_show = np.dstack((depth_img.copy(),depth_img.copy(),depth_img.copy()))
 
         for j,box in enumerate(bboxes):
             H_est = np.eye(4)
@@ -144,16 +149,52 @@ class AePoseEstimator(PoseEstInterface):
             t_est = ts_est.squeeze()
 
             if 'depth_img' in self.query_process_requirements():
+                print 'depth im shape:', depth_img.shape
+                print 'color im shape:', color_img.shape
                 assert H == depth_img.shape[0]
+                depth_crop = depth_img
                 depth_crop = self.extract_square_patch(depth_img, 
                                                     box_xywh,
                                                     self.pad_factors[clas_idx],
                                                     resize=self.patch_sizes[clas_idx], 
-                                                    interpolation=cv2.INTER_NEAREST)
-                R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H))
+                                                    interpolation=cv2.INTER_NEAREST) * 1000.
+                R_est_auto = R_est.copy()
+                t_est_auto = t_est.copy()
+                print 'translation from camera before : ',  t_est/1000.
+                R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, camK, (W,H), clas_idx=clas_idx, depth_only=True)
+                _, ts_est, _ = self.all_codebooks[clas_idx].auto_pose6d(self.sess, 
+                                                                            det_img, 
+                                                                            box_xywh, 
+                                                                            camK,
+                                                                            self._topk, 
+                                                                            self.all_train_args[clas_idx], 
+                                                                            upright=self._upright,
+                                                                            depth_pred=t_est[2])
+                               
+                R_est, _ = self.icp_handle.icp_refinement(depth_crop, R_est, ts_est.squeeze(), camK, (W,H), clas_idx=clas_idx, no_depth=True)
 
+                if self.vis:
+                    bgr, depth = self.icp_handle.syn_renderer.render_trafo(camK, R_est, t_est, (W,H), clas_idx=clas_idx)
+                    bgr_auto, depth_auto = self.icp_handle.syn_renderer.render_trafo(camK, R_est_auto, t_est_auto, (W,H), clas_idx=clas_idx)
+                    g_y = np.zeros_like(bgr)
+                    g_y[:,:,1]= bgr[:,:,1]
+                    g_y = g_y/255.   
+                    r_y = np.zeros_like(bgr_auto)
+                    r_y[:,:,0]= bgr_auto[:,:,0]
+                    r_y = r_y/255.   
+                    img_show[depth_auto > 0] = r_y[depth_auto > 0]*2./3. + img_show[depth_auto > 0]*1./3.
+                    img_show[depth > 0] = g_y[depth > 0]*2./3. + img_show[depth > 0]*1./3.
+                    
+
+                    depth_img_show[depth_auto > 0] = r_y[depth_auto > 0]*2./3. + depth_img_show[depth_auto > 0]*1./3.
+                    depth_img_show[depth > 0] = g_y[depth > 0]*2./3. + depth_img_show[depth > 0]*1./3.
+                    
+                    cv2.imshow('pose est',img_show)
+                    cv2.imshow('pose est depth',depth_img_show)  
+                    
+           
             H_est[:3,:3] = R_est
-            H_est[:3,3] = t_est / 1000. #mm in m
+            H_est[:3,3] = t_est / 1000.
             print 'translation from camera: ',  H_est[:3,3]
 
             if self._camPose:
@@ -164,5 +205,4 @@ class AePoseEstimator(PoseEstInterface):
 
 
         return all_pose_estimates
-
 

@@ -16,6 +16,7 @@ class MultiQueue(object):
         self._dataset = dataset
         self._batch_size = batch_size
         self._noof_training_imgs = noof_training_imgs
+        
         self._model_paths = model_paths
         self._shape = shape
 
@@ -29,6 +30,7 @@ class MultiQueue(object):
         self.max_off_brightness = eval(aug_args['max_off_brightness'])
         self.gaussian_blur = eval(aug_args['gaussian_blur'])
         self.invert = eval(aug_args['invert'])
+        self._random_bg = eval(aug_args['random_bg'])
         self.occl = eval(aug_args['transparent_shape_occlusion'])
 
         print self.zoom_range
@@ -91,7 +93,8 @@ class MultiQueue(object):
         # train_x = add_black_patches(train_x)
         train_x = zoom_image_object(train_x,np.linspace(self.zoom_range[0], self.zoom_range[1], 50).astype(np.float32))
         train_x = add_black_patches(train_x, max_area_cov = self.occl) if self.occl > 0 else train_x
-        train_x = add_background(train_x, bg)
+
+        train_x = add_background(train_x, bg) if self._random_bg else train_x
         train_x = gaussian_noise(train_x) if self.g_noise else train_x
         # train_x = gaussian_blur(train_x) if self.gaussian_blur else train_x
         train_x = random_brightness(train_x, self.max_off_brightness)
