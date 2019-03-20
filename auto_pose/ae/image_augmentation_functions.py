@@ -351,10 +351,12 @@ def invert_color(in_tensor):
 	aug2 = lambda: _one_channel(in_tensor)
 	aug3 = lambda: _no_aug(in_tensor)
 
-	return tf.case([(tf.less_equal(prob, 0.1), aug1), 
-		(tf.less_equal(prob, 0.3), aug2)],
+	# return tf.case([(tf.less_equal(prob, 0.1), aug1), 
+	# 	(tf.less_equal(prob, 0.3), aug2)],
+	# 	default = aug3)
+	return tf.case([(tf.less_equal(prob, 0.25), aug1), 
+		(tf.less_equal(prob, 0.5), aug2)],
 		default = aug3)
-
 	
 @map_decorator('random_brightness')
 def random_brightness(in_tensor, max_offset):
@@ -394,12 +396,14 @@ def random_brightness(in_tensor, max_offset):
 	#aug_tensor = tf.case([(tf.less_equal(prob, 0.33), color1),
 	#	(tf.less_equal(prob, 0.66), color2)],
 	#	default = color3)
-	aug_tensor = tf.case([(tf.less_equal(prob, 0.3), color1),(tf.less_equal(prob, 0.5), color2)],
-		default = color3)
+	# aug_tensor = tf.case([(tf.less_equal(prob, 0.3), color1),(tf.less_equal(prob, 0.5), color2)],
+	# 	default = color3)
 
 	# prob = tf.random_uniform([], minval = 0.0, maxval = 1.0, dtype = tf.float32)
-	# aug_tensor = tf.case([(tf.less_equal(prob, 0.5), color2)],
-	# 	default = color3)
+	aug_tensor = tf.case([(tf.less_equal(prob, 0.5), color1)],default = color3)
+
+	prob = tf.random_uniform([], minval = 0.0, maxval = 1.0, dtype = tf.float32)
+	aug_tensor = tf.case([(tf.less_equal(prob, 0.5), color2)],default = color3)
 
 	aug_tensor.set_shape(shape)
 	return tf.maximum(tf.minimum(aug_tensor, 1.0), 0.0)
@@ -628,7 +632,7 @@ def multiply_brightness(in_tensor, factor_range = [0.6, 1.4]):
 	aug2 = lambda: _one_channel(in_tensor, factor)
 	aug3 = lambda: _no_aug(in_tensor)
 
-	return tf.case([(tf.less_equal(prob, 0.35), aug1), 
+	return tf.case([(tf.less_equal(prob, 0.25), aug1), 
 		(tf.less_equal(prob, 0.5), aug2)],
 		default = aug3)
 

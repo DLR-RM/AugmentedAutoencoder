@@ -7,6 +7,7 @@ import glob
 import os
 import progressbar
 import cv2
+import xml.etree.ElementTree as ET
 
 from pysixd_stuff import transform
 from pysixd_stuff import view_sampler
@@ -152,10 +153,14 @@ class Dataset(object):
     def load_bg_images(self, dataset_path):
         current_config_hash = hashlib.md5(str(self.shape) + str(self.noof_bg_imgs) + str(self._kw['background_images_glob'])).hexdigest()
         current_file_name = os.path.join(dataset_path, current_config_hash +'.npy')
+    
+
         if os.path.exists(current_file_name):
             self.bg_imgs = np.load(current_file_name)
         else:
+            
             file_list = self.bg_img_paths[:self.noof_bg_imgs]
+            
             from random import shuffle
             shuffle(file_list)
 
@@ -175,30 +180,55 @@ class Dataset(object):
                 self.bg_imgs[j] = bgr
             np.save(current_file_name,self.bg_imgs)
 
+
         import tensorflow as tf
         self.bg_imgs = self.bg_imgs/255.
         print 'loaded %s bg images' % self.noof_bg_imgs
 
+    def filter_voc_paths(self, bg_paths):
+        model_set = set()
+        m_paths = eval(str(self._kw['model_path']))
+        for path in m_paths:
+            if 'ModelNet' in path:
+                model_set.add(os.path.basename(path).split('_')[0])
+        if len(model_set)==0:
+            return bg_paths
 
-    def render_rot(self, R, downSample = 1):
+        filtered_bg_paths = []
+        xml_path_glob = os.path.join(os.path.dirname(os.path.dirname(bg_paths[0])),'Annotations','*.xml')
+        xml_glob = glob.glob(xml_path_glob)
+        dic = {}
+        for xml,bg_p in zip(xml_glob,bg_paths):
+            root = ET.parse(xml).getroot()
+            if root.find('object').find('name').text in model_set:
+                filtered_bg_paths.append(bg_p)
+        self.noof_bg_imgs = len(filtered_bg_paths)
+        return filtered_bg_paths
+
+    def render_rot(self, R, K=None, downSample = 1, obj_id = 0, t=None, return_bb = False,return_orig = False):
         kw = self._kw
         h, w = self.shape[:2]
         radius = float(kw['radius'])
         render_dims = eval(kw['render_dims'])
-        K = eval(kw['k'])
-        K = np.array(K).reshape(3,3)
-        K[:2,:] = K[:2,:] / downSample
+
+        if K is None:
+            K = eval(kw['k'])
+            K = np.array(K).reshape(3,3)
+
+
+        K[:2,2] = K[:2,2] / downSample
 
         clip_near = float(kw['clip_near'])
         clip_far = float(kw['clip_far'])
         pad_factor = float(kw['pad_factor'])
 
-        t = np.array([0, 0, float(kw['radius'])])
+        if t is None:
+            t = np.array([0, 0, float(kw['radius'])])
 
         bgr_y, depth_y = self.renderer.render( 
-            obj_id=0,
-            W=render_dims[0]/downSample, 
-            H=render_dims[1]/downSample,
+            obj_id=obj_id,
+            W=render_dims[0]//downSample, 
+            H=render_dims[1]//downSample,
             K=K.copy(), 
             R=R, 
             t=t,
@@ -209,16 +239,19 @@ class Dataset(object):
 
         ys, xs = np.nonzero(depth_y > 0)
         obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
-        x, y, w, h = obj_bb
+        bgr_y_cropped = self.extract_square_patch(bgr_y, obj_bb, pad_factor)
+        
+        if downSample > 1:
+            obj_bb[0] = obj_bb[0]*downSample+obj_bb[2]/downSample
+            obj_bb[1] = obj_bb[1]*downSample+obj_bb[3]/downSample
 
-        size = int(np.maximum(h, w) * pad_factor)
-        left = x+w/2-size/2
-        right = x+w/2+size/2
-        top = y+h/2-size/2
-        bottom = y+h/2+size/2
-
-        bgr_y = bgr_y[top:bottom, left:right]
-        return cv2.resize(bgr_y, self.shape[:2])
+        
+        if return_bb:
+            if return_orig:
+                return bgr_y_cropped, obj_bb,bgr_y
+            return bgr_y_cropped, obj_bb
+        else:
+            return bgr_y_cropped
 
 
     def render_training_images(self, serialize_func = None, obj_id=0, tfrec_writer=None):
@@ -365,9 +398,9 @@ class Dataset(object):
         size = int(np.maximum(h, w) * pad_factor)
         
         left = np.maximum(x+w/2-size/2, 0)
-        right = x+w/2+size/2
+        right = np.minimum(x+w/2+size/2,scene_img.shape[1])
         top = np.maximum(y+h/2-size/2, 0)
-        bottom = y+h/2+size/2
+        bottom = np.minimum(y+h/2+size/2,scene_img.shape[0])
 
         scene_crop = scene_img[top:bottom, left:right]
         scene_crop = cv2.resize(scene_crop, resize, interpolation = interpolation)

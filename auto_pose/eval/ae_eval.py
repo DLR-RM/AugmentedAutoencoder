@@ -59,12 +59,14 @@ def main():
     #[EVALUATION]
     icp = eval_args.getboolean('EVALUATION','ICP')
     gt_trans = eval_args.getboolean('EVALUATION','gt_trans')
+    iterative_code_refinement = eval_args.getboolean('EVALUATION','iterative_code_refinement')
     
 
     evaluation_name = evaluation_name + '_icp' if icp else evaluation_name
     evaluation_name = evaluation_name + '_bbest' if estimate_bbs else evaluation_name
     evaluation_name = evaluation_name + '_gttrans' if gt_trans else evaluation_name
     evaluation_name = evaluation_name + '_gtmasks' if gt_masks else evaluation_name
+    evaluation_name = evaluation_name + '_refined' if iterative_code_refinement else evaluation_name
 
     data = dataset_name + '_' + cam_type if len(cam_type) > 0 else dataset_name
 
@@ -185,11 +187,21 @@ def main():
                 if train_args.getint('Dataset','C') == 1:
                     test_crop = cv2.cvtColor(test_crop,cv2.COLOR_BGR2GRAY)[:,:,None]
                 Rs_est, ts_est,_ = codebook.auto_pose6d(sess, 
-                                                                    test_crop, 
-                                                                    test_bb, 
-                                                                    Ks_test[view].copy(), 
-                                                                    top_nn, 
-                                                                    train_args)
+                                                        test_crop, 
+                                                        test_bb, 
+                                                        Ks_test[view].copy(), 
+                                                        top_nn, 
+                                                        train_args,
+                                                        refine=iterative_code_refinement)
+                #TODO: 
+                Rs_est_old, ts_est_old = Rs_est.copy(), ts_est.copy()
+                # Rs_est_old, ts_est_old,_ = codebook.auto_pose6d(sess, 
+                #                                     test_crop, 
+                #                                     test_bb, 
+                #                                     Ks_test[view].copy(), 
+                #                                     top_nn, 
+                #                                     train_args,
+                #                                     refine=False)
                 ae_time = time.time() - start
 
                 if eval_args.getboolean('PLOT','EMBEDDING_PCA'):
@@ -217,8 +229,7 @@ def main():
                 except:
                     run_time = ae_time
                 # icp = False if view<350 else True
-                #TODO: 
-                Rs_est_old, ts_est_old = Rs_est.copy(), ts_est.copy()
+
                 for p in xrange(top_nn):
                     if icp:
                         start = time.time()
@@ -229,7 +240,7 @@ def main():
                         print t_est_refined
 
                         # x,y update,does not change tz:
-                        _, ts_est_refined, _ = codebook.auto_pose6d(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args,depth_pred=t_est_refined[2])
+                        _, ts_est_refined, _ = codebook.auto_pose6d(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args,depth_pred=t_est_refined[2], refine=iterative_code_refinement)
                         t_est_refined = ts_est_refined[p]
 
                         # rotation icp, only accepted if below 20 deg change

@@ -174,6 +174,14 @@ def main():
 				eval_name = re.sub('\d','',eval_name) + exp_name
 			data_paper_vsd[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1])] = float(sixd_recall)*100
 
+			data_paper_vsd_1_18 = {}
+			data_paper_vsd_19_30 = {}
+			for (key, value) in data_paper_vsd.items():
+				if key<=18:
+					data_paper_vsd_1_18[key] = value
+				else:
+					data_paper_vsd_19_30[key] = value
+
 		elif error_type=='cou':
 			data_cou.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
@@ -266,6 +274,45 @@ def main():
 
 		df_paper = df_paper.loc[:, df_paper.isnull().mean() <= .9]
 		df_paper.loc['mean'] = df_paper.mean(axis=0)
+
+		# df_paper.loc['mean'][0] = 0
+
+		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
+		latex_list = df_paper.to_latex(index=False, multirow=True, float_format='%.2f').splitlines()
+		latex_list.insert(len(latex_list)-3, '\midrule')
+		latex_new = '\n'.join(latex_list)
+		latex_content.append(latex_new)
+		latex_content.append('\\end{adjustbox}')
+		latex_content.append('\n')
+		latex_content.append('\n')
+	if len(data_paper_vsd_1_18) > 0:
+		df_paper = pd.DataFrame.from_dict(data_paper_vsd_1_18, orient='index')
+		cols = ['eval_obj']  + [col for col in df_paper if col != 'eval_obj']
+		df_paper = df_paper[cols]
+		df_paper = df_paper.sort_index(axis=1)
+
+		df_paper = df_paper.loc[:, df_paper.isnull().mean() <= .9]
+		df_paper.loc['mean'] = df_paper.mean(axis=0)
+
+		# df_paper.loc['mean'][0] = 0
+
+		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
+		latex_list = df_paper.to_latex(index=False, multirow=True, float_format='%.2f').splitlines()
+		latex_list.insert(len(latex_list)-3, '\midrule')
+		latex_new = '\n'.join(latex_list)
+		latex_content.append(latex_new)
+		latex_content.append('\\end{adjustbox}')
+		latex_content.append('\n')
+		latex_content.append('\n')
+	if len(data_paper_vsd_19_30) > 0:
+		df_paper = pd.DataFrame.from_dict(data_paper_vsd_19_30, orient='index')
+		cols = ['eval_obj']  + [col for col in df_paper if col != 'eval_obj']
+		df_paper = df_paper[cols]
+		df_paper = df_paper.sort_index(axis=1)
+
+		df_paper = df_paper.loc[:, df_paper.isnull().mean() <= .9]
+		df_paper.loc['mean'] = df_paper.mean(axis=0)
+
 		# df_paper.loc['mean'][0] = 0
 
 		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
@@ -299,6 +346,7 @@ def main():
 		df_paper = df_paper[cols]
 		df_paper = df_paper.sort_index(axis=1)
 		df_paper.loc['mean'] = df_paper.mean(axis=0)
+
 		# df_paper.loc['mean'][0] = 0
 
 		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')
@@ -309,6 +357,7 @@ def main():
 		latex_content.append('\\end{adjustbox}')
 		latex_content.append('\n')
 		latex_content.append('\n')
+		
 	if len(data_vsd) > 0:
 		df_vsd = pd.DataFrame(data_vsd).sort_values(by=['eval_obj','eval_name','eval_data','sixd_recall'])
 		latex_content.append('\\begin{adjustbox}{max width=\\textwidth}')

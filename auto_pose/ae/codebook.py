@@ -8,6 +8,7 @@ import progressbar
 from utils import lazy_property
 import utils as u
 
+import time
 
 class Codebook(object):
 
@@ -43,6 +44,132 @@ class Codebook(object):
             self.embed_obj_bbs_values = None
         
         self.cos_similarity = tf.matmul(self.normalized_embedding_query, self.embedding_normalized,transpose_b=True)
+        self._image_ph = tf.placeholder(tf.float32, [None,] + list(self._dataset.shape))
+
+    def refined_nearest_rotation(self, session, x, top_n, R_init=None, t_init=None, budget=10, epochs=3, high=6./180*np.pi, obj_id=0, top_n_refine=1):
+
+        from sixd_toolkit.pysixd import transform,pose_error
+        from sklearn.metrics.pairwise import cosine_similarity
+
+        if x.dtype == 'uint8':
+            x = x/255.
+        if x.ndim == 3:
+            x = np.expand_dims(x, 0)
+
+        cosine_similar, orig_in_emb = session.run([self.cos_similarity,self.normalized_embedding_query], {self._encoder.x: x})
+        
+        if top_n_refine==1:
+            idcs = np.argmax(cosine_similar, axis=1)
+            # orig_cosine_sim = cosine_similar[0,idcs]
+        else:
+            unsorted_max_idcs = np.argpartition(-cosine_similar.squeeze(), top_n_refine)[:top_n_refine]
+            idcs = unsorted_max_idcs[np.argsort(-cosine_similar.squeeze()[unsorted_max_idcs])]
+            # orig_cosine_sim = cosine_similar[0,idcs[0]]
+        print 'original cosine sim: ', cosine_similar[0,idcs]
+
+        Rs = self._dataset.viewsphere_for_embedding[idcs].copy()
+        Rs_new = [Rs[0]]
+        for R in Rs:
+            res = [pose_error.re(R_new,R) for R_new in Rs_new] 
+            if np.min(res) > 80:
+                Rs_new.append(R)
+
+        if R_init is None:
+            Rs = Rs_new[:]
+        else:
+            Rs = [R_init]
+        top_n_new = len(Rs)
+        max_cosine_sim = 0.0
+
+        R_perts = []
+        fine_views = []
+        bbs = []
+        for j in range(epochs):
+
+
+            noof_perts = budget * top_n_new
+            for i in xrange(noof_perts):
+                if j>0 and i==0:
+                    R_perts = Rs
+                    print noof_perts
+                    # fine_views = list(view_best) if not isinstance(view_best, list) else view_best
+                    # bbs = list(bb_best) if not isinstance(bbs, list) else bbs
+                    continue
+                if i < top_n_new and j==0:
+                    R_off = np.eye(3,3)
+                else:
+                    rand_direction = transform.make_rand_vector(3)
+                    rand_angle = np.random.uniform(0,high/(j+1))
+                    R_off = transform.rotation_matrix(rand_angle,rand_direction)[:3,:3]
+
+                R_pert = np.dot(R_off,Rs[i%top_n_new])
+
+                R_perts.append(R_pert)
+
+                
+                bgr,obj_bb = self._dataset.render_rot(R_pert, downSample=1, obj_id=obj_id, return_bb=True)
+                # bgr[2:,2:,:] = bgr[:-2,:-2,:]
+
+                fine_views.append(bgr)
+                bbs.append(obj_bb)
+
+
+
+
+            float_imgs = session.run(self._image_ph/255.,{self._image_ph:np.array(fine_views)})
+            normalized_embedding_query = session.run(self.normalized_embedding_query, {self._encoder.x: float_imgs})
+            cosine_sim = cosine_similarity(orig_in_emb, normalized_embedding_query)
+            idx = np.argmax(cosine_sim, axis=1)
+            R_perts = np.array(R_perts)
+            
+            if cosine_sim[0,idx] >= max_cosine_sim:
+
+                fine_views = np.array(fine_views)
+                bbs = np.array(bbs)
+
+                max_cosine_sim = cosine_sim[0,idx]
+                unsorted_max_idcs = np.argpartition(-cosine_sim.squeeze(), top_n_refine)[:top_n_refine]
+                idcs = unsorted_max_idcs[np.argsort(-cosine_sim.squeeze()[unsorted_max_idcs])]
+                
+                Rs = R_perts[idcs]
+                view_best = fine_views[idcs[0]]
+                bb_best = bbs[idcs[0]]
+                # if top_n_new > 1:´
+
+                Rs_new = [Rs[0]]
+
+                # cv2.imshow('refined',view_best)
+                # cv2.imshow('orig_rendered',fine_views[0])
+                # cv2.imshow('orig_in',x[0])
+                # cv2.waitKey(0)
+
+                view_best_new = [view_best.squeeze()]
+                bb_best_new = [bb_best.squeeze()]
+                for r,R in enumerate(Rs):
+                    res = [pose_error.re(R_new,R) for R_new in Rs_new] 
+                    if np.min(res) > 80:
+                        Rs_new.append(R)
+                        view_best_new.append(fine_views[idcs[r]])
+                        bb_best_new.append(bbs[idcs[r]])
+
+
+                Rs = Rs_new[:]
+                fine_views = view_best_new[:]
+                bbs = bb_best_new[:]
+
+                top_n_new = len(view_best_new)
+
+                print 'refined'
+                # cv2.imshow('chosen', fine_views[idx])
+                # cv2.waitKey(0)
+                
+                
+                # Rs_best = list(Rs)
+            else:
+                print 'not refined'
+        print 'final cosine sim: ', max_cosine_sim
+        # idx = np.argmax(cosine_sim)
+        return np.array(Rs)[0:top_n], bbs[0:top_n]
 
 
 
@@ -62,6 +189,7 @@ class Codebook(object):
         else:
             unsorted_max_idcs = np.argpartition(-cosine_similarity.squeeze(), top_n)[:top_n]
             idcs = unsorted_max_idcs[np.argsort(-cosine_similarity.squeeze()[unsorted_max_idcs])]
+
         if return_idcs:
             return idcs
         else:
@@ -69,10 +197,14 @@ class Codebook(object):
 
 
 
-    def auto_pose6d(self, session, x, predicted_bb, K_test, top_n, train_args, depth_pred=None, upright=False):
+    def auto_pose6d(self, session, x, predicted_bb, K_test, top_n, train_args, depth_pred=None, upright=False, refine=False):
         
-        idcs = self.nearest_rotation(session, x, top_n=top_n, upright=upright,return_idcs=True)
-        Rs_est = self._dataset.viewsphere_for_embedding[idcs]
+        if refine:
+            Rs_est,rendered_bbs = self.refined_nearest_rotation(session, x, top_n, budget=30, epochs=2, obj_id=0, top_n_refine=2)
+            rendered_bb = rendered_bbs[0]
+        else:
+            idcs = self.nearest_rotation(session, x, top_n=top_n, upright=upright,return_idcs=True)
+            Rs_est = self._dataset.viewsphere_for_embedding[idcs]
 
 
         # if test_codes:
@@ -91,9 +223,12 @@ class Codebook(object):
             self.embed_obj_bbs_values = session.run(self.embed_obj_bbs_var)
 
         ts_est = np.empty((top_n,3))
-        for i,idx in enumerate(idcs):
 
-            rendered_bb = self.embed_obj_bbs_values[idx].squeeze()
+        for i,R_est in enumerate(Rs_est):
+
+            if not refine:
+                rendered_bb = self.embed_obj_bbs_values[idcs[i]].squeeze()
+                
             if depth_pred is None:
                 bb_diag_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
                 z = bb_diag_ratio * K_diag_ratio * render_radius
@@ -110,7 +245,10 @@ class Codebook(object):
             center_obj_mm_x = center_obj_x_test * z / K_test[0,0] - center_obj_x_train * render_radius / K_train[0,0]  
             center_obj_mm_y = center_obj_y_test * z / K_test[1,1] - center_obj_y_train * render_radius / K_train[1,1]  
             
-            t_est = np.array([center_obj_mm_x, center_obj_mm_y, z])
+            # z_updated = np.sqrt(z**2+center_obj_x_test**2+center_obj_y_test**2)
+            z_updated = z
+
+            t_est = np.array([center_obj_mm_x, center_obj_mm_y, z_updated])
             ts_est[i] = t_est
             
             # correcting the rotation matrix 
@@ -126,7 +264,7 @@ class Codebook(object):
                                 [0,1,0],
                                 [-np.sin(d_alpha_y),0,np.cos(d_alpha_y)]]) 
 
-            R_corrected = np.dot(R_corr_y,np.dot(R_corr_x,Rs_est[i]))
+            R_corrected = np.dot(R_corr_y,np.dot(R_corr_x,R_est))
             Rs_est[i] = R_corrected
         return (Rs_est, ts_est,None)
         
@@ -189,8 +327,8 @@ class Codebook(object):
     def update_embedding(self, session, batch_size, model_path):
 
         self._dataset._kw['model_path'] = list([str(model_path)])
-        self._dataset._kw['model'] = 'cad' if 'cad' in model_path else 'reconst'
-        self._dataset._kw['model'] = 'reconst' if 'reconst' in model_path else 'cad'
+        self._dataset._kw['model'] = 'cad' if 'cad' in model_path else self._dataset._kw['model']
+        self._dataset._kw['model'] = 'reconst' if 'reconst' in model_path else self._dataset._kw['model']
 
         embedding_size = self._dataset.embedding_size
         J = self._encoder.latent_space_size
@@ -206,6 +344,9 @@ class Codebook(object):
         for a, e in u.batch_iteration_indices(embedding_size, batch_size):
 
             batch, obj_bbs_batch = self._dataset.render_embedding_image_batch(a, e)
+            # import cv2
+            # cv2.imshow('',u.tiles(batch,10,10))
+            # cv2.waitKey(0)
             embedding_z[a:e] = session.run(self._encoder.z, feed_dict={self._encoder.x: batch})
 
             if self.embed_bb:

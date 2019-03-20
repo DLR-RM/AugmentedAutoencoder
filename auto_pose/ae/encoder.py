@@ -61,6 +61,9 @@ class Encoder(object):
                 depth=self._num_filters[-1], 
                 atrous_rates=self._aspp)
         else:
+            if self._aspp and len(self._aspp) == len(self._num_filters):
+                self._num_filters = np.array(self._num_filters)*2
+
             for filters, stride in zip(self._num_filters, self._strides):
                 padding = 'same'
                 x = tf.layers.conv2d(

@@ -260,3 +260,28 @@ def select_img_crops(crop_candidates, test_crops_depth, bbs, bb_scores, visibs, 
         return (np.array(crop_candidates)[idcs], np.array(test_crops_depth)[idcs], np.array(bbs)[idcs], np.array(bb_scores)[idcs], np.array(visibs)[idcs])
     else:
         return (np.array(crop_candidates)[idcs], None, np.array(bbs)[idcs], np.array(bb_scores)[idcs], np.array(visibs)[idcs])
+
+def align_images(im1, im2, z_init, warp_mode = cv2.MOTION_AFFINE, termination_eps = 1e-7, number_of_iterations = 5000):
+
+    import cv2
+    print im1.dtype, np.min(im1), np.max(im1), im1.shape
+    im1_gray = cv2.cvtColor(im1.astype(np.float32),cv2.COLOR_BGR2GRAY)
+    im2_gray = cv2.cvtColor(im2.astype(np.float32),cv2.COLOR_BGR2GRAY)
+    # Find size of image1
+    sz = im1.shape
+    
+    # Define the motion model
+
+    # Define 2x3 or 3x3 matrices and initialize the matrix to identity
+    if warp_mode == cv2.MOTION_HOMOGRAPHY:
+        warp_matrix = np.eye(3, 3, dtype=np.float32)
+    else:
+        warp_matrix = np.eye(2, 3, dtype=np.float32)
+    
+    
+    criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations,  termination_eps)
+    (cc, warp_matrix) = cv2.findTransformECC (im1_gray, im2_gray, warp_matrix, warp_mode, criteria)
+    # Use warpAffine for Translation, Euclidean and Affine
+    t_z_est = (np.array(warp_matrix)[0,0] + np.array(warp_matrix)[1,1])/2*random_t_pert[2] 
+
+    return t_z_est

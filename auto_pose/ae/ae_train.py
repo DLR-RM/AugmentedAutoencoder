@@ -35,11 +35,12 @@ def main():
     parser.add_argument("-gen", action='store_true', default=False)
     parser.add_argument('--at_step', default=None,  type=int, required=False)
 
-
     arguments = parser.parse_args()
 
     full_name = arguments.experiment_name.split('/')
     
+
+
     experiment_name = full_name.pop()
     experiment_group = full_name.pop() if len(full_name) > 0 else ''
     
@@ -65,7 +66,6 @@ def main():
         os.makedirs(train_fig_dir)
     if not os.path.exists(dataset_path):
         os.makedirs(dataset_path)
-        
 
     args = configparser.ConfigParser()
     args.read(cfg_file_path)
@@ -83,7 +83,7 @@ def main():
             dataset = factory.build_dataset(dataset_path, args)
             multi_queue = factory.build_multi_queue(dataset, args)
             if generate_data:
-                dataset.load_bg_images(dataset_path)
+                # dataset.load_bg_images(dataset_path)
                 multi_queue.create_tfrecord_training_images(dataset_path, args)
                 print 'finished generating training images'
                 exit()
@@ -123,7 +123,7 @@ def main():
             tf.summary.image('reconstruction', tf.gather(tf.concat([decoder.x for decoder in decoders],0),rand_idcs), max_outputs=4)
 
         # dataset.get_training_images(dataset_path, args)
-    dataset.load_bg_images(dataset_path)
+    # dataset.load_bg_images(dataset_path)
     multi_queue.create_tfrecord_training_images(dataset_path, args)
 
     if generate_data:

@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D 
 from matplotlib2tikz import save as tikz_save
@@ -9,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 from auto_pose.ae.utils import tiles
 from sklearn.decomposition import PCA
+from scipy import interpolate 
 import glob
 import pickle as pl
 
@@ -260,40 +260,190 @@ def plot_scene_with_estimate(test_img,renderer,K_test, R_est_old, t_est_old,R_es
     #         cv2.imshow('ground truth scene_estimation',scene_view)
 
 
-def compute_pca_plot_embedding(eval_dir, z_train, z_test=None, save=True):
+def compute_pca_plot_embedding(eval_dir, z_train, lon_lat=None, z_test=None, save=True,inter_factor = 8):
     sklearn_pca = PCA(n_components=3)
     full_z_pca = sklearn_pca.fit_transform(z_train)
     if z_test is not None:
         full_z_pca_test = sklearn_pca.transform(z_test)
 
-    fig = plt.figure()
-    ax = Axes3D(fig)
+    for i in [0,1]:
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        if lon_lat is None:
+            c=np.linspace(0, 1, len(full_z_pca))
+        else:
+            lon_lat = np.array(lon_lat)
+            sort_idcs=np.argsort(lon_lat[:,i])
+            full_z_pca_s = full_z_pca[sort_idcs]
 
-    c=np.linspace(0, 1, len(full_z_pca))
-    ax.scatter(full_z_pca[:,0],full_z_pca[:,1],full_z_pca[:,2], c=c, marker='.', label='PCs of train viewsphere')
+            tck, u = interpolate.splprep(full_z_pca_s.T, s=2)
+            u_fine = np.linspace(0,1,inter_factor*len(full_z_pca_s))
+            x_fine, y_fine, z_fine = interpolate.splev(u_fine, tck)
+
+
+            if i==0:
+                c=np.array(lon_lat)[:,i]/(2*np.pi)
+            else:
+                c=(np.array(lon_lat)[:,i] + np.pi/2)/np.pi
+        incr = len(c)//10
+        incr_int = incr * inter_factor
+        jet = plt.get_cmap('jet')
+        for j in range(10): 
+            #ax.scatter(full_z_pca[:,0],full_z_pca[:,1],full_z_pca[:,2], c=c, marker='.', label='PCs of train viewsphere')
+            
+            label ='lat level %s' % j if i==1 else 'lat level %s' % j
+            ax.plot(x_fine[j*incr_int:(j+1)*incr_int], y_fine[j*incr_int:(j+1)*incr_int], z_fine[j*incr_int:(j+1)*incr_int], label=label, markersize=10, marker='.', color=jet(c[j*incr])[:3]+(0.8,))
+        if z_test is not None:
+            ax.scatter(full_z_pca_test[:,0],full_z_pca_test[:,1],full_z_pca_test[:,2], c='red', marker='.', label='test_z')
+        if i==0:
+            plt.title('Embedding Principal Components Lon')
+        else:
+            plt.title('Embedding Principal Components Lat')
+        ax.set_xlabel('pc1')
+        ax.set_ylabel('pc2')
+        ax.set_zlabel('pc3')
+        ax.legend()
+
+        if save:
+            pl.dump(fig,file(os.path.join(eval_dir,'figures','pca_embedding.pickle'),'wb'))
+            plt.savefig(os.path.join(eval_dir,'figures','pca_embedding.pdf'))
+
+    return sklearn_pca
+
+def compute_pca_plot_azelin(noof, z_train, pca=None, z_test=None, save=True, inter_factor = 2, normalize=False,fig=None, ax=None):
+
+    if pca is None:
+        sklearn_pca = PCA(n_components=3)
+        full_z_pca = sklearn_pca.fit_transform(z_train)
+    else:
+        full_z_pca = pca.transform(z_train)
+    if normalize:
+        full_z_pca = full_z_pca/np.linalg.norm(full_z_pca,axis=1)[:,np.newaxis]
+    if z_test is not None:
+        full_z_pca_test = pca.transform(z_test)
+
+    # full_z_pca = np.concatenate((full_z_pca,full_z_pca[0:1]))
+
+    incr = np.linspace(0,1,3)
+    off = noof * inter_factor
+    jet = plt.get_cmap('brg')
+    labels = ['azimuth','elevation','inplane']
+
+    for j in range(3)[::-1]: 
+        #ax.scatter(full_z_pca[:,0],full_z_pca[:,1],full_z_pca[:,2], c=c, marker='.', label='PCs of train viewsphere')
+        if inter_factor<=1:
+            x_fine, y_fine, z_fine = full_z_pca.T
+            
+        else:
+            tck, u = interpolate.splprep(full_z_pca.T,s=3)
+            u_fine = np.linspace(0,1,inter_factor*len(full_z_pca))
+            x_fine, y_fine, z_fine = interpolate.splev(u_fine, tck)
+
+        ax.plot(x_fine[j*off:(j+1)*off], y_fine[j*off:(j+1)*off], z_fine[j*off:(j+1)*off], label=labels[j], marker='.',markersize=4,color=jet(incr[j])[:3]+(0.8,))
     if z_test is not None:
         ax.scatter(full_z_pca_test[:,0],full_z_pca_test[:,1],full_z_pca_test[:,2], c='red', marker='.', label='test_z')
-
-    plt.title('Embedding Principal Components')
+    ax.scatter(x_fine[0],y_fine[0],z_fine[0],c='black', marker='o')
     ax.set_xlabel('pc1')
     ax.set_ylabel('pc2')
     ax.set_zlabel('pc3')
+    ax.grid(False)
 
-    plt.legend()
-    pl.dump(fig,file(os.path.join(eval_dir,'figures','pca_embedding.pickle'),'wb'))
+    # ax.legend()
+
     if save:
+        pl.dump(fig,file(os.path.join(eval_dir,'figures','pca_embedding.pickle'),'wb'))
         plt.savefig(os.path.join(eval_dir,'figures','pca_embedding.pdf'))
 
 
-def plot_viewsphere_for_embedding(Rs_viewpoints, eval_dir):
+def plot_viewsphere_for_embedding(Rs_viewpoints, eval_dir, save=True):
+
     fig = plt.figure()
     ax = Axes3D(fig)
     c=np.linspace(0, 1, len(Rs_viewpoints))
     ax.scatter(Rs_viewpoints[:,2,0],Rs_viewpoints[:,2,1],Rs_viewpoints[:,2,2], c=c, marker='.', label='embed viewpoints')
     plt.title('Embedding Viewpoints')
     plt.legend()
-    plt.savefig(os.path.join(eval_dir,'figures','embedding_viewpoints.pdf'))
+    if save:
+        plt.savefig(os.path.join(eval_dir,'figures','embedding_viewpoints.pdf'))
+    else:
+        plt.show()
 
+
+def generate_view_points(noof=1001, lat=(-0.5*np.pi,0.5*np.pi), lon=(0,2*np.pi), num_cyclo=1, renderer=None):
+    from sixd_toolkit.pysixd import view_sampler
+    azimuth_range = lon
+    elev_range = lat
+
+
+
+    views, _, lon_lat, pts = view_sampler.sample_views(noof-1,
+                                                    azimuth_range = lon,
+                                                    elev_range = lat,
+                                                    sampling='fibonacci')
+    Rs = np.empty( (len(views)*num_cyclo, 3, 3) )
+    i = 0
+
+    for view in views:
+        for cyclo in np.linspace(0, 2.*np.pi, num_cyclo, endpoint=False):
+            rot_z = np.array([[np.cos(-cyclo), -np.sin(-cyclo), 0], [np.sin(-cyclo), np.cos(-cyclo), 0], [0, 0, 1]])
+            Rs[i,:,:] = rot_z.dot(view['R'])
+            i += 1
+
+    return Rs,lon_lat,pts
+
+def generate_azim_elev_points(noof=36, orig_az_el_in = (0,np.pi/2,0)):
+    from sixd_toolkit.pysixd import view_sampler
+
+    elevs = np.roll(np.linspace(-np.pi,np.pi, noof),noof//4)
+    azims = np.linspace(0,2*np.pi,noof, endpoint=False)
+    pts_el = []
+    pts_az = []
+    sign = 1
+    for e,el in enumerate(elevs):
+        # if e >= len(elevs)//4:
+        #     sign=-1
+        # if e >= len(elevs)//4*3:
+        #     sign=1
+        x_el = sign*np.sin(el) * np.cos(orig_az_el_in[0])
+        y_el = np.sin(el) * np.sin(orig_az_el_in[0])
+        z_el = np.cos(el)
+        pts_el.append([x_el,y_el,z_el])
+    pts_el = np.array(pts_el)
+
+    for az in azims:
+        x_az = np.sin(orig_az_el_in[1]) * np.cos(az)
+        y_az = np.sin(orig_az_el_in[1]) * np.sin(az)
+        z_az = np.cos(orig_az_el_in[1])
+        pts_az.append([x_az,y_az,z_az])
+    pts_az = np.array(pts_az)
+
+    views_el, _, _, _ = view_sampler.sample_views(noof,
+                                                    sampling='None',
+                                                    pts=pts_el)
+    Rs_el = np.array([view['R'] for view in views_el])
+    for r,R_el in enumerate(Rs_el):
+        if r>=len(Rs_el)//4 and r<len(Rs_el)//4*3:
+            rot_z = np.array([[np.cos(np.pi), -np.sin(np.pi), 0], [np.sin(np.pi), np.cos(np.pi), 0], [0, 0, 1]])
+            Rs_el[r,:,:] = rot_z.dot(R_el)
+    views_az, _, _, _ = view_sampler.sample_views(noof,
+                                                sampling='None',
+                                                pts=pts_az)
+    Rs_az = np.array([view['R'] for view in views_az])
+
+    Rs_in = np.empty( (noof, 3, 3) )
+    pts_in = []
+    i = 0
+    for cyclo in np.linspace(0, 2.*np.pi, noof, endpoint=False):
+        rot_z = np.array([[np.cos(-cyclo), -np.sin(-cyclo), 0], [np.sin(-cyclo), np.cos(-cyclo), 0], [0, 0, 1]])
+        Rs_in[i,:,:] = rot_z.dot(Rs_el[0])
+        pts_in.append(rot_z.dot(pts_el[0]))
+        i += 1
+    pts_in = np.array(pts_in)
+    
+    pts = np.concatenate((pts_az, pts_el, pts_in))
+    Rs = np.concatenate((Rs_az, Rs_az[0:1], Rs_el, Rs_el[0:1], Rs_in, Rs_in[0:1]))
+    lon_lat = None
+    return Rs,lon_lat,pts
 
 
 def plot_t_err_hist(t_errors, eval_dir):

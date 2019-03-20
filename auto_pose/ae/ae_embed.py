@@ -70,7 +70,7 @@ def main():
     print '#'*20
 
 
-    batch_size = args.getint('Training', 'BATCH_SIZE')
+    batch_size = args.getint('Training', 'BATCH_SIZE')*len(eval(args.get('Paths', 'MODEL_PATH')))
     model = args.get('Dataset', 'MODEL')
 
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)

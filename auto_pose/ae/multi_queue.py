@@ -73,10 +73,16 @@ class MultiQueue(object):
         return (train_x, mask_x, train_y)
 
     def create_tfrecord_training_images(self, dataset_path, args):
-
+        dataset_args = str(args.items('Dataset'))
         for m,model in enumerate(self._model_paths):
+            if 'cad' in model:
+                dataset_args = dataset_args.replace('reconst','cad')
+            elif 'reconst' in model:
+                dataset_args = dataset_args.replace('cad','reconst')
+            else:
+                dataset_args = str(args.items('Dataset'))
 
-            current_config_hash = hashlib.md5(str(args.items('Dataset')) + model).hexdigest()
+            current_config_hash = hashlib.md5(dataset_args + model).hexdigest()
             current_file_name = os.path.join(dataset_path, current_config_hash + '.tfrecord')
             
             if not os.path.exists(current_file_name):
@@ -99,7 +105,7 @@ class MultiQueue(object):
         # train_x = gaussian_blur(train_x) if self.gaussian_blur else train_x
         train_x = random_brightness(train_x, self.max_off_brightness)
         train_x = invert_color(train_x) if self.invert else train_x
-        train_x = multiply_brightness(train_x, self.mult_brightness)
+        # train_x = multiply_brightness(train_x, self.mult_brightness)
         train_x = multiply_brightness(train_x, self.mult_brightness)
         train_x = contrast_normalization(train_x, self.contrast_norm_range)
         # train_x = gaussian_blur(train_x)
@@ -108,8 +114,7 @@ class MultiQueue(object):
     def load_bg_imgs(self, in_path):
 
         return tf.image.resize_images(tf.image.convert_image_dtype(tf.image.decode_jpeg(tf.read_file(in_path)),tf.float32),
-                    [self._shape[0],self._shape[1]],
-                    method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+                    [self._shape[0],self._shape[1]])
 
 
     def create_background_image_iterator(self, bg_paths):
@@ -154,12 +159,25 @@ class MultiQueue(object):
         return dataset
 
     def create_iterator(self, dataset_path, args):
+
         background_img_paths = glob.glob(args.get('Paths','BACKGROUND_IMAGES_GLOB'))
+
+        background_img_paths = self._dataset.filter_voc_paths(background_img_paths)
 
         self.create_background_image_iterator(background_img_paths)
         dsets = []
+
+        dataset_args = str(args.items('Dataset'))
         for m,model in enumerate(self._model_paths):
-            current_config_hash = hashlib.md5(str(args.items('Dataset')) + model).hexdigest()
+
+            if 'cad' in model:
+                dataset_args = dataset_args.replace('reconst','cad')
+            elif 'reconst' in model:
+                dataset_args = dataset_args.replace('cad','reconst')
+            else:
+                dataset_args = str(args.items('Dataset'))
+
+            current_config_hash = hashlib.md5(dataset_args + model).hexdigest()
             current_file_name = os.path.join(dataset_path, current_config_hash + '.tfrecord')
             tfrecord_dataset = tf.data.TFRecordDataset(current_file_name)
             dsets.append(self.preprocess_pipeline(tfrecord_dataset))

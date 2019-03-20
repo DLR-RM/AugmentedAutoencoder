@@ -13,6 +13,7 @@ import tensorflow as tf
 
 from auto_pose.ae import ae_factory as factory
 from auto_pose.ae import utils as u
+from auto_pose.eval import eval_plots
 
 
 def main():
@@ -33,6 +34,7 @@ def main():
     parser.add_argument("experiment_name")
     parser.add_argument("-d", action='store_true', default=False)
     parser.add_argument("-gen", action='store_true', default=False)
+    parser.add_argument("-vis_emb", action='store_true', default=False)
     parser.add_argument('--at_step', default=None,  type=int, required=False)
 
 
@@ -140,6 +142,20 @@ def main():
         if not debug_mode:
             print 'Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))
             bar.start()
+
+        if arguments.vis_emb:
+            Rs,lon_lat,pts = eval_plots.generate_view_points(noof=2001)
+            syn_crops = []
+            z_train = np.zeros((len(Rs),encoder.latent_space_size))
+            for R in Rs:
+                syn_crops.append(dataset.render_rot(R,obj_id=1))
+            for a, e in u.batch_iteration_indices(len(Rs), 200):
+                print a
+                z_train[a:e] = sess.run(encoder.z,feed_dict={encoder._input:syn_crops[a:e]})
+            eval_plots.compute_pca_plot_embedding('',z_train,lon_lat=lon_lat,save=False)
+            
+            exit()
+
         
         # print 'before starting queue'
         # queue.start(sess)
@@ -193,7 +209,6 @@ def main():
             k = cv2.waitKey(0)
             if k == 27:
                 break
-
             if gentle_stop[0]:
                 break
 
