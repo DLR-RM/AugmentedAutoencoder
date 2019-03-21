@@ -101,14 +101,14 @@ def main():
     # factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir, at_step=at_step)
     
 
-    if estimate_bbs:
-        #Object Detection, seperate from main
-        # sys.path.append('/net/rmc-lx0050/home_local/sund_ma/src/SSD_Tensorflow')
-        # from ssd_detector import SSD_detector
-        # #TODO: set num_classes, network etc.
-        # ssd = SSD_detector(sess, num_classes=31, net_shape=(300,300))
-        from rmcssd.bin import detector
-        ssd = detector.Detector(eval_args.get('BBOXES','CKPT'))
+    # if estimate_bbs:
+    #     #Object Detection, seperate from main
+    #     # sys.path.append('/net/rmc-lx0050/home_local/sund_ma/src/SSD_Tensorflow')
+    #     # from ssd_detector import SSD_detector
+    #     # #TODO: set num_classes, network etc.
+    #     # ssd = SSD_detector(sess, num_classes=31, net_shape=(300,300))
+    #     from rmcssd.bin import detector
+    #     ssd = detector.Detector(eval_args.get('BBOXES','CKPT'))
     
     t_errors = []
     R_errors = []
