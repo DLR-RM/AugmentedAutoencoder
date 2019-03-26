@@ -20,11 +20,12 @@ if __name__ == '__main__':
     parser.add_argument('--farplane', type=float, default=5000)
     parser.add_argument('-v', '--vocpath', required=True, help='Path to the Pascal Voc folder (VOCdevkit)')
     parser.add_argument('-type', '--model_type', required=False, default = 'reconst', help='Path to the Pascal Voc folder (VOCdevkit)')
+    parser.add_argument('--radius', default=800, type=int)
+    parser.add_argument('--min_rot_views', default=1000, type=int)
     args = parser.parse_args()
     
     output_path = args.output_path
 
-    
     models_cad_files = glob.glob(os.path.join(args.model,'*.ply'))
     obj_ids = [int(file.split('_')[-1].split('.')[0]) for file in models_cad_files]
     # print obj_ids
@@ -40,11 +41,11 @@ if __name__ == '__main__':
     K = np.array([(args.width+args.height)/2., 0, args.width/2, 0, (args.width+args.height)/2., args.height/2, 0, 0, 1]).reshape(3,3)
     vocdevkit_path = args.vocpath
     min_num_objects_per_scene = 1
-    max_num_objects_per_scene = 6
+    max_num_objects_per_scene = 9
     near_plane = args.nearplane
     far_plane = args.farplane
-    min_n_views = 1000
-    radius = 1000
+    min_n_views = args.min_rot_views
+    radius = args.radius
 
     augmenters = Sequential([
         Sometimes(0.1, GaussianBlur(0.5)),

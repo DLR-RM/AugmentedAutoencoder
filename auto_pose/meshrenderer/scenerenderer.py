@@ -5,8 +5,8 @@ import glob
 import math
 import numpy as np
 from write_xml import *
-import meshrenderer as mr
-import meshrenderer_phong as mr_phong
+import auto_pose.meshrenderer.meshrenderer as mr
+import auto_pose.meshrenderer.meshrenderer_phong as mr_phong
 import cv2
 
 from pysixd import view_sampler
@@ -35,6 +35,7 @@ class SceneRenderer(object):
         self._models_cad_files = models_cad_files
         self._width = width
         self._height = height
+        self._radius = radius
         self._K = K
         self._augmenters = augmenters
         self._min_num_objects_per_scene = min_num_objects_per_scene
@@ -90,7 +91,7 @@ class SceneRenderer(object):
             success = False
             while not success:
 
-                tz = np.random.triangular(160,500,1200)
+                tz = np.random.triangular(self._radius-self._radius/3,self._radius,self._radius+self._radius/3)
 
                 tx = np.random.uniform(-0.35 * tz * self._width / self._K[0,0], 0.35 * tz * self._width / self._K[0,0])
                 ty = np.random.uniform(-0.35 * tz * self._height / self._K[1,1], 0.35 * tz * self._height / self._K[1,1])
