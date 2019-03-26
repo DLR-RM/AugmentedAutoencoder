@@ -13,7 +13,7 @@ class Renderer(object):
     MAX_FBO_WIDTH = 2000
     MAX_FBO_HEIGHT = 2000
 
-    def __init__(self, models_cad_files, samples=1, vertex_tmp_store_folder='.',clamp=False):
+    def __init__(self, models_cad_files, samples=1, vertex_tmp_store_folder='.',clamp=False, vertex_scale=1.0):
         self._samples = samples
         self._context = gu.OffscreenContext()
 
@@ -44,7 +44,7 @@ class Renderer(object):
         indices = []
         for vertex, normal, color, faces in attributes:
             indices.append( faces.flatten() )
-            vertices.append(np.hstack((vertex, normal, color/255.0)).flatten())
+            vertices.append(np.hstack((vertex * vertex_scale, normal, color/255.0)).flatten())
 
         indices = np.hstack(indices).astype(np.uint32)
         vertices = np.hstack(vertices).astype(np.float32)

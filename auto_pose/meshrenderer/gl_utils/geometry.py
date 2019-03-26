@@ -4,7 +4,10 @@ import numpy as np
 import hashlib
 
 import pyassimp
+import pyassimp.postprocess
 import progressbar
+
+
 
 def load(filename):
     scene = pyassimp.load(filename, processing=pyassimp.postprocess.aiProcess_GenUVCoords|pyassimp.postprocess.aiProcess_Triangulate )
