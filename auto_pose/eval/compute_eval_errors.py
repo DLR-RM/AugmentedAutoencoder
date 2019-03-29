@@ -63,11 +63,17 @@ cam_type = eval_args.get('DATA','cam_type')
 estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
 icp = eval_args.getboolean('EVALUATION','ICP')
 gt_trans = eval_args.getboolean('EVALUATION','gt_trans')
+gt_masks = eval_args.getboolean('BBOXES','gt_masks')
+estimate_masks = eval_args.getboolean('BBOXES','estimate_masks')
+iterative_code_refinement = eval_args.getboolean('EVALUATION','iterative_code_refinement')
 
 
 evaluation_name = evaluation_name + '_icp' if icp else evaluation_name
 evaluation_name = evaluation_name + '_bbest' if estimate_bbs else evaluation_name
+evaluation_name = evaluation_name + '_maskest' if estimate_masks else evaluation_name
 evaluation_name = evaluation_name + '_gttrans' if gt_trans else evaluation_name
+evaluation_name = evaluation_name + '_gtmasks' if gt_masks else evaluation_name
+evaluation_name = evaluation_name + '_refined' if iterative_code_refinement else evaluation_name
 
 data = dataset_name + '_' + cam_type if len(cam_type) > 0 else dataset_name
 

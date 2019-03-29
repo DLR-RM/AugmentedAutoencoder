@@ -15,7 +15,7 @@ N = 3000                                 # number of random points in the datase
 dim = 3                                     # number of dimensions of the points
 verbose = False
 # max_mean_dist_factor = 2.0
-angle_change_limit = 20*np.pi/180.# = 20 deg #0.5236=30 deg
+angle_change_limit = 25*np.pi/180.# = 20 deg #0.5236=30 deg
 
 
 def best_fit_transform(A, B, depth_only=False, no_depth=False):
@@ -260,7 +260,7 @@ def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_d
     real_depth_pts = real_depth_pts[real_synmean_dist < max_mean_dist_factor*max_mean_dist]
     print depth_crop.max()
     print len(real_depth_pts), len(synthetic_pts)
-    if len(real_depth_pts) < len(synthetic_pts)/8.:
+    if len(real_depth_pts) < len(synthetic_pts)/50.:
         print 'not enough visible points'
         R_refined = R_est
         t_refined = t_est

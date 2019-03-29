@@ -26,7 +26,6 @@ class AE(object):
     # @property
     # def reconstruction(self):
     #     return self._decoder.x
-
     # @property
     # def reconstruction_target(self):
     #     return self._decoder.reconstruction_target

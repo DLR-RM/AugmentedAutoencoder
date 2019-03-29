@@ -7,6 +7,7 @@ import shutil
 import os
 import sys
 import time
+import glob
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -54,6 +55,7 @@ def main():
     #[BBOXES]
     estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
     gt_masks = eval_args.getboolean('BBOXES','gt_masks')
+    estimate_masks = eval_args.getboolean('BBOXES','estimate_masks')
     #[METRIC]
     top_nn = eval_args.getint('METRIC','TOP_N')
     #[EVALUATION]
@@ -64,6 +66,7 @@ def main():
 
     evaluation_name = evaluation_name + '_icp' if icp else evaluation_name
     evaluation_name = evaluation_name + '_bbest' if estimate_bbs else evaluation_name
+    evaluation_name = evaluation_name + '_maskest' if estimate_masks else evaluation_name
     evaluation_name = evaluation_name + '_gttrans' if gt_trans else evaluation_name
     evaluation_name = evaluation_name + '_gtmasks' if gt_masks else evaluation_name
     evaluation_name = evaluation_name + '_refined' if iterative_code_refinement else evaluation_name
@@ -133,12 +136,18 @@ def main():
                 # inout.save_yaml(os.path.join(scene_res_dir,'bb_preds.yml'), bb_preds)
                 print bb_preds
             else:
-                bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'),'{:02d}.yml'.format(scene_id)))
+                if estimate_masks:
+                    bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'), '{:02d}/mask_rcnn_predict.yml'.format(scene_id)))
+                    print bb_preds[0][0].keys()
+                    mask_paths = glob.glob(os.path.join(eval_args.get('BBOXES','EXTERNAL'), '{:02d}/masks/*.npy'.format(scene_id)))
+                    maskrcnn_scene_masks = [np.load(mp) for mp in mask_paths] 
+                else:
+                    maskrcnn_scene_masks = None
+                    bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'),'{:02d}.yml'.format(scene_id)))
 
-
-            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.generate_scene_crops(test_imgs, test_imgs_depth, bb_preds, eval_args, train_args)
+            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.generate_scene_crops(test_imgs, test_imgs_depth, bb_preds, eval_args, train_args, inst_masks = maskrcnn_scene_masks)
         else:
-            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.get_gt_scene_crops(scene_id, eval_args, train_args,load_gt_masks = gt_masks)
+            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks = gt_masks)
 
         if len(test_img_crops) == 0:
             print 'ERROR: object %s not in scene %s' % (obj_id,scene_id)

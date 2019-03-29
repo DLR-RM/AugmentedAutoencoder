@@ -170,7 +170,7 @@ class AePoseEstimator(PoseEstInterface):
                                                                             self.all_train_args[clas_idx], 
                                                                             upright=self._upright,
                                                                             depth_pred=t_est[2])
-                               
+                t_est = ts_est.squeeze()
                 R_est, _ = self.icp_handle.icp_refinement(depth_crop, R_est, ts_est.squeeze(), camK, (W,H), clas_idx=clas_idx, no_depth=True)
 
                 if self.vis:

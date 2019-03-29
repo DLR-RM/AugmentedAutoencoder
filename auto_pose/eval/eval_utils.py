@@ -52,9 +52,10 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
         if load_gt_masks:
             mask_paths = glob.glob('/net/rmc-lx0314/home_local_nvme/sund_ma/data/scene_renderings/tless_scene_masks/{:02d}/masks/*.npy'.format(scene_id))
             gt_inst_masks = [np.load(mp) for mp in mask_paths] 
+        
 
         test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis = generate_scene_crops(test_imgs, test_imgs_depth, gt, eval_args, 
-                                                                                            train_args, visib_gt=visib_gt,gt_inst_masks=gt_inst_masks)
+                                                                                            train_args, visib_gt=visib_gt,inst_masks=gt_inst_masks)
 
         np.savez(current_file_name, test_img_crops=test_img_crops, test_img_depth_crops=test_img_depth_crops, bbs = bbs, bb_scores=bb_scores, visib_gt=bb_vis)
         
@@ -72,14 +73,14 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
 
 
 
-def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, train_args, visib_gt = None, gt_inst_masks=None):
+def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, train_args, visib_gt = None, inst_masks=None):
 
 
     obj_id = eval_args.getint('DATA','OBJ_ID')
     estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
     pad_factor = eval_args.getfloat('BBOXES','PAD_FACTOR')
     icp = eval_args.getboolean('EVALUATION','ICP')
-
+    estimate_masks = eval_args.getboolean('BBOXES','estimate_masks')
     W_AE = train_args.getint('Dataset','W')
     H_AE = train_args.getint('Dataset','H')
 
@@ -95,6 +96,9 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, train_args, 
         if len(gt[view]) > 0:
             for bbox_idx,bbox in enumerate(gt[view]):
                 if bbox['obj_id'] == obj_id:
+                    if bbox.has_key('score'):
+                        if bbox['score']==-1:
+                            continue
                     bb = np.array(bbox['obj_bb'])
                     obj_id = bbox['obj_id']
                     bb_score = bbox['score'] if estimate_bbs else 1.0
@@ -107,19 +111,38 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, train_args, 
                     top = int(np.max([y+h/2-size/2, 0]))
                     bottom = int(np.min([y+h/2+size/2, H]))
 
-                    if gt_inst_masks is None:
+                    if inst_masks is None:
                         crop = img[top:bottom, left:right].copy()
                         if icp:
                             depth_crop = depth[top:bottom, left:right]
                     else:
-                        mask = gt_inst_masks[view]
-                        img_copy = np.zeros_like(img)
-                        img_copy[mask == (bbox_idx+1)] = img[mask == (bbox_idx+1)]
-                        crop = img_copy[top:bottom, left:right].copy()
-                        if icp:
-                            depth_copy = np.zeros_like(depth)
-                            depth_copy[mask == (bbox_idx+1)] = depth[mask == (bbox_idx+1)]
-                            depth_crop = depth_copy[top:bottom, left:right]
+                        if not estimate_masks:
+                            mask = inst_masks[view]
+                            img_copy = np.zeros_like(img)
+                            img_copy[mask == (bbox_idx+1)] = img[mask == (bbox_idx+1)]
+                            crop = img_copy[top:bottom, left:right].copy()
+                            if icp:
+                                depth_copy = np.zeros_like(depth)
+                                depth_copy[mask == (bbox_idx+1)] = depth[mask == (bbox_idx+1)]
+                                depth_crop = depth_copy[top:bottom, left:right]
+                        else:
+                            # chan = int(bbox['np_channel_id'])
+                            chan = bbox_idx
+                            mask = inst_masks[view][:,:,chan]
+                            # kernel = np.ones((2,2), np.uint8) 
+                            # mask_eroded = cv2.dilate(mask.astype(np.uint8), kernel, iterations=1) 
+                            # cv2.imshow('mask_erod',mask_eroded.astype(np.float32))
+                            # cv2.imshow('mask',mask.astype(np.float32))
+                            # cv2.waitKey(0)
+                            
+                            # mask = mask_eroded.astype(np.bool)
+                            img_copy = np.zeros_like(img)
+                            img_copy[mask] = img[mask]
+                            crop = img_copy[top:bottom, left:right].copy()
+                            if icp:
+                                depth_copy = np.zeros_like(depth)
+                                depth_copy[mask] = depth[mask]
+                                depth_crop = depth_copy[top:bottom, left:right]
 
                     #print bb
                     ## uebler hack: remove!
