@@ -36,6 +36,8 @@ class AePoseEstimator:
         self._camK = np.array(eval(test_args.get('CAMERA','K_test'))).reshape(3,3)
         self._width = test_args.getint('CAMERA','width')
         self._height = test_args.getint('CAMERA','height')
+        
+    
 
         self._upright = test_args.getboolean('AAE','upright')
         self.all_experiments = eval(test_args.get('AAE','experiments'))
@@ -43,6 +45,10 @@ class AePoseEstimator:
         self.class_names = eval(test_args.get('DETECTOR','class_names'))
         self.det_threshold = eval(test_args.get('DETECTOR','det_threshold'))
         self.icp = test_args.getboolean('ICP','icp')
+
+        if self.icp:
+            self._depth_scale = test_args.getfloat('DATA','depth_scale')
+
         self.all_codebooks = []
         self.all_train_args = []
         self.pad_factors = []
@@ -57,6 +63,7 @@ class AePoseEstimator:
         self.detector = load_model(str(test_args.get('DETECTOR','detector_model_path')), 
                             backbone_name=test_args.get('DETECTOR','backbone'))
         #detector = self._load_model_with_nms(test_args)
+
 
 
         for i,experiment in enumerate(self.all_experiments):
@@ -79,11 +86,14 @@ class AePoseEstimator:
             factory.restore_checkpoint(self.sess, saver, ckpt_dir)
 
 
-            if self.icp:
-                assert len(self.all_experiments) == 1, 'icp currently only works for one object'
-                # currently works only for one object
-                from auto_pose.icp import icp
-                self.icp_handle = icp.ICP(train_args)
+            # if self.icp:
+            #     assert len(self.all_experiments) == 1, 'icp currently only works for one object'
+            #     # currently works only for one object
+            #     from auto_pose.icp import icp
+            #     self.icp_handle = icp.ICP(train_args)
+        if test_args.getboolean('ICP','icp'):
+            from auto_pose.icp import icp
+            self.icp_handle = icp.ICP(test_args, self.all_train_args)
 
 
     def extract_square_patch(self, scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST,black_borders=False):
@@ -190,15 +200,38 @@ class AePoseEstimator:
 
             if self.icp:
                 assert H == depth_img.shape[0]
+
                 depth_crop = self.extract_square_patch(depth_img, 
                                                     box_xywh,
                                                     self.pad_factors[clas_idx],
                                                     resize=self.patch_sizes[clas_idx], 
-                                                    interpolation=cv2.INTER_NEAREST)
-                R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, self._camK, (W,H))
+                                                    interpolation=cv2.INTER_NEAREST) * self._depth_scale
+                R_est_auto = R_est.copy()
+                t_est_auto = t_est.copy()
+
+                R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, self._camK, (W,H), clas_idx=clas_idx, depth_only=True)
+                _, ts_est, _ = self.all_codebooks[clas_idx].auto_pose6d(self.sess, 
+                                                                            det_img, 
+                                                                            box_xywh, 
+                                                                            self._camK,
+                                                                            1, 
+                                                                            self.all_train_args[clas_idx], 
+                                                                            upright=self._upright,
+                                                                            depth_pred=t_est[2])
+                t_est = ts_est.squeeze()
+                R_est, _ = self.icp_handle.icp_refinement(depth_crop, R_est, ts_est.squeeze(), self._camK, (W,H), clas_idx=clas_idx, no_depth=True)
+                # depth_crop = self.extract_square_patch(depth_img, 
+                #                                     box_xywh,
+                #                                     self.pad_factors[clas_idx],
+                #                                     resize=self.patch_sizes[clas_idx], 
+                #                                     interpolation=cv2.INTER_NEAREST)
+                # R_est, t_est = self.icp_handle.icp_refinement(depth_crop, R_est, t_est, self._camK, (W,H))
+
+                H_est[:3,3] = t_est / self._depth_scale #mm / m
+            else:
+                H_est[:3,3] = t_est
 
             H_est[:3,:3] = R_est
-            H_est[:3,3] = t_est #/ 1000. #mm in m
             print 'translation from camera: ',  H_est[:3,3]
 
             if self._camPose:
