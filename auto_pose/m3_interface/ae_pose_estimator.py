@@ -75,11 +75,11 @@ class AePoseEstimator(PoseEstInterface):
             factory.restore_checkpoint(self.sess, saver, ckpt_dir)
 
 
-        if test_args.getboolean('ICP','icp'):
+        # if test_args.getboolean('ICP','icp'):
 
-            from auto_pose.icp import icp
-            self._process_requirements.append('depth_img')
-            self.icp_handle = icp.ICP(test_args)
+        #     from auto_pose.icp import icp
+        #     self._process_requirements.append('depth_img')
+        #     self.icp_handle = icp.ICP(test_args)
 
 
 

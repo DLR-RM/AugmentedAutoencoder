@@ -22,11 +22,6 @@ PYTHON_PATHS = ${ARCH}/lib/python2.7/site-packages
 ADDITIONAL_ENV = M3_ESTIMATOR_PACKAGES=auto_pose:$${M3_ESTIMATOR_PACKAGES}
 
 [subpackage]
-NAME = withICP
-DEPENDS += sw.moro.meshrenderer==0,
-		   software.common.scikit-learn==0
-
-[subpackage]
 NAME = training
 DEPENDS += sw.moro.meshrenderer==0, 
 		   sw.common.python-imgaug==0
