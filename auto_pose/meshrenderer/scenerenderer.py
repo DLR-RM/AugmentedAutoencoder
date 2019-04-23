@@ -102,6 +102,7 @@ class SceneRenderer(object):
 
                 if len(ts_norm) > 0 and np.any(np.dot(np.array(ts_norm),t_norm.reshape(3,1)) > 0.99):
                     success = False
+                    print 'fail'
                 else:
                     ts_norm.append(t_norm)
                     ts.append( t )

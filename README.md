@@ -50,13 +50,13 @@ sudo apt-get install libassimp-dev
 ```
 
 Tensorflow >= 1.6  
-OpenCV >= 3.1  
+OpenCV >= 3.1
 
 ```bash
 pip install --user --pre --upgrade PyOpenGL PyOpenGL_accelerate
 pip install --user cython
 pip install --user cyglfw3
-pip install --user pyassimp
+pip install --user pyassimp==3.3
 pip install --user imgaug
 pip install --user progressbar
 ```

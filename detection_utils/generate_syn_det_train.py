@@ -39,6 +39,9 @@ if __name__ == '__main__':
     model_type = args.model_type
 
     K = np.array([(args.width+args.height)/2., 0, args.width/2, 0, (args.width+args.height)/2., args.height/2, 0, 0, 1]).reshape(3,3)
+    # K = np.array([1075.65, 0, args.width/2, 0, 1073.90, args.height/2, 0, 0, 1]).reshape(3,3)
+
+
     vocdevkit_path = args.vocpath
     min_num_objects_per_scene = 1
     max_num_objects_per_scene = 9
