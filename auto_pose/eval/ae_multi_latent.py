@@ -48,16 +48,11 @@ def main():
     experiment_name = full_name.pop()
     experiment_group = full_name.pop() if len(full_name) > 0 else ''
     
-    debug_mode = arguments.d
-    generate_data = arguments.gen
     at_step = arguments.at_step
 
     cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
-    ckpt_dir = u.get_checkpoint_dir(log_dir)
-    train_fig_dir = u.get_train_fig_dir(log_dir)
-    dataset_path = u.get_dataset_path(workspace_path)
-    
+
     if not os.path.exists(cfg_file_path):
         print 'Could not find config file:\n'
         print '{}\n'.format(cfg_file_path)
@@ -72,9 +67,6 @@ def main():
     else:
         checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path, latest=at_step)
 
-    num_iter = args.getint('Training', 'NUM_ITER') if not debug_mode else np.iinfo(np.int32).max
-    save_interval = args.getint('Training', 'SAVE_INTERVAL')
-    num_gpus = 1
     model_type = args.get('Dataset', 'MODEL')
 
     codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True)
@@ -86,46 +78,6 @@ def main():
     saver = tf.train.Saver()
     saver.restore(sess, checkpoint_file)
 
-
-    # with tf.variable_scope(experiment_name, reuse=tf.AUTO_REUSE):
-    #     dataset = factory.build_dataset(dataset_path, args)
-    #     multi_queue = factory.build_multi_queue(dataset, args)
-    #     dev_splits = np.array_split(np.arange(24), num_gpus)
-
-    #     iterator = multi_queue.create_iterator(dataset_path, args)
-    #     all_object_views = tf.concat([inp[0] for inp in multi_queue.next_element],0)
-
-    #     bs = multi_queue._batch_size
-    #     encoding_splits = []
-    #     for dev in xrange(num_gpus):
-    #         with tf.device('/device:GPU:%s' % dev):   
-    #             encoder = factory.build_encoder(all_object_views[dev_splits[dev][0]*bs:(dev_splits[dev][-1]+1)*bs], args, is_training=False)
-    #             encoding_splits.append(tf.split(encoder.z, len(dev_splits[dev]),0))
-
-    # with tf.variable_scope(experiment_name):
-    #     decoders = []
-    #     for dev in xrange(num_gpus):     
-    #         with tf.device('/device:GPU:%s' % dev):  
-    #             for j,i in enumerate(dev_splits[dev]):
-    #                 decoders.append(factory.build_decoder(multi_queue.next_element[i], encoding_splits[dev][j], args, is_training=False, idx=i))
-
-    #     ae = factory.build_ae(encoder, decoders, args)
-    #     codebook = factory.build_codebook(encoder, dataset, args)
-    #     train_op = factory.build_train_op(ae, args)
-    #     saver = tf.train.Saver(save_relative_paths=True)
-
-    # dataset.load_bg_images(dataset_path)
-    # multi_queue.create_tfrecord_training_images(dataset_path, args)
-
-    # widgets = ['Training: ', progressbar.Percentage(),
-    #      ' ', progressbar.Bar(),
-    #      ' ', progressbar.Counter(), ' / %s' % num_iter,
-    #      ' ', progressbar.ETA(), ' ']
-    # bar = progressbar.ProgressBar(maxval=num_iter,widgets=widgets)
-
-
-    # gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.9)
-    # config = tf.ConfigProto(gpu_options=gpu_options,log_device_placement=True,allow_soft_placement=True)
 
     # all_aligned_train = sorted(glob.glob('/net/rmc-lx0314/home_local/sund_ma/data/modelnet_aligned/modelnet40_aligned_normalized_cent/car/train/*_normalized.off'))
     # all_aligned_test = sorted(glob.glob('/net/rmc-lx0314/home_local/sund_ma/data/modelnet_aligned/modelnet40_aligned_normalized_cent/car/test/*_normalized.off'))
@@ -147,98 +99,98 @@ def main():
 
 ## rot error histogram CB with 3D model
 ############################
-    # pose_errs = []
-    # for i in range(1,num_o+1):
-    #     for j in range(3):
-    #         random_R = transform.random_rotation_matrix()[:3,:3]
-    #         # DeepIM
+    pose_errs = []
+    for i in range(1,num_o+1):
+        for j in range(3):
+            random_R = transform.random_rotation_matrix()[:3,:3]
+            # DeepIM
 
 
-    #         while True:
-    #             rand_direction = transform.make_rand_vector(3)
-    #         #     rand_angle_x = np.random.normal(0,(15/180.*np.pi)**2)
-    #         #     rand_angle_y = np.random.normal(0,(15/180.*np.pi)**2)
-    #         #     rand_angle_z = np.random.normal(0,(15/180.*np.pi)**2)
+            while True:
+                rand_direction = transform.make_rand_vector(3)
+            #     rand_angle_x = np.random.normal(0,(15/180.*np.pi)**2)
+            #     rand_angle_y = np.random.normal(0,(15/180.*np.pi)**2)
+            #     rand_angle_z = np.random.normal(0,(15/180.*np.pi)**2)
 
-    #         #     R_off = transform.euler_matrix(rand_angle_x,rand_angle_y,rand_angle_z)
-    #         #     angle_off,_,_ = transform.rotation_from_matrix(R_off)
-    #         #     print angle_off*180/np.pi
+            #     R_off = transform.euler_matrix(rand_angle_x,rand_angle_y,rand_angle_z)
+            #     angle_off,_,_ = transform.rotation_from_matrix(R_off)
+            #     print angle_off*180/np.pi
 
-    #             rand_angle = np.random.normal(0,45/180.*np.pi)
-    #             R_off = transform.rotation_matrix(rand_angle,rand_direction)[:3,:3]
-    #             random_R_pert = np.dot(R_off,random_R)
-    #             print rand_angle
-    #             if abs(rand_angle) < 45/180.*np.pi and abs(rand_angle) > 5/180.*np.pi:
-    #                 break
+                rand_angle = np.random.normal(0,45/180.*np.pi)
+                R_off = transform.rotation_matrix(rand_angle,rand_direction)[:3,:3]
+                random_R_pert = np.dot(R_off,random_R)
+                print rand_angle
+                if abs(rand_angle) < 45/180.*np.pi and abs(rand_angle) > 5/180.*np.pi:
+                    break
 
             
-    #         ###
-    #         random_t_pert = np.array([0,0,700])# + np.array([np.random.normal(0,10),np.random.normal(0,10),np.random.normal(0,50)])
-    #         print random_t_pert
-    #         # random_R = dataset.viewsphere_for_embedding[np.random.randint(0,92000)]
-    #         import cv2
-    #         rand_test_view_crop, bb = dataset.render_rot(random_R, obj_id=i, return_bb=True)
+            ###
+            random_t_pert = np.array([0,0,700])# + np.array([np.random.normal(0,10),np.random.normal(0,10),np.random.normal(0,50)])
+            print random_t_pert
+            # random_R = dataset.viewsphere_for_embedding[np.random.randint(0,92000)]
+            import cv2
+            rand_test_view_crop, bb = dataset.render_rot(random_R, obj_id=i, return_bb=True)
 
-    #         # _, _, rand_test_view_whole_target = dataset.render_rot(random_R_pert, obj_id=i, t=random_t_pert, return_bb=True, return_orig=True)
-    #         # rand_test_view_crop = dataset.extract_square_patch(rand_test_view_whole_target, bb, float(dataset._kw['pad_factor']))
-    #         # rand_test_view_whole_target = rand_test_view_whole_target/255.
-    #         # rand_test_view_crop = rand_test_view_crop/255.
+            # _, _, rand_test_view_whole_target = dataset.render_rot(random_R_pert, obj_id=i, t=random_t_pert, return_bb=True, return_orig=True)
+            # rand_test_view_crop = dataset.extract_square_patch(rand_test_view_whole_target, bb, float(dataset._kw['pad_factor']))
+            # rand_test_view_whole_target = rand_test_view_whole_target/255.
+            # rand_test_view_crop = rand_test_view_crop/255.
             
             
-    #         # K = eval(dataset._kw['k'])
-    #         # K = np.array(K).reshape(3,3)
-    #         # bgr_y,_ = dataset.renderer.render( 
-    #         #     obj_id=i,
-    #         #     W=720, 
-    #         #     H=540,
-    #         #     K=K.copy(), 
-    #         #     R=random_R, 
-    #         #     t=np.array([0.,0,650]),
-    #         #     near=10,
-    #         #     far=10000,
-    #         #     random_light=False
-    #         # )
+            # K = eval(dataset._kw['k'])
+            # K = np.array(K).reshape(3,3)
+            # bgr_y,_ = dataset.renderer.render( 
+            #     obj_id=i,
+            #     W=720, 
+            #     H=540,
+            #     K=K.copy(), 
+            #     R=random_R, 
+            #     t=np.array([0.,0,650]),
+            #     near=10,
+            #     far=10000,
+            #     random_light=False
+            # )
 
 
-    #         # cv2.imshow('in',rand_test_view_crop)
-    #         # cv2.imshow('translated and rotated', rand_test_view_crop)
-    #         # cv2.waitKey(0)
+            # cv2.imshow('in',rand_test_view_crop)
+            # cv2.imshow('translated and rotated', rand_test_view_crop)
+            # cv2.waitKey(0)
 
-    #         # Rs_est = codebook.nearest_rotation(sess, rand_test_view, top_n=1)
-    #         st = time.time()
-    #         # session, x, top_n, budget=10, epochs=3, high=6./180*np.pi, obj_id=0, top_n_refine=1
-    #         R_refined,_ = codebook.refined_nearest_rotation(sess, rand_test_view_crop, 1, R_init=random_R_pert, budget=40, epochs=4, high=45./180*np.pi, obj_id=i, top_n_refine=1)
-    #         # R = codebook.nearest_rotation(sess, rand_test_view, 1)
-    #         # R = codebook.nearest_rotation(sess, rand_test_view, 1)
-    #         # R_refined = R_refined[np.newaxis,:]
-    #         print time.time() - st
+            # Rs_est = codebook.nearest_rotation(sess, rand_test_view, top_n=1)
+            st = time.time()
+            # session, x, top_n, budget=10, epochs=3, high=6./180*np.pi, obj_id=0, top_n_refine=1
+            R_refined,_ = codebook.refined_nearest_rotation(sess, rand_test_view_crop, 1, R_init=random_R_pert, budget=40, epochs=4, high=45./180*np.pi, obj_id=i, top_n_refine=1)
+            # R = codebook.nearest_rotation(sess, rand_test_view, 1)
+            # R = codebook.nearest_rotation(sess, rand_test_view, 1)
+            # R_refined = R_refined[np.newaxis,:]
+            print time.time() - st
 
-    #         pose_errs.append(pose_error.re(random_R,R_refined[0]))
-
-
-
-    #         # _, _, rand_test_view_whole = dataset.render_rot(R_refined[0], obj_id=i, return_bb=True,return_orig=True)
-    #         # z_est = eval_utils.align_images(rand_test_view_whole_target, rand_test_view_whole/255., random_t_pert[2], warp_mode = cv2.MOTION_AFFINE)
-    #         # print z_est
+            pose_errs.append(pose_error.re(random_R,R_refined[0]))
 
 
 
-    #         # pose_errs[-1] = np.minimum(pose_errs[-1],np.abs(pose_errs[-1]-180))
-    #         # import cv2
-    #         # cv2.imshow('inserted_view',rand_test_view)
-    #         # cv2.imshow('pert_view',rand_init_view)
-    #         # cv2.imshow('est_view', dataset.render_rot(R_refined[0],obj_id=i)/255.)
-    #         # cv2.waitKey(0)
+            # _, _, rand_test_view_whole = dataset.render_rot(R_refined[0], obj_id=i, return_bb=True,return_orig=True)
+            # z_est = eval_utils.align_images(rand_test_view_whole_target, rand_test_view_whole/255., random_t_pert[2], warp_mode = cv2.MOTION_AFFINE)
+            # print z_est
 
-    #         if pose_errs[-1]>170:
-    #             cv2.imshow('inserted_view',rand_test_view)
-    #             cv2.imshow('est_view', dataset.render_rot(R_refined[0],obj_id=i)/255.)
-    #             cv2.waitKey(1)
 
-    # plt.hist(pose_errs, bins=180)
-    # pose_errs = np.array(pose_errs)
-    # plt.title('median: ' + str(np.median(pose_errs)) + ', mean: ' + str(np.mean(pose_errs)) + ', <5deg: ' + str(len(pose_errs[pose_errs<5])/1.0/len(pose_errs)))
-    # plt.show()
+
+            # pose_errs[-1] = np.minimum(pose_errs[-1],np.abs(pose_errs[-1]-180))
+            # import cv2
+            # cv2.imshow('inserted_view',rand_test_view)
+            # cv2.imshow('pert_view',rand_init_view)
+            # cv2.imshow('est_view', dataset.render_rot(R_refined[0],obj_id=i)/255.)
+            # cv2.waitKey(0)
+
+            if pose_errs[-1]>170:
+                cv2.imshow('inserted_view',rand_test_view_crop)
+                cv2.imshow('est_view', dataset.render_rot(R_refined[0],obj_id=i)/255.)
+                cv2.waitKey(1)
+
+    plt.hist(pose_errs, bins=180)
+    pose_errs = np.array(pose_errs)
+    plt.title('median: ' + str(np.median(pose_errs)) + ', mean: ' + str(np.mean(pose_errs)) + ', <5deg: ' + str(len(pose_errs[pose_errs<5])/1.0/len(pose_errs)))
+    plt.show()
 
 
 
@@ -262,7 +214,6 @@ def main():
     pca_all = eval_plots.compute_pca_plot_embedding('',all_ztrain,lon_lat=list(lon_lat)*5,save=False)
 
 ##########################
-
 
     Rs,lon_lat,_ = eval_plots.generate_azim_elev_points(noof=36*8)
 
