@@ -75,7 +75,6 @@ def main():
     num_iter = args.getint('Training', 'NUM_ITER') if not debug_mode else np.iinfo(np.int32).max
     save_interval = args.getint('Training', 'SAVE_INTERVAL')
     num_gpus = args.getint('Training', 'NUM_GPUS')
-    model_type = args.get('Dataset', 'MODEL')
 
     with tf.device('/device:CPU:0'): 
         with tf.variable_scope(experiment_name, reuse=tf.AUTO_REUSE):
@@ -91,13 +90,17 @@ def main():
             dev_splits = np.array_split(np.arange(multi_queue._num_objects), num_gpus)
 
             iterator = multi_queue.create_iterator(dataset_path, args)
-            all_object_views = tf.concat([inp[0] for inp in multi_queue.next_element],0)
 
-            bs = multi_queue._batch_size
+            all_x, all_y = zip(*[(inp[0], inp[2]) for inp in multi_queue.next_element])
+            all_x, all_y = tf.concat(all_x, axis=0), tf.concat(all_y, axis=0)
+            print all_x.shape
             encoding_splits = []
             for dev in xrange(num_gpus):
                 with tf.device('/device:GPU:%s' % dev):   
-                    encoder = factory.build_encoder(all_object_views[dev_splits[dev][0]*bs:(dev_splits[dev][-1]+1)*bs], args, is_training=True)
+                    sta = dev_splits[dev][0] * multi_queue._batch_size
+                    end = (dev_splits[dev][-1]+1) * multi_queue._batch_size
+                    print sta, end
+                    encoder = factory.build_encoder(all_x[sta:end], args, target=all_y[sta:end], is_training=True)
                     encoding_splits.append(tf.split(encoder.z, len(dev_splits[dev]),0))
 
         with tf.variable_scope(experiment_name):
@@ -105,22 +108,13 @@ def main():
             for dev in xrange(num_gpus):     
                 with tf.device('/device:GPU:%s' % dev):  
                     for j,i in enumerate(dev_splits[dev]):
+                        print len(encoding_splits)
                         decoders.append(factory.build_decoder(multi_queue.next_element[i], encoding_splits[dev][j], args, is_training=True, idx=i))
             
             ae = factory.build_ae(encoder, decoders, args)
             codebook = factory.build_codebook(encoder, dataset, args)
             train_op = factory.build_train_op(ae, args)
             saver = tf.train.Saver(save_relative_paths=True)
-
-            tf.summary.histogram('mean_loss', ae._encoder.z)
-            tf.summary.scalar('total_loss', ae.loss)
-            for j,d in enumerate(decoders):
-                tf.summary.scalar('reconst_loss_%s' % j, d.reconstr_loss)
-                
-            rand_idcs = tf.random_shuffle(tf.range(bs * multi_queue._num_objects), seed=0)
-            tf.summary.image('input', tf.gather(tf.concat([el[0] for el in multi_queue.next_element],0),rand_idcs), max_outputs=4)
-            tf.summary.image('reconstruction_target', tf.gather(tf.concat([el[2] for el in multi_queue.next_element],0),rand_idcs), max_outputs=4)
-            tf.summary.image('reconstruction', tf.gather(tf.concat([decoder.x for decoder in decoders],0),rand_idcs), max_outputs=4)
 
         # dataset.get_training_images(dataset_path, args)
     # dataset.load_bg_images(dataset_path)
@@ -140,13 +134,14 @@ def main():
 
 
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.9)
-    config = tf.ConfigProto(gpu_options=gpu_options,log_device_placement=True,allow_soft_placement=True)
+    config = tf.ConfigProto(gpu_options=gpu_options,allow_soft_placement=True)
 
     with tf.Session(config=config) as sess:
 
         sess.run(multi_queue.bg_img_init.initializer)
         sess.run(iterator.initializer)
-
+       
+        u.create_summaries(multi_queue, decoders, ae)
         merged_loss_summary = tf.summary.merge_all()
         summary_writer = tf.summary.FileWriter(ckpt_dir, sess.graph)
 
@@ -184,7 +179,7 @@ def main():
                 # print 'before optimize'
                 sess.run([train_op,multi_queue.next_bg_element])
                 # print 'after optimize'
-                if i % 100 == 0:
+                if (i+1) % 100 == 0:
                     merged_summaries = sess.run(merged_loss_summary)
                     summary_writer.add_summary(merged_summaries, i)
 
@@ -211,8 +206,8 @@ def main():
 
                 this_x = np.concatenate([el[0] for el in this])
                 this_y = np.concatenate([el[2] for el in this])
-                print this_x.shape
-                reconstr_train = np.concatenate(reconstr_train)
+                print this_x.shape, reconstr_train[0].shape, len(reconstr_train)
+                reconstr_train = np.concatenate(reconstr_train,axis=0)
                 for imgs in [this_x,this_y,reconstr_train]:
                     np.random.seed(0)
                     np.random.shuffle(imgs)

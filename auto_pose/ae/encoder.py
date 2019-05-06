@@ -8,8 +8,11 @@ from utils import lazy_property
 
 class Encoder(object):
 
-    def __init__(self, input, latent_space_size, num_filters, kernel_size, strides, batch_norm, resnet50, resnet101, aspp, pre_trained_model, is_training=False):
+    def __init__(self, input, latent_space_size, num_filters, kernel_size, strides, 
+                batch_norm, resnet50, resnet101, aspp, pre_trained_model, 
+                emb_invariance_loss, is_training=False):
         
+
         self._input = input #tf.concat([inp[0] for inp in input],0)
         print self._input.shape
         self._latent_space_size = latent_space_size
@@ -22,6 +25,7 @@ class Encoder(object):
         self._aspp = aspp
         self._pre_trained_model = pre_trained_model
         self._is_training = is_training
+        self._emb_invariance_loss = emb_invariance_loss
 
         
         self.encoder_out
@@ -33,6 +37,8 @@ class Encoder(object):
             self.fil_var_list = self.load_ckpt_varlist()
             self.saver = tf.train.Saver(var_list = self.fil_var_list)
 
+        if self._emb_invariance_loss > 0:
+            self.emb_inv_loss
         # self.q_sigma
         # self.sampled_z
         # self.reg_loss
@@ -93,7 +99,13 @@ class Encoder(object):
             kernel_initializer=tf.contrib.layers.xavier_initializer()
         )
 
+        if self._emb_invariance_loss > 0:
+            z_1,z_2 = tf.split(z, 2, axis=0)
+            z = z_1
+            self._z_reconst = z_2
+
         return z
+
     
     @lazy_property
     def q_sigma(self):
@@ -129,6 +141,19 @@ class Encoder(object):
     def reg_loss(self):
         reg_loss = tf.reduce_mean(tf.abs(tf.norm(self.z,axis=1) - tf.constant(1.)))
         return reg_loss
+
+    @lazy_property
+    def emb_inv_loss(self):
+
+        z_norm = tf.nn.l2_normalize(self.z, 1)
+        z_reconst_norm = tf.nn.l2_normalize(self._z_reconst, 1)
+        print z_norm.shape, z_reconst_norm.shape
+        # loss = tf.reduce_mean(1-tf.reduce_sum(tf.multiply(a,b),axis=1)) -> same
+        loss = tf.losses.cosine_distance(z_norm, z_reconst_norm, axis=1)
+
+        loss *= self._emb_invariance_loss
+
+        return loss
 
     @lazy_property
     def global_step(self):

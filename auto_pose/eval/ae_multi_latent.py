@@ -1,4 +1,5 @@
  # -*- coding: utf-8 -*-
+from imgaug.augmenters import *
 import os
 import configparser
 import argparse
@@ -8,6 +9,7 @@ import shutil
 import cv2
 import glob
 
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import progressbar
 import tensorflow as tf
@@ -15,6 +17,10 @@ import tensorflow as tf
 from auto_pose.ae import ae_factory as factory
 from auto_pose.ae import utils as u
 from auto_pose.eval import eval_plots,eval_utils
+
+import matplotlib.pyplot as plt
+from sixd_toolkit.pysixd import transform,pose_error,view_sampler
+import time
 
 
 def main():
@@ -79,6 +85,54 @@ def main():
     saver.restore(sess, checkpoint_file)
 
 
+    if arguments.vis_emb:
+        Rs, lon_lat, pts = eval_plots.generate_view_points(noof=101)
+        syn_crops = []
+        z_train = np.zeros((len(Rs), encoder.latent_space_size))
+        for R in Rs:
+            syn_crops.append(dataset.render_rot(R, obj_id=1)/255.)
+        for a, e in u.batch_iteration_indices(len(Rs), 200):
+            print a
+            z_train[a:e] = sess.run(encoder.z, feed_dict={
+                                    encoder._input: syn_crops[a:e]})
+
+
+        aug = Sequential([
+                #Sometimes(0.5, PerspectiveTransform(0.05)),
+                #Sometimes(0.5, CropAndPad(percent=(-0.05, 0.1))),
+                # Sometimes(0.5, CoarseDropout( p=0.1, size_percent=0.05) ),
+                Sometimes(0.5, Affine(scale=(0.8, 1.2))),
+                Sometimes(0.5, Affine( translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)})),
+                # Sometimes(0.5, GaussianBlur(1.2*np.random.rand())),
+                # Sometimes(0.5, Add((-25, 25), per_channel=0.3)),
+                # Sometimes(0.5, Invert(0.2, per_channel=True)),
+                # Sometimes(0.5, Invert(0.2, per_channel=False)),
+                # Sometimes(0.5, Multiply((0.6, 1.4), per_channel=0.5)),
+                # Sometimes(0.5, Multiply((0.6, 1.4))),
+                # Sometimes(0.5, ContrastNormalization((0.5, 2.2), per_channel=0.3))
+        ], random_order=True)
+
+        batch = []
+        orig_img = (syn_crops[100]*255).astype(np.uint8)  # H, W, C,  C H W
+        for i in xrange(200):
+            print i
+            img = aug.augment_image(orig_img.copy()).astype(np.float32) / 255.
+            #img = img.transpose( (1, 2, 0) ) #C H, W 1, 2,
+            batch.append(img)
+        batch = np.array(batch)
+        z_test = sess.run(encoder.z, feed_dict={encoder._input: batch})
+        
+        eval_plots.compute_pca_plot_embedding(
+            '', z_train, z_test=z_test, lon_lat=None, save=False, inter_factor=1)
+        from gl_utils import tiles
+        import cv2
+        mean_var = np.mean(np.var(z_test,axis=0))
+        cv2.imshow('mean_var: %s' % mean_var, tiles(batch, 10, 20))
+        cv2.waitKey(0)
+        plt.show()
+        exit()
+
+
     # all_aligned_train = sorted(glob.glob('/net/rmc-lx0314/home_local/sund_ma/data/modelnet_aligned/modelnet40_aligned_normalized_cent/car/train/*_normalized.off'))
     # all_aligned_test = sorted(glob.glob('/net/rmc-lx0314/home_local/sund_ma/data/modelnet_aligned/modelnet40_aligned_normalized_cent/car/test/*_normalized.off'))
     all_aligned_train = sorted(glob.glob('/net/rmc-lx0314/home_local/sund_ma/data/modelnet_aligned/modelnet40_manually_aligned/car/train/*_normalized.off'))
@@ -91,10 +145,6 @@ def main():
     print dataset._kw['model_path']
 
 
-
-    import matplotlib.pyplot as plt
-    from sixd_toolkit.pysixd import transform,pose_error,view_sampler
-    import time
 
 
 ## rot error histogram CB with 3D model
@@ -128,7 +178,6 @@ def main():
             random_t_pert = np.array([0,0,700])# + np.array([np.random.normal(0,10),np.random.normal(0,10),np.random.normal(0,50)])
             print random_t_pert
             # random_R = dataset.viewsphere_for_embedding[np.random.randint(0,92000)]
-            import cv2
             rand_test_view_crop, bb = dataset.render_rot(random_R, obj_id=i, return_bb=True)
 
             # _, _, rand_test_view_whole_target = dataset.render_rot(random_R_pert, obj_id=i, t=random_t_pert, return_bb=True, return_orig=True)
@@ -195,6 +244,7 @@ def main():
 
 
 ##############################################
+
 
 # generate PCA directions from all objects
 

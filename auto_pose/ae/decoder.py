@@ -86,6 +86,8 @@ class Decoder(object):
             )
         return x
 
+
+
     @lazy_property
     def reconstr_loss(self):
         print self.x.shape

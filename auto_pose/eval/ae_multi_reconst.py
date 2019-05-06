@@ -143,18 +143,7 @@ def main():
             print 'Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))
             bar.start()
 
-        if arguments.vis_emb:
-            Rs,lon_lat,pts = eval_plots.generate_view_points(noof=2001)
-            syn_crops = []
-            z_train = np.zeros((len(Rs),encoder.latent_space_size))
-            for R in Rs:
-                syn_crops.append(dataset.render_rot(R,obj_id=1))
-            for a, e in u.batch_iteration_indices(len(Rs), 200):
-                print a
-                z_train[a:e] = sess.run(encoder.z,feed_dict={encoder._input:syn_crops[a:e]})
-            eval_plots.compute_pca_plot_embedding('',z_train,lon_lat=lon_lat,save=False)
-            
-            exit()
+
 
         
         # print 'before starting queue'
@@ -184,7 +173,7 @@ def main():
             #         cv2.imwrite(os.path.join(train_fig_dir,'training_images_%s.png' % i), train_imgs*255)
             # else:
             
-            this,_,reconstr_train,enc_z  = sess.run([multi_queue.next_element,multi_queue.next_bg_element,[decoder.x for decoder in decoders],encoder.z])
+            this,_,reconstr_train,enc_z  = sess.run([multi_queue.next_element,multi_queue.next_bg_element,[decoder.x for decoder in decoders], encoder.z])
 
             this_x = np.concatenate([el[0] for el in this])
             this_y = np.concatenate([el[2] for el in this])

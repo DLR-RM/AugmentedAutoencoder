@@ -260,7 +260,8 @@ def plot_scene_with_estimate(test_img,renderer,K_test, R_est_old, t_est_old,R_es
     #         cv2.imshow('ground truth scene_estimation',scene_view)
 
 
-def compute_pca_plot_embedding(eval_dir, z_train, lon_lat=None, z_test=None, save=True,inter_factor = 8):
+def compute_pca_plot_embedding(eval_dir, z_train, lon_lat=None, z_test=None, save=True, inter_factor = 1):
+    print inter_factor
     sklearn_pca = PCA(n_components=3)
     full_z_pca = sklearn_pca.fit_transform(z_train)
     if z_test is not None:
@@ -271,6 +272,7 @@ def compute_pca_plot_embedding(eval_dir, z_train, lon_lat=None, z_test=None, sav
         ax = Axes3D(fig)
         if lon_lat is None:
             c=np.linspace(0, 1, len(full_z_pca))
+            x_fine, y_fine, z_fine = full_z_pca.T
         else:
             lon_lat = np.array(lon_lat)
             sort_idcs=np.argsort(lon_lat[:,i])
@@ -294,7 +296,7 @@ def compute_pca_plot_embedding(eval_dir, z_train, lon_lat=None, z_test=None, sav
             label ='lat level %s' % j if i==1 else 'lat level %s' % j
             ax.plot(x_fine[j*incr_int:(j+1)*incr_int], y_fine[j*incr_int:(j+1)*incr_int], z_fine[j*incr_int:(j+1)*incr_int], label=label, markersize=10, marker='.', color=jet(c[j*incr])[:3]+(0.8,))
         if z_test is not None:
-            ax.scatter(full_z_pca_test[:,0],full_z_pca_test[:,1],full_z_pca_test[:,2], c='red', marker='.', label='test_z')
+            ax.scatter(full_z_pca_test[:,0],full_z_pca_test[:,1],full_z_pca_test[:,2], c='black', marker='.', label='test_z')
         if i==0:
             plt.title('Embedding Principal Components Lon')
         else:

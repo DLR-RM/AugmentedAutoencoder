@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import tensorflow as tf
 
 from dataset import Dataset
 from queue import Queue
@@ -47,7 +47,7 @@ def build_multi_queue(dataset, args):
     )
     return queue
 
-def build_encoder(x, args, is_training=False):
+def build_encoder(x, args, target=None, is_training=False):
     LATENT_SPACE_SIZE = args.getint('Network', 'LATENT_SPACE_SIZE')
     NUM_FILTER = eval(args.get('Network', 'NUM_FILTER'))
     KERNEL_SIZE_ENCODER = args.getint('Network', 'KERNEL_SIZE_ENCODER')
@@ -57,6 +57,11 @@ def build_encoder(x, args, is_training=False):
     RESNET101 = args.getboolean('Network', 'RESNET101')
     ASPP = eval(args.get('Network', 'ASPP'))
     PRE_TRAINED_MODEL = args.get('Training', 'PRE_TRAINED_MODEL')
+    EMB_INVARIANCE_LOSS = args.getfloat('Network', 'EMB_INVARIANCE_LOSS')
+
+    if target is not None and EMB_INVARIANCE_LOSS > 0:
+        x = tf.concat((x, target), axis=0)
+
     encoder = Encoder(
         x,
         LATENT_SPACE_SIZE, 
@@ -68,6 +73,7 @@ def build_encoder(x, args, is_training=False):
         RESNET101,
         ASPP,
         PRE_TRAINED_MODEL,
+        EMB_INVARIANCE_LOSS,
         is_training=is_training
     )
     return encoder
@@ -99,7 +105,8 @@ def build_decoder(reconstruction_target, encoder_z_split, args, is_training=Fals
 def build_ae(encoder, decoder, args):
     NORM_REGULARIZE = args.getfloat('Network', 'NORM_REGULARIZE')
     VARIATIONAL = args.getfloat('Network', 'VARIATIONAL')
-    ae = AE(encoder, decoder, NORM_REGULARIZE, VARIATIONAL)
+    EMB_INVARIANCE_LOSS = args.getfloat('Network', 'EMB_INVARIANCE_LOSS')
+    ae = AE(encoder, decoder, NORM_REGULARIZE, VARIATIONAL, EMB_INVARIANCE_LOSS)
     return ae
 
 def build_train_op(ae, args):

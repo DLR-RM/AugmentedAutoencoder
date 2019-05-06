@@ -6,11 +6,12 @@ from utils import lazy_property
 
 class AE(object):
 
-    def __init__(self, encoder, decoder, norm_regularize, variational):
+    def __init__(self, encoder, decoder, norm_regularize, variational, emb_inv):
         self._encoder = encoder
         self._decoders = decoder
         self._norm_regularize = norm_regularize
         self._variational = variational
+        self._emb_inv = emb_inv
         self.loss
         # tf.summary.scalar('total_loss', self.loss)
         
@@ -33,6 +34,10 @@ class AE(object):
     @lazy_property
     def loss(self):
         loss = tf.reduce_sum([d.reconstr_loss for d in self._decoders])
+
+        if self._emb_inv > 0:
+            loss += self._encoder.emb_inv_loss
+            tf.summary.scalar('emb_inv_loss', self._encoder.emb_inv_loss)
 
         # if self._norm_regularize > 0:
         #     loss += self._encoder.reg_loss * tf.constant(self._norm_regularize,dtype=tf.float32)
