@@ -313,9 +313,7 @@ class Dataset(object):
             if self.shape[2] == 1:
                 bgr_x = cv2.cvtColor(np.uint8(bgr_x), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
                 bgr_y = cv2.cvtColor(np.uint8(bgr_y), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
-            # cv2.imshow('bgr_x',bgr_x)
-            # cv2.imshow('bgr_y',bgr_y)
-            # cv2.waitKey(0)
+
 
             self.train_x[i] = bgr_x.astype(np.uint8)
             self.mask_x[i] = mask_x
@@ -493,6 +491,7 @@ class Dataset(object):
             masks = self.augment_squares(masks.copy(),rand_idcs,max_occl=np.float(self._kw['square_occlusion']))
 
         batch_x[masks] = rand_vocs[masks]
+
 
         # random in-plane rotation, not necessary
         # for i in xrange(batch_size):
