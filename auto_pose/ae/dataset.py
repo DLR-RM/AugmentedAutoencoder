@@ -233,7 +233,7 @@ class Dataset(object):
         t = np.array([0, 0, float(kw['radius'])])
 
 
-        widgets = ['Training: ', progressbar.Percentage(),
+        widgets = ['Rendering training imgs: ', progressbar.Percentage(),
              ' ', progressbar.Bar(),
              ' ', progressbar.Counter(), ' / %s' % self.noof_training_imgs,
              ' ', progressbar.ETA(), ' ']
