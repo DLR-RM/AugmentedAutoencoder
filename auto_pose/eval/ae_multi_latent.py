@@ -33,8 +33,10 @@ def main():
 
     gentle_stop = np.array((1,), dtype=np.bool)
     gentle_stop[0] = False
+
     def on_ctrl_c(signal, frame):
         gentle_stop[0] = True
+
     signal.signal(signal.SIGINT, on_ctrl_c)
 
     parser = argparse.ArgumentParser()
@@ -57,6 +59,7 @@ def main():
     at_step = arguments.at_step
 
     cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
+    latent_cfg_file_path = u.get_eval_config_file_path(workspace_path, 'eval_latent_template.cfg')
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
 
     if not os.path.exists(cfg_file_path):
@@ -64,9 +67,11 @@ def main():
         print '{}\n'.format(cfg_file_path)
         exit(-1)
 
-
     args = configparser.ConfigParser()
     args.read(cfg_file_path)
+
+    args_latent = configparser.ConfigParser()
+    args_latent.read(latent_cfg_file_path)
 
     if at_step is None:
         checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path, latest=args.getint('Training', 'NUM_ITER'))
@@ -77,15 +82,45 @@ def main():
 
     codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True)
     encoder = codebook._encoder
+    
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.5)
     config = tf.ConfigProto(gpu_options=gpu_options)
-
     sess = tf.Session(config=config)
     saver = tf.train.Saver()
     saver.restore(sess, checkpoint_file)
 
 
-    if arguments.vis_emb:
+[Data]
+dataset = ModelNet
+base_path = /net/rmc-lx0314/home_local/sund_ma/data/modelnet_aligned/modelnet40_manually_aligned/
+test_class = car
+split = train
+num_obj = 80
+
+[Experiment]
+refinement_pert_category_based = True
+refinement_pert_category_agnostic = True
+refinement_initial_codebook = False
+emb_invariance = False
+instance_based_generalization = False
+category_based_generalization = False
+category_agnostic_generalization = False
+
+[Visualization]
+pca_embedding_all = True
+pca_embedding_azelin = True
+rot_err_histogram = True
+verbose = True
+
+[Refinement]
+budget_per_epoch = 40
+epochs = 4
+sampling_interval_deg = 45
+max_num_modalities = 1
+
+    data_type = 
+
+    if args_latent.getboolean('Experiment', 'emb_invariance'):
         Rs, lon_lat, pts = eval_plots.generate_view_points(noof=101)
         syn_crops = []
         z_train = np.zeros((len(Rs), encoder.latent_space_size))
@@ -96,21 +131,7 @@ def main():
             z_train[a:e] = sess.run(encoder.z, feed_dict={
                                     encoder._input: syn_crops[a:e]})
 
-
-        aug = Sequential([
-                #Sometimes(0.5, PerspectiveTransform(0.05)),
-                #Sometimes(0.5, CropAndPad(percent=(-0.05, 0.1))),
-                # Sometimes(0.5, CoarseDropout( p=0.1, size_percent=0.05) ),
-                Sometimes(0.5, Affine(scale=(0.8, 1.2))),
-                Sometimes(0.5, Affine( translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)})),
-                # Sometimes(0.5, GaussianBlur(1.2*np.random.rand())),
-                # Sometimes(0.5, Add((-25, 25), per_channel=0.3)),
-                # Sometimes(0.5, Invert(0.2, per_channel=True)),
-                # Sometimes(0.5, Invert(0.2, per_channel=False)),
-                # Sometimes(0.5, Multiply((0.6, 1.4), per_channel=0.5)),
-                # Sometimes(0.5, Multiply((0.6, 1.4))),
-                # Sometimes(0.5, ContrastNormalization((0.5, 2.2), per_channel=0.3))
-        ], random_order=True)
+        aug = eval(args_latent.get('Emb_invariance', 'aug'))
 
         batch = []
         orig_img = (syn_crops[100]*255).astype(np.uint8)  # H, W, C,  C H W
@@ -130,7 +151,7 @@ def main():
         cv2.imshow('mean_var: %s' % mean_var, tiles(batch, 10, 20))
         cv2.waitKey(0)
         plt.show()
-        exit()
+
 
 
     # all_aligned_train = sorted(glob.glob('/net/rmc-lx0314/home_local/sund_ma/data/modelnet_aligned/modelnet40_aligned_normalized_cent/car/train/*_normalized.off'))
