@@ -271,6 +271,7 @@ class Dataset(object):
                     random_light=True,
                     phong = lighting
                 )
+                
             bgr_y, depth_y = self.renderer.render( 
                 obj_id=0,
                 W=render_dims[0], 
