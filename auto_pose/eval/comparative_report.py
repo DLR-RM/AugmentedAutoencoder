@@ -108,7 +108,7 @@ def main():
 		else:
 			eval_cfg_file_path = eval_cfg_file_pathes[0]
 
-		eval_args = configparser.ConfigParser()
+		eval_args = configparser.ConfigParser(inline_comment_prefixes="#")
 		eval_args.read(eval_cfg_file_path)
 		print eval_cfg_file_path
 		estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')

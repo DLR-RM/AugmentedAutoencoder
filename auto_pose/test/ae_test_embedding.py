@@ -28,7 +28,7 @@ def main():
     ckpt_dir = u.get_checkpoint_dir(log_dir)
 
     train_cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
-    train_args = configparser.ConfigParser()
+    train_args = configparser.ConfigParser(inline_comment_prefixes="#")
     train_args.read(train_cfg_file_path)
 
     print train_args.items('Dataset')

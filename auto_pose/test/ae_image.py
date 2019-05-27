@@ -31,8 +31,8 @@ ckpt_dir = u.get_checkpoint_dir(log_dir)
 
 train_cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
 eval_cfg_file_path = u.get_eval_config_file_path(workspace_path)
-train_args = configparser.ConfigParser()
-eval_args = configparser.ConfigParser()
+train_args = configparser.ConfigParser(inline_comment_prefixes="#")
+eval_args = configparser.ConfigParser(inline_comment_prefixes="#")
 train_args.read(train_cfg_file_path)
 eval_args.read(eval_cfg_file_path)
 

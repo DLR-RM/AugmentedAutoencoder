@@ -42,7 +42,7 @@ def main():
         print '{}\n'.format(cfg_file_path)
         exit(-1)
 
-    args = configparser.ConfigParser()
+    args = configparser.ConfigParser(inline_comment_prefixes="#")
     args.read(cfg_file_path)
 
     with tf.variable_scope(experiment_name):

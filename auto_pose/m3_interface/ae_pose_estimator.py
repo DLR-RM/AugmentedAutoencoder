@@ -13,10 +13,9 @@ class AePoseEstimator(PoseEstInterface):
     """ """
 
     # Takes a configPath only!
-    def __init__(self, test_configpath):
-
-        test_args = configparser.ConfigParser()
-        test_args.read(test_configpath) 
+    def __init__(self, test_config_path):
+        
+        test_args = self.get_params(test_config_path)
 
         workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
@@ -26,23 +25,23 @@ class AePoseEstimator(PoseEstInterface):
             exit(-1)
 
         self._process_requirements = ['color_img', 'camK', 'bboxes']
-        if test_args.getboolean('MODEL','camPose'):
+        if test_args.getboolean('auto_pose','camPose'):
             self._process_requirements.append('camPose')
-        self._camPose = test_args.getboolean('MODEL','camPose')
-        self._upright = test_args.getboolean('MODEL','upright')
-        self._topk = test_args.getint('MODEL','topk')
+        self._camPose = test_args.getboolean('auto_pose','camPose')
+        self._upright = test_args.getboolean('auto_pose','upright')
+        self._topk = test_args.getint('auto_pose','topk')
         if self._topk > 1:
             print 'ERROR: topk > 1 not implemented yet'
             exit()
 
-        self._image_format = {'color_format':test_args.get('MODEL','color_format'), 
-                              'color_data_type': eval(test_args.get('MODEL','color_data_type')),
-                              'depth_data_type': eval(test_args.get('MODEL','depth_data_type')) }
+        self._image_format = {'color_format':test_args.get('auto_pose','color_format'), 
+                              'color_data_type': eval(test_args.get('auto_pose','color_data_type')),
+                              'depth_data_type': eval(test_args.get('auto_pose','depth_data_type')) }
 
-        self.vis = test_args.getboolean('MODEL','pose_visualization')
+        self.vis = test_args.getboolean('auto_pose','pose_visualization')
 
-        # self.all_experiments = eval(test_args.get('MODEL','experiments'))
-        self.class_2_encoder = eval(test_args.get('MODEL','class_2_encoder'))
+        # self.all_experiments = eval(test_args.get('auto_pose','experiments'))
+        self.class_2_encoder = eval(test_args.get('auto_pose','class_2_encoder'))
 
         self.all_codebooks = {}
         self.all_train_args = {}
@@ -51,7 +50,7 @@ class AePoseEstimator(PoseEstInterface):
 
         config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth=True
-        config.gpu_options.per_process_gpu_memory_fraction = test_args.getfloat('MODEL','gpu_memory_fraction')
+        config.gpu_options.per_process_gpu_memory_fraction = test_args.getfloat('auto_pose','gpu_memory_fraction')
 
         self.sess = tf.Session(config=config)
 
@@ -64,7 +63,7 @@ class AePoseEstimator(PoseEstInterface):
             train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
             print train_cfg_file_path
             # train_cfg_file_path = utils.get_config_file_path(workspace_path, experiment_name, experiment_group)
-            train_args = configparser.ConfigParser()
+            train_args = configparser.ConfigParser(inline_comment_prefixes="#")
             train_args.read(train_cfg_file_path)
             self.all_train_args[clas_name] = train_args
             self.pad_factors[clas_name] = train_args.getfloat('Dataset','PAD_FACTOR')
@@ -73,15 +72,6 @@ class AePoseEstimator(PoseEstInterface):
             self.all_codebooks[clas_name] = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=False)
             saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=experiment_name))
             factory.restore_checkpoint(self.sess, saver, ckpt_dir)
-
-
-        # if test_args.getboolean('ICP','icp'):
-
-        #     from auto_pose.icp import icp
-        #     self._process_requirements.append('depth_img')
-        #     self.icp_handle = icp.ICP(test_args)
-
-
 
 
     def set_parameter(self, string_name, string_val):

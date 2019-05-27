@@ -111,7 +111,7 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
     dataset_path = u.get_dataset_path(workspace_path)
 
     if os.path.exists(cfg_file_path):
-        args = configparser.ConfigParser()
+        args = configparser.ConfigParser(inline_comment_prefixes="#")
         args.read(cfg_file_path)
     else:
         print 'ERROR: Config File not found: ', cfg_file_path

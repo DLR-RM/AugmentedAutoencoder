@@ -63,7 +63,7 @@ def main():
         os.makedirs(dataset_path)
         
 
-    args = configparser.ConfigParser()
+    args = configparser.ConfigParser(inline_comment_prefixes="#")
     args.read(cfg_file_path)
 
     shutil.copy2(cfg_file_path, log_dir)

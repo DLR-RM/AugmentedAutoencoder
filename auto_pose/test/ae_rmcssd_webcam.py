@@ -63,7 +63,7 @@ log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
 ckpt_dir = utils.get_checkpoint_dir(log_dir)
 
 train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
-train_args = configparser.ConfigParser()
+train_args = configparser.ConfigParser(inline_comment_prefixes="#")
 train_args.read(train_cfg_file_path)  
   
 factory.restore_checkpoint(ssd.isess, saver, ckpt_dir)

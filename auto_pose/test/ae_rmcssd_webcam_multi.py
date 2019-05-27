@@ -77,7 +77,7 @@ for i,experiment_name in enumerate(arguments.experiment_names):
         class_i_mapping[i] = i
 
     train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
-    train_args = configparser.ConfigParser()
+    train_args = configparser.ConfigParser(inline_comment_prefixes="#")
     train_args.read(train_cfg_file_path)  
     h_train, w_train, c = train_args.getint('Dataset','H'),train_args.getint('Dataset','W'), train_args.getint('Dataset','C')
     model_paths.append(train_args.get('Paths','MODEL_PATH'))
