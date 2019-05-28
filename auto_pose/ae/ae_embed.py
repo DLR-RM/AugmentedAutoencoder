@@ -45,27 +45,28 @@ def main():
     args = configparser.ConfigParser(inline_comment_prefixes="#")
     args.read(cfg_file_path)
 
-    with tf.variable_scope(experiment_name):
-        dataset = factory.build_dataset(dataset_path, args)
-        queue = factory.build_queue(dataset, args)
-        encoder = factory.build_encoder(queue.x, args)
-        decoder = factory.build_decoder(queue.y, encoder, args)
-        ae = factory.build_ae(encoder, decoder, args)
-        codebook = factory.build_codebook(encoder, dataset, args)
-        saver = tf.train.Saver(save_relative_paths=True)
-
     batch_size = args.getint('Training', 'BATCH_SIZE')
     model = args.get('Dataset', 'MODEL')
 
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction=0.7)
     config = tf.ConfigProto(gpu_options=gpu_options)
 
+    with tf.variable_scope(experiment_name):
+        dataset = factory.build_dataset(dataset_path, args)
+        queue = factory.build_queue(dataset, args)
+        encoder = factory.build_encoder(queue.x, args)
+        decoder = factory.build_decoder(queue.y, encoder, args)
+        ae = factory.build_ae(encoder, decoder, args)
+        saver = tf.train.Saver(save_relative_paths=True)
+        codebook = factory.build_codebook(encoder, dataset, args)
+        saver_with_codebook = tf.train.Saver(save_relative_paths=True)
+        
     with tf.Session(config=config) as sess:
 
         print ckpt_dir
 
         factory.restore_checkpoint(sess, saver, ckpt_dir, at_step=at_step)
-
+                    
         # chkpt = tf.train.get_checkpoint_state(ckpt_dir)
         # if chkpt and chkpt.model_checkpoint_path:
         #     print chkpt.model_checkpoint_path
@@ -82,7 +83,7 @@ def main():
 
         print 'Saving new checkoint ..',
 
-        saver.save(sess, checkpoint_file, global_step=ae.global_step)
+        saver_with_codebook.save(sess, checkpoint_file, global_step=ae.global_step)
 
         print 'done',
 

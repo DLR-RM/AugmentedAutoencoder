@@ -40,8 +40,8 @@ class Dataset(object):
     def viewsphere_for_embedding(self):
         kw = self._kw
         num_cyclo = int(kw['num_cyclo'])
-        azimuth_range = (0, 2 * np.pi)
-        elev_range = (-0.5 * np.pi, 0.5 * np.pi)
+        azimuth_range = eval(kw['azimuth_range']) if kw.has_key('azimuth_range') else (0, 2 * np.pi)
+        elev_range = eval(kw['elev_range']) if kw.has_key('elev_range') else (-0.5 * np.pi, 0.5 * np.pi)
         views, _ = view_sampler.sample_views(
             int(kw['min_n_views']), 
             float(kw['radius']), 
@@ -271,7 +271,7 @@ class Dataset(object):
                     random_light=True,
                     phong = lighting
                 )
-                
+
             bgr_y, depth_y = self.renderer.render( 
                 obj_id=0,
                 W=render_dims[0], 
@@ -390,10 +390,6 @@ class Dataset(object):
         scene_crop = cv2.resize(scene_crop, resize, interpolation = interpolation)
         return scene_crop
 
-    @property
-    def embedding_size(self):
-        return len(self.viewsphere_for_embedding)
-
 
     @lazy_property
     def _aug(self):
@@ -438,7 +434,6 @@ class Dataset(object):
 
     def augment_occlusion_mask(self, masks, verbose=False, min_trans = 0.2, max_trans=0.7, max_occl = 0.25,min_occl = 0.0):
 
-        
         new_masks = np.zeros_like(masks,dtype=np.bool)
         occl_masks_batch = self.random_syn_masks[np.random.choice(len(self.random_syn_masks),len(masks))]
         for idx,mask in enumerate(masks):
@@ -460,6 +455,7 @@ class Dataset(object):
                     break
 
         return new_masks
+
     def augment_squares(self,masks,rand_idcs,max_occl=0.25):
         new_masks = np.invert(masks)
 

@@ -18,35 +18,31 @@ class Codebook(object):
         self.embed_bb = embed_bb
         
         J = encoder.latent_space_size
-        embedding_size = self._dataset.embedding_size
 
         self.normalized_embedding_query = tf.nn.l2_normalize(self._encoder.z, 1)
         self.embedding_normalized = tf.Variable(
-            np.zeros((embedding_size, J)),
+            np.zeros((self.embedding_size, J)),
             dtype=tf.float32,
             trainable=False,
             name='embedding_normalized'
         )
 
-        self.embedding = tf.placeholder(tf.float32, shape=[embedding_size, J])
+        self.embedding = tf.placeholder(tf.float32, shape=[self.embedding_size, J])
         self.embedding_assign_op = tf.assign(self.embedding_normalized, self.embedding)
         
-
         if embed_bb:
             self.embed_obj_bbs_var = tf.Variable(
-                np.zeros((embedding_size, 4)),
+                np.zeros((self.embedding_size, 4)),
                 dtype=tf.int32,
                 trainable=False,
                 name='embed_obj_bbs_var'
             )
-            self.embed_obj_bbs = tf.placeholder(tf.int32, shape=[embedding_size, 4])
+            self.embed_obj_bbs = tf.placeholder(tf.int32, shape=[self.embedding_size, 4])
             self.embed_obj_bbs_assign_op = tf.assign(self.embed_obj_bbs_var, self.embed_obj_bbs)
             self.embed_obj_bbs_values = None
         
         self.cos_similarity = tf.matmul(self.normalized_embedding_query, self.embedding_normalized,transpose_b=True)
         self.nearest_neighbor_idx = tf.argmax(self.cos_similarity, axis=1)
-
-
 
     def nearest_rotation(self, session, x, top_n=1, upright=False, return_idcs=False):
         
@@ -138,8 +134,6 @@ class Codebook(object):
         return (Rs_est, ts_est,None)
         
 
-
-
     def nearest_rotation_batch(self, session, x):
         idcs = session.run(self.nearest_neighbor_idx, {self._encoder.x: x})
         return self._dataset.viewsphere_for_embedding[idcs]
@@ -196,21 +190,21 @@ class Codebook(object):
 
         session.run(self.embedding_assign_op, {self.embedding: normalized_embedding})
 
-
-
+    @lazy_property
+    def embedding_size(self):
+        return len(self._dataset.viewsphere_for_embedding)
 
     def update_embedding(self, session, batch_size):
-        embedding_size = self._dataset.embedding_size
         J = self._encoder.latent_space_size
-        embedding_z = np.empty( (embedding_size, J) )
-        obj_bbs = np.empty( (embedding_size, 4) )
+        embedding_z = np.empty( (self.embedding_size, J) )
+        obj_bbs = np.empty( (self.embedding_size, 4) )
         widgets = ['Creating Embedding: ', progressbar.Percentage(),
              ' ', progressbar.Bar(),
-             ' ', progressbar.Counter(), ' / %s' % embedding_size,
+             ' ', progressbar.Counter(), ' / %s' % self.embedding_size,
              ' ', progressbar.ETA(), ' ']
-        bar = progressbar.ProgressBar(maxval=embedding_size,widgets=widgets)
+        bar = progressbar.ProgressBar(maxval=self.embedding_size,widgets=widgets)
         bar.start()
-        for a, e in u.batch_iteration_indices(embedding_size, batch_size):
+        for a, e in u.batch_iteration_indices(self.embedding_size, batch_size):
 
             batch, obj_bbs_batch = self._dataset.render_embedding_image_batch(a, e)
             embedding_z[a:e] = session.run(self._encoder.z, feed_dict={self._encoder.x: batch})

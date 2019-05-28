@@ -74,7 +74,7 @@ def main():
         encoder = factory.build_encoder(queue.x, args, is_training=True)
         decoder = factory.build_decoder(queue.y, encoder, args, is_training=True)
         ae = factory.build_ae(encoder, decoder, args)
-        codebook = factory.build_codebook(encoder, dataset, args)
+        # codebook = factory.build_codebook(encoder, dataset, args)
         train_op = factory.build_train_op(ae, args)
         saver = tf.train.Saver(save_relative_paths=True)
 
@@ -133,7 +133,7 @@ def main():
                     summary_writer.add_summary(loss, i)
 
                 bar.update(i)
-                if (i+1) % save_interval == 0:
+                if (i+1) % save_interval == 0 or i+1 == num_iter:
                     saver.save(sess, checkpoint_file, global_step=ae.global_step)
 
                     this_x, this_y = sess.run([queue.x, queue.y])
@@ -153,6 +153,7 @@ def main():
 
             if gentle_stop[0]:
                 break
+
 
         queue.stop(sess)
         if not debug_mode:

@@ -38,7 +38,7 @@ class AePoseEstimator(PoseEstInterface):
                               'color_data_type': eval(test_args.get('auto_pose','color_data_type')),
                               'depth_data_type': eval(test_args.get('auto_pose','depth_data_type')) }
 
-        self.vis = test_args.getboolean('auto_pose','pose_visualization')
+        # self.vis = test_args.getboolean('auto_pose','pose_visualization')
 
         # self.all_experiments = eval(test_args.get('auto_pose','experiments'))
         self.class_2_encoder = eval(test_args.get('auto_pose','class_2_encoder'))
@@ -105,9 +105,9 @@ class AePoseEstimator(PoseEstInterface):
 
         all_Rs, all_ts = [],[]
         all_pose_estimates = []
-        if self.vis:
-            img_show = color_img.copy()
-            depth_img_show = np.dstack((depth_img.copy(),depth_img.copy(),depth_img.copy()))
+        # if self.vis:
+        #     img_show = color_img.copy()
+        #     depth_img_show = np.dstack((depth_img.copy(),depth_img.copy(),depth_img.copy()))
 
         for j,box in enumerate(bboxes):
             H_est = np.eye(4)
