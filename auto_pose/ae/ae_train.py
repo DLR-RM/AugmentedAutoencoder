@@ -114,7 +114,7 @@ def main():
             ae = factory.build_ae(encoder, decoders, args)
             codebook = factory.build_codebook(encoder, dataset, args)
             train_op = factory.build_train_op(ae, args)
-            saver = tf.train.Saver(save_relative_paths=True)
+            saver = tf.train.Saver(save_relative_paths=True, max_to_keep=1)
 
         # dataset.get_training_images(dataset_path, args)
     # dataset.load_bg_images(dataset_path)

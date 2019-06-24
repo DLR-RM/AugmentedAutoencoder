@@ -46,17 +46,18 @@ class Codebook(object):
         self.cos_similarity = tf.matmul(self.normalized_embedding_query, self.embedding_normalized,transpose_b=True)
         self._image_ph = tf.placeholder(tf.float32, [None,] + list(self._dataset.shape))
 
-    def refined_nearest_rotation(self, session, x, top_n, R_init=None, t_init=None, budget=10, epochs=3, high=6./180*np.pi, obj_id=0, top_n_refine=1):
+    def refined_nearest_rotation(self, session, target_view, top_n, R_init=None, t_init=None, budget=10, epochs=3,
+                                 high=6./180*np.pi, obj_id=0, top_n_refine=1, target_bb=None):
 
         from sixd_toolkit.pysixd import transform,pose_error
         from sklearn.metrics.pairwise import cosine_similarity
 
-        if x.dtype == 'uint8':
-            x = x/255.
-        if x.ndim == 3:
-            x = np.expand_dims(x, 0)
+        if target_view.dtype == 'uint8':
+            target_view = target_view/255.
+        if target_view.ndim == 3:
+            target_view = np.expand_dims(target_view, 0)
 
-        cosine_similar, orig_in_emb = session.run([self.cos_similarity,self.normalized_embedding_query], {self._encoder.x: x})
+        cosine_similar, orig_in_emb = session.run([self.cos_similarity,self.normalized_embedding_query], {self._encoder.x: target_view})
         
         if top_n_refine==1:
             idcs = np.argmax(cosine_similar, axis=1)
@@ -67,6 +68,7 @@ class Codebook(object):
             # orig_cosine_sim = cosine_similar[0,idcs[0]]
         print 'original cosine sim: ', cosine_similar[0,idcs]
 
+        ### intitializing rotation estimates from existing codebook
         Rs = self._dataset.viewsphere_for_embedding[idcs].copy()
         Rs_new = [Rs[0]]
         for R in Rs:
@@ -76,17 +78,25 @@ class Codebook(object):
 
         if R_init is None:
             Rs = Rs_new[:]
+        ######
         else:
             Rs = [R_init]
+
+
         top_n_new = len(Rs)
         max_cosine_sim = 0.0
+        K = eval(self._dataset._kw['k'])
+        K = np.array(K).reshape(3,3)
+        render_dims = eval(self._dataset._kw['render_dims'])
+        clip_near = float(self._dataset._kw['clip_near'])
+        clip_far = float(self._dataset._kw['clip_far'])
+        pad_factor = float(self._dataset._kw['pad_factor'])
 
         R_perts = []
         fine_views = []
         bbs = []
+
         for j in range(epochs):
-
-
             noof_perts = budget * top_n_new
             for i in xrange(noof_perts):
                 if j>0 and i==0:
@@ -103,17 +113,27 @@ class Codebook(object):
                     R_off = transform.rotation_matrix(rand_angle,rand_direction)[:3,:3]
 
                 R_pert = np.dot(R_off,Rs[i%top_n_new])
-
                 R_perts.append(R_pert)
-
-                
-                bgr,obj_bb = self._dataset.render_rot(R_pert, downSample=1, obj_id=obj_id, return_bb=True)
-                # bgr[2:,2:,:] = bgr[:-2,:-2,:]
+             
+                if target_bb is not None and t_init is not None:
+                    bgr_full, _ = self._dataset.renderer.render(
+                        obj_id=obj_id,
+                        W=render_dims[0],
+                        H=render_dims[1],
+                        K=K.copy(),
+                        R=R_pert,
+                        t=t_init,
+                        near=clip_near,
+                        far=clip_far,
+                        random_light=False
+                    )
+                    bgr = self._dataset.extract_square_patch(bgr_full, target_bb, pad_factor)
+                    obj_bb = np.array([0,0,1,1])
+                else:
+                    bgr,obj_bb = self._dataset.render_rot(R_pert, downSample=1, obj_id=obj_id, return_bb=True)
 
                 fine_views.append(bgr)
                 bbs.append(obj_bb)
-
-
 
 
             float_imgs = session.run(self._image_ph/255.,{self._image_ph:np.array(fine_views)})
@@ -124,10 +144,11 @@ class Codebook(object):
             
             if cosine_sim[0,idx] >= max_cosine_sim:
 
+                max_cosine_sim = cosine_sim[0, idx]
+
                 fine_views = np.array(fine_views)
                 bbs = np.array(bbs)
-
-                max_cosine_sim = cosine_sim[0,idx]
+                
                 unsorted_max_idcs = np.argpartition(-cosine_sim.squeeze(), top_n_refine)[:top_n_refine]
                 idcs = unsorted_max_idcs[np.argsort(-cosine_sim.squeeze()[unsorted_max_idcs])]
                 
@@ -136,7 +157,7 @@ class Codebook(object):
                 bb_best = bbs[idcs[0]]
                 # if top_n_new > 1:´
 
-                Rs_new = [Rs[0]]
+                
 
                 # cv2.imshow('refined',view_best)
                 # cv2.imshow('orig_rendered',fine_views[0])
@@ -145,6 +166,9 @@ class Codebook(object):
 
                 view_best_new = [view_best.squeeze()]
                 bb_best_new = [bb_best.squeeze()]
+
+                ##  if more than one neighbor, look for far apart alternatives 
+                Rs_new = [Rs[0]]
                 for r,R in enumerate(Rs):
                     res = [pose_error.re(R_new,R) for R_new in Rs_new] 
                     if np.min(res) > 80:
@@ -169,7 +193,10 @@ class Codebook(object):
                 print 'not refined'
         print 'final cosine sim: ', max_cosine_sim
         # idx = np.argmax(cosine_sim)
+
         return np.array(Rs)[0:top_n], bbs[0:top_n]
+
+
 
 
 

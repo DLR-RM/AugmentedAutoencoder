@@ -357,6 +357,28 @@ def invert_color(in_tensor):
 	return tf.case([(tf.less_equal(prob, 0.25), aug1), 
 		(tf.less_equal(prob, 0.5), aug2)],
 		default = aug3)
+
+
+@map_decorator('invert_color_all')
+def invert_color_all(in_tensor):
+
+	def _all_channels(in_tensor):
+		return 1.0 - in_tensor
+
+	def _no_aug(in_tensor):
+		return in_tensor
+
+	prob = tf.random_uniform([], minval=0.0, maxval=1.0, dtype=tf.float32)
+
+	def aug1(): return _all_channels(in_tensor)
+	def aug3(): return _no_aug(in_tensor)
+
+	# return tf.case([(tf.less_equal(prob, 0.1), aug1),
+	# 	(tf.less_equal(prob, 0.3), aug2)],
+	# 	default = aug3)
+	return tf.case([(tf.less_equal(prob, 0.25), aug1),
+                 (tf.less_equal(prob, 0.4), aug1)],
+                default=aug3)
 	
 @map_decorator('random_brightness')
 def random_brightness(in_tensor, max_offset):

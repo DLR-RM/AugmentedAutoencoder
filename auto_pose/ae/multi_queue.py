@@ -105,6 +105,7 @@ class MultiQueue(object):
         # train_x = gaussian_blur(train_x) if self.gaussian_blur else train_x
         train_x = random_brightness(train_x, self.max_off_brightness)
         train_x = invert_color(train_x) if self.invert else train_x
+        train_x = invert_color_all(train_x) if self.invert_whole else train_x
         # train_x = multiply_brightness(train_x, self.mult_brightness)
         train_x = multiply_brightness(train_x, self.mult_brightness)
         train_x = contrast_normalization(train_x, self.contrast_norm_range)
