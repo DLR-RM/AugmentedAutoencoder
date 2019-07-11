@@ -216,7 +216,7 @@ class Dataset(object):
             K = np.array(K).reshape(3,3)
 
 
-        K[:2,2] = K[:2,2] / downSample
+        K[:2,2] = K[:2,2] / downSampledownSample
 
         clip_near = float(kw['clip_near'])
         clip_far = float(kw['clip_far'])

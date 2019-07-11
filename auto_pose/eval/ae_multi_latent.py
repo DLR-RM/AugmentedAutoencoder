@@ -99,7 +99,10 @@ def main():
 
     models_train = sorted(glob.glob(os.path.join(base_path, test_class, 'train', '*_normalized.off')))
     models_test = sorted(glob.glob(os.path.join(base_path, test_class, 'test', '*_normalized.off')))
-    print models_train
+    # models_test = [m for m in models_test if not '_normalized' in m]
+    # models_train = [m for m in models_train if not '_normalized' in m]
+    # print models_train
+    # print models_test[:10]
     if split == 'train':
         dataset._kw['model_path'] = models_train[0:num_obj]
     elif split == 'test':
@@ -113,7 +116,10 @@ def main():
     if args_latent.getboolean('Experiment', 'emb_invariance'):
         latent_utils.compute_plot_emb_invariance(args_latent)
     if args_latent.getboolean('Experiment', 'refinement_pert_category_agnostic'):
-        latent_utils.relative_pose_refinement(sess, args_latent, dataset, codebook)
+        pose_errs, pose_errs_refref, pose_errs_trans = latent_utils.relative_pose_refinement(sess, args_latent, dataset, codebook)
+        np.save(os.path.join(log_dir, 'pose_errs_%s.npy' % test_class), pose_errs)
+        np.save(os.path.join(log_dir, 'pose_errs_refref_%s.npy'% test_class), pose_errs_refref)
+        np.save(os.path.join(log_dir, 'pose_errs_trans_%s.npy' % test_class), pose_errs_trans)
     if args_latent.getboolean('Visualization', 'pca_embedding_azelin'):
         latent_utils.plot_latent_revolutions(num_obj)
 
