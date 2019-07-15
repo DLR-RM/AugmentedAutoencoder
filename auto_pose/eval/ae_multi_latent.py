@@ -42,6 +42,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_name")
     parser.add_argument('--model_path', default=None, required=True)
+    parser.add_argument('--config_path', default='eval_latent_template.cfg', required=True)
     parser.add_argument("-d", action='store_true', default=False)
     parser.add_argument("-gen", action='store_true', default=False)
     parser.add_argument("-vis_emb", action='store_true', default=False)
@@ -59,7 +60,7 @@ def main():
     at_step = arguments.at_step
 
     cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
-    latent_cfg_file_path = u.get_eval_config_file_path(workspace_path, 'eval_latent_template.cfg')
+    latent_cfg_file_path = u.get_eval_config_file_path(workspace_path, arguments.config_path)
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
 
     if not os.path.exists(cfg_file_path):
@@ -116,10 +117,12 @@ def main():
     if args_latent.getboolean('Experiment', 'emb_invariance'):
         latent_utils.compute_plot_emb_invariance(args_latent)
     if args_latent.getboolean('Experiment', 'refinement_pert_category_agnostic'):
-        pose_errs, pose_errs_refref, pose_errs_trans = latent_utils.relative_pose_refinement(sess, args_latent, dataset, codebook)
-        np.save(os.path.join(log_dir, 'pose_errs_%s.npy' % test_class), pose_errs)
-        np.save(os.path.join(log_dir, 'pose_errs_refref_%s.npy'% test_class), pose_errs_refref)
-        np.save(os.path.join(log_dir, 'pose_errs_trans_%s.npy' % test_class), pose_errs_trans)
+        res_preds = latent_utils.relative_pose_refinement(sess, args_latent, dataset, codebook)
+        np.save(os.path.join(log_dir, 'preds_%s.npy' % test_class), res_preds)
+    if args_latent.getboolean('Experiment', 'compute_pose_errors'):
+        res_preds = np.load(os.path.join(log_dir, 'preds_%s.npy' % test_class)).item()
+        res_errors = latent_utils.compute_pose_errors(res_preds, args_latent, dataset)
+        np.save(os.path.join(log_dir, 'pose_errors_%s.npy' % test_class), res_errors)
     if args_latent.getboolean('Visualization', 'pca_embedding_azelin'):
         latent_utils.plot_latent_revolutions(num_obj)
 

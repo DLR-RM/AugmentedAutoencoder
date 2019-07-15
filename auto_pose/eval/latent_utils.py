@@ -142,12 +142,20 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
 
     num_obj = args_latent.getint('Data', 'num_obj')
     num_views = args_latent.getint('Data', 'num_views')
+    test_class = args_latent.get('Data', 'test_class')
 
     K = eval(dataset._kw['k'])
     K = np.array(K).reshape(3,3)
     # K[0, 0] = K[0, 0] /2
     # K[1, 1] = K[1, 1] /2
     render_dims = np.array(eval(dataset._kw['render_dims']))
+
+    render_dims[0] = 640
+    render_dims[1] = 480
+    K = np.array([[572.4114, 0, 320.], [0, 573.57043, 240], [0, 0, 1]]) # LM
+    dataset._kw['render_dims'] = '(640,480)'
+    dataset._kw['k'] = 'np.array([[572.4114, 0, 320.], [0, 573.57043, 240], [0, 0, 1]])'
+
     clip_near = float(dataset._kw['clip_near'])
     clip_far = float(dataset._kw['clip_far'])
     pad_factor = float(dataset._kw['pad_factor'])
@@ -155,8 +163,21 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
     pose_errs = []
     pose_errs_refref = []
     pose_errs_trans = []
+    add_errs = []
+    proj_errs = []
+    all_model_pts = [np.array(v) for v in dataset.renderer.verts]
+    diameters = []
+    for model_pts in all_model_pts:
+        # model_pts_01 = model_pts * 0.1
+        vec = model_pts.max(0) - model_pts.min(0)
+        print vec
+        diameters.append(np.linalg.norm(vec))
+    res_dict = {'test_class': test_class, 'preds': {}}
 
     for i in range(0, num_obj):
+        res_dict['preds'][i] = {'R_init': [], 'R_init_pert': [], 'R_1': [], 'R_2': [], 'R_3': [],
+                                't_init': [], 't_init_pert': [], 't_1': [], 't_2': [], 't_3': []}
+
         for j in range(num_views):
             random_R = transform.random_rotation_matrix()[:3, :3]
 
@@ -169,6 +190,7 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
                                                              near=clip_near,
                                                              far=clip_far,
                                                              random_light=False)
+
             ys, xs = np.nonzero(full_target_view_dep > 0)
             target_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             target_view = dataset.extract_square_patch(full_target_view, target_bb, pad_factor)
@@ -206,9 +228,6 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
                                                     random_light=False
                                                 )
             init_perturbed_view = dataset.extract_square_patch(full_perturbed_view, target_bb, pad_factor)
-            # cv2.imshow('full', full_perturbed_view)
-            # cv2.imshow('cropped', init_perturbed_view)
-            # cv2.waitKey(0)
             start_time = time.time()
 
             R_refined, _ = codebook.refined_nearest_rotation(sess, target_view, 1, R_init=random_R_pert, t_init=random_t_pert,
@@ -257,57 +276,101 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
                                                                random_light=False
                                                                )
             x_target, y_target, real_scale = multi_scale_template_matching(full_perturbed_view_3, full_target_view, args_latent)
-            t_refined = np.array([t_refined[0]-(x_target-K[0, 2])/K[0, 0]*t_refined[2]*real_scale, 
+            t_refined_refined = np.array([t_refined[0]-(x_target-K[0, 2])/K[0, 0]*t_refined[2]*real_scale, 
                                   t_refined[1]-(y_target-K[1, 2])/K[1, 1]*t_refined[2]*real_scale,
                                   t_refined[2]*real_scale])
-            R_refined_refined, _ = codebook.refined_nearest_rotation(sess, target_view, 1, R_init=R_refined_refined[0], t_init=t_refined,
+
+            refine_t_2 = time.time() - start_time
+            R_refined_refined_refined, _ = codebook.refined_nearest_rotation(sess, target_view, 1, R_init=R_refined_refined[0], t_init=t_refined_refined,
                                                                      budget=budget-10, epochs=epochs, high=sampling_interval_deg/3./180.*np.pi, obj_id=i,
                                                                      top_n_refine=top_n_refine, target_bb=target_bb)
+            refine_R_3 = time.time() - start_time
 
-            
 
-            pose_errs_trans.append(pose_error.te(t_refined, np.array([0, 0, t_z])))
-            pose_errs.append(pose_error.re(random_R, R_refined[0]))
-            pose_errs_refref.append(pose_error.re(random_R, R_refined_refined[0]))
-            # pose_errs[-1] = np.minimum(pose_errs[-1],np.abs(pose_errs[-1]-180))
+            full_perturbed_view_4, _ = dataset.renderer.render(obj_id=i,
+                                                               W=render_dims[0],
+                                                               H=render_dims[1],
+                                                               K=K.copy(),
+                                                               R=R_refined_refined_refined[0],
+                                                               t=t_refined_refined,
+                                                               near=clip_near,
+                                                               far=clip_far,
+                                                               random_light=False
+                                                               )
+            x_target, y_target, real_scale = multi_scale_template_matching(full_perturbed_view_4, full_target_view, args_latent,last=True)
+            t_refined_refined_refined = np.array([t_refined_refined[0]-(x_target-K[0, 2])/K[0, 0]*t_refined_refined[2]*real_scale, 
+                                  t_refined_refined[1]-(y_target-K[1, 2])/K[1, 1]*t_refined_refined[2]*real_scale,
+                                  t_refined_refined[2]*real_scale])
+
+            refine_t_3 = time.time() - start_time
+
+            res_dict['preds'][i]['R_init'].append(np.array(random_R))
+            res_dict['preds'][i]['R_init_pert'].append(random_R_pert)
+            res_dict['preds'][i]['R_1'].append(R_refined[0])
+            res_dict['preds'][i]['R_2'].append(R_refined_refined[0])
+            res_dict['preds'][i]['R_3'].append(R_refined_refined_refined[0])
+            res_dict['preds'][i]['t_init'].append(np.array([0, 0, t_z]))
+            res_dict['preds'][i]['t_init_pert'].append(random_t_pert)
+            res_dict['preds'][i]['t_1'].append(t_refined)
+            res_dict['preds'][i]['t_2'].append(t_refined_refined)
+            res_dict['preds'][i]['t_3'].append(t_refined_refined_refined)
+
+
+            # pose_errs_trans.append(pose_error.te(t_refined_refined, np.array([0, 0, t_z])))
+            # pose_errs.append(pose_error.re(random_R, R_refined[0]))
+            # pose_errs_refref.append(pose_error.re(random_R, R_refined_refined_refined[0]))
+
+
+
+            print 'add_recall: ', add_recall_diameter(R_refined_refined_refined[0], t_refined_refined_refined, random_R, np.array([
+                                                   0, 0, t_z]), {'pts': all_model_pts[i]}, diameters[i])
+            # proj_err = pose_error.arp_2d(R_refined_refined_refined[0], t_refined_refined, random_R, np.array([0, 0, t_z]), {'pts': all_model_pts[i]}, K)
+            # print 'add: ', add_err
+            # print 'proj: ', proj_err
+            # add_errs.append(add_err)
+            # proj_errs.append(proj_err)
+            # # pose_errs[-1] = np.minimum(pose_errs[-1],np.abs(pose_errs[-1]-180))
             
             print 'timings:'
             print refine_R_1
             print refine_t_1
             print refine_R_2
-
+            print refine_t_2
+            print refine_R_3
+            print refine_t_3
+            print 'object: ', i
             if args_latent.getboolean('Visualization','verbose'):
+                full_est_view_final, _ = dataset.renderer.render(obj_id=i,
+                                                                W=render_dims[0],
+                                                                H=render_dims[1],
+                                                                K=K.copy(),
+                                                                R=R_refined_refined_refined[0],
+                                                                t=t_refined_refined,
+                                                                near=clip_near,
+                                                                far=clip_far,
+                                                                random_light=False
+                                                                )
+
                 # full_perturbed_view_3, _ = dataset.renderer.render(obj_id=i,
                 #                                                 W=render_dims[0],
                 #                                                 H=render_dims[1],
                 #                                                 K=K.copy(),
                 #                                                 R=R_refined[0],
-                #                                                 t=t_refined,
+                #                                                 t=t_refined_refined,
                 #                                                 near=clip_near,
                 #                                                 far=clip_far,
                 #                                                 random_light=False
                 #                                                 )
                 # perturbed_view_3 = dataset.extract_square_patch(full_perturbed_view_3, target_bb, pad_factor)
-                full_est_view_final, _ = dataset.renderer.render(obj_id=i,
-                                                                W=render_dims[0],
-                                                                H=render_dims[1],
-                                                                K=K.copy(),
-                                                                R=R_refined_refined[0],
-                                                                t=t_refined,
-                                                                near=clip_near,
-                                                                far=clip_far,
-                                                                random_light=False
-                                                                )
-                est_view_final = dataset.extract_square_patch(full_est_view_final, target_bb, pad_factor)
-
+                # est_view_final = dataset.extract_square_patch(full_est_view_final, target_bb, pad_factor)
                 # cv2.imshow('goal_view', target_view)
                 # cv2.imshow('pert_view', init_perturbed_view/255.)
                 # cv2.imshow('est_view_1', perturbed_view_2/255.)
                 # cv2.imshow('est_view_2', perturbed_view_3/255.)
                 # cv2.imshow('est_view_3', est_view_final/255.)
                 
-                start_edge = cv2.Canny(cv2.cvtColor(full_perturbed_view, cv2.COLOR_BGR2GRAY), 100, 200, apertureSize=3)
-                end_edge = cv2.Canny(cv2.cvtColor(full_est_view_final, cv2.COLOR_BGR2GRAY), 100, 200, apertureSize=3)
+                start_edge = cv2.Canny(cv2.cvtColor(full_perturbed_view, cv2.COLOR_BGR2GRAY), 80, 200, apertureSize=3)
+                end_edge = cv2.Canny(cv2.cvtColor(full_est_view_final, cv2.COLOR_BGR2GRAY), 80, 200, apertureSize=3)
                 red_chan = full_target_view[:, :, 2]
                 green_chan = full_target_view[:, :, 1]
                 red_chan[start_edge > 0] = start_edge[start_edge>0]
@@ -316,36 +379,173 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
                 full_target_view[:, :, 2] = red_chan
 
                 cv2.imshow('deep_im_vis', full_target_view/255.)
+                cv2.imwrite('/net/rmc-lx0314/home_local/sund_ma/autoencoder_ws/iccv_results/%s_%s.png' % (i,j), full_target_view)
                 cv2.waitKey(0)
 
-    pose_errs = np.array(pose_errs)
-    pose_errs_refref = np.array(pose_errs_refref)
-    pose_errs_trans = np.array(pose_errs_trans)
+
+    return res_dict
+        
+
+def add_recall_diameter(R_est, t_est, R_gt, t_gt, model_pts, diameter):
+    add_err = pose_error.add(R_est, t_est, R_gt, t_gt, model_pts)
+    if add_err < diameter * 0.1:
+        return 1.
+    else:
+        return 0.
+
+def proj_recall_diameter(R_est, t_est, R_gt, t_gt, model_pts, diameter, K):
+    proj_err = pose_error.arp_2d(R_est, t_est, R_gt, t_gt, model_pts, K)
+    if proj_err <= 5:
+        return 1.
+    else:
+        return 0.
+
+def compute_pose_errors(res_dict, args_latent, dataset):
+
+    num_obj = args_latent.getint('Data', 'num_obj')
+    num_views = args_latent.getint('Data', 'num_views')
+    test_class = args_latent.get('Data', 'test_class')
+
+    K = eval(dataset._kw['k'])
+    K = np.array(K).reshape(3,3)
+    K = np.array([[572.4114, 0, 320.], [0, 573.57043, 240], [0, 0, 1]]) # LM
+
+    R_init_errs = []
+    R_1_errs = []
+    R_2_errs = []
+    R_3_errs = []
+    t_init_errs = []
+    t_1_errs = []
+    t_2_errs = []
+    t_3_errs = []
+    add_recalls_init = []
+    add_recalls = []
+    proj_recalls_init = []
+    proj_recalls = []
+    proj_recalls2 = []
+
+
+    all_model_pts = [np.array(v) for v in dataset.renderer.verts]
+
+    diameters = []
+    for model_pts in all_model_pts:
+        # model_pts_01 = model_pts * 0.1
+        vec = model_pts.max(0) - model_pts.min(0)
+        print vec
+        diameters.append(np.linalg.norm(vec))
+    print diameters
+    
+
+    for i in range(0, num_obj):
+        for j in range(num_views):
+            R_target = res_dict['preds'][i]['R_init'][j]
+            t_target = res_dict['preds'][i]['t_init'][j]
+
+            R_init_errs.append(pose_error.re(R_target, res_dict['preds'][i]['R_init_pert'][j]))
+            R_1_errs.append(pose_error.re(R_target, res_dict['preds'][i]['R_1'][j]))
+            R_2_errs.append(pose_error.re(R_target, res_dict['preds'][i]['R_2'][j]))
+            R_3_errs.append(pose_error.re(R_target, res_dict['preds'][i]['R_3'][j]))
+            t_init_errs.append(pose_error.te(t_target, res_dict['preds'][i]['t_init_pert'][j]))
+            t_1_errs.append(pose_error.te(t_target, res_dict['preds'][i]['t_1'][j]))
+            t_2_errs.append(pose_error.te(t_target, res_dict['preds'][i]['t_2'][j]))
+            t_3_errs.append(pose_error.te(t_target, res_dict['preds'][i]['t_3'][j]))
+
+            add_recalls_init.append(add_recall_diameter(res_dict['preds'][i]['R_init_pert'][j],
+                                                res_dict['preds'][i]['t_init_pert'][j], R_target, 
+                                                t_target, {'pts': all_model_pts[i]}, diameters[i]))
+            add_recalls.append(add_recall_diameter(res_dict['preds'][i]['R_3'][j],
+                                                   res_dict['preds'][i]['t_3'][j], R_target, 
+                                                   t_target, {'pts': all_model_pts[i]}, diameters[i]))
+            proj_recalls_init.append(proj_recall_diameter(res_dict['preds'][i]['R_init_pert'][j],
+                                       res_dict['preds'][i]['t_init_pert'][j], R_target, 
+                                       t_target, {'pts': all_model_pts[i]}, diameters[i], K))
+            proj_recalls.append(proj_recall_diameter(res_dict['preds'][i]['R_3'][j],
+                                       res_dict['preds'][i]['t_3'][j], R_target, 
+                                       t_target, {'pts': all_model_pts[i]}, diameters[i], K))
+            proj_recalls2.append(proj_recall_diameter(res_dict['preds'][i]['R_3'][j],
+                                       res_dict['preds'][i]['t_2'][j], R_target, 
+                                       t_target, {'pts': all_model_pts[i]}, diameters[i], K))
+
+    
+    R_init_errs = np.array(R_init_errs)
+    R_1_errs    = np.array(R_1_errs)
+    R_2_errs    = np.array(R_2_errs)
+    R_3_errs    = np.array(R_3_errs)
+    t_init_errs = np.array(t_init_errs)
+    t_1_errs    = np.array(t_1_errs)
+    t_2_errs    = np.array(t_2_errs)
+    t_3_errs    = np.array(t_3_errs)
+
+    res = {}
+
+    # res['R_init_errs'] = np.array(R_init_errs)
+    # res['R_1_errs']    = np.array(R_1_errs)
+    # res['R_2_errs']    = np.array(R_2_errs)
+    # res['R_3_errs']    = np.array(R_3_errs)
+    # res['t_init_errs'] = np.array(t_init_errs)
+    # res['t_1_errs']    = np.array(t_1_errs)
+    # res['t_2_errs']    = np.array(t_2_errs)
+
+
+    res['mean_add_recall_init'] = np.mean(add_recalls_init)
+    res['mean_add_recall'] = np.mean(add_recalls)
+    res['mean_proj_recall_init'] = np.mean(proj_recalls_init)
+    res['mean_proj_recall'] = np.mean(proj_recalls)
+    res['mean_proj_recall2'] = np.mean(proj_recalls2)
+    res['<5deg_<5cm_init'] = len(R_init_errs[(R_init_errs <= 5) & (t_init_errs <= 50)])/1.0/len(R_init_errs)
+    res['<5deg_<5cm_R1'] = len(R_1_errs[(R_1_errs <= 5) & (t_init_errs <= 50)])/1.0/len(R_1_errs)
+    res['<5deg_<5cm_R1_t1'] = len(R_1_errs[(R_1_errs <= 5) & (t_1_errs <= 50)])/1.0/len(R_1_errs)
+    res['<5deg_<5cm_R2_t1'] = len(R_2_errs[(R_2_errs <= 5) & (t_1_errs <= 50)])/1.0/len(R_2_errs)
+    res['<5deg_<5cm_R2_t2'] = len(R_2_errs[(R_2_errs <= 5) & (t_2_errs <= 50)])/1.0/len(R_2_errs)
+    res['<5deg_<5cm_R2_t2'] = len(R_2_errs[(R_2_errs <= 5) & (t_2_errs <= 50)])/1.0/len(R_2_errs)
+    res['<5deg_<5cm_R3_t2'] = len(R_3_errs[(R_3_errs <= 5) & (t_2_errs <= 50)])/1.0/len(R_3_errs)
+    res['<5deg_<5cm'] = len(R_3_errs[(R_3_errs <= 5) & (t_3_errs <= 50)])/1.0/len(R_3_errs)
+
+    print res
+
+    print ('pose_errs_init: median: ' + str(np.median(R_init_errs)) 
+    + ', mean: ' + str(np.mean(R_init_errs)) + ', <5deg & <5cm: ' 
+    + str(len(R_init_errs[(R_init_errs <= 5) & (t_init_errs <= 50)])/1.0/len(R_init_errs))
+    + ', <5deg: ' + str(len(R_init_errs[(R_init_errs <= 5)])/1.0/len(R_init_errs))
+    + ', <5cm: ' + str(len(t_init_errs[t_init_errs <= 50])/1.0/len(t_init_errs)))
+
+    print ('pose_errs_final: median: ' + str(np.median(R_3_errs)) 
+    + ', mean: ' + str(np.mean(R_3_errs)) + ', <5deg & <5cm: ' 
+    + str(len(R_3_errs[(R_3_errs <= 5) & (t_2_errs <= 50)])/1.0/len(R_3_errs))
+    + ', <5deg: ' + str(len(R_3_errs[(R_3_errs <= 5)])/1.0/len(R_3_errs))
+    + ', <5cm: ' + str(len(t_2_errs[t_2_errs <= 50])/1.0/len(t_2_errs)))
+
+
     if args_latent.getboolean('Visualization', 'rot_err_histogram'):
         
         plt.figure(1)
-        plt.hist(pose_errs, bins=180)
-        plt.title('pose_errs: median: ' + str(np.median(pose_errs)) + ', mean: ' + str(np.mean(
-            pose_errs)) + ', <5deg: ' + str(len(pose_errs[pose_errs < 5])/1.0/len(pose_errs)))
+        plt.hist(R_1_errs, bins=180)
+        plt.title('R_1_errs: median: ' + str(np.median(R_1_errs)) + ', mean: ' + str(np.mean(
+            R_1_errs)) + ', <5deg: ' + str(len(R_1_errs[R_1_errs < 5])/1.0/len(R_1_errs)))
         
         plt.figure(2)
-        plt.hist(pose_errs_refref, bins=180)
-        plt.title('pose_errs_refref: median: ' + str(np.median(pose_errs_refref)) 
-                  + ', mean: ' + str(np.mean(pose_errs_refref)) + ', <5deg & <5cm: ' 
-                  + str(len(pose_errs_refref[(pose_errs_refref <= 5) & (pose_errs_trans <= 50)])/1.0/len(pose_errs_refref))
-                  + ', <5deg: ' + str(len(pose_errs_refref[(pose_errs_refref <= 5)])/1.0/len(pose_errs_refref)))
+        plt.hist(R_3_errs, bins=180)
+        plt.title('R_3_errs: median: ' + str(np.median(R_3_errs)) 
+                  + ', mean: ' + str(np.mean(R_3_errs)) + ', <5deg & <5cm: ' 
+                  + str(len(R_3_errs[(R_3_errs <= 5) & (t_2_errs <= 50)])/1.0/len(R_3_errs))
+                  + ', <5deg: ' + str(len(R_3_errs[(R_3_errs <= 5)])/1.0/len(R_3_errs)))
 
         plt.figure(3)
-        plt.hist(pose_errs_trans, bins=180)
-        plt.title('pose_errs_trans: median: ' + str(np.median(pose_errs_trans)) + ', mean: ' + str(np.mean(pose_errs_trans))
-                  + ', <5cm: ' + str(len(pose_errs_trans[pose_errs_trans <= 50])/1.0/len(pose_errs_trans)))
+        plt.hist(t_2_errs, bins=180)
+        plt.title('t_2_errs: median: ' + str(np.median(t_2_errs)) + ', mean: ' + str(np.mean(t_2_errs))
+                  + ', <5cm: ' + str(len(t_2_errs[t_2_errs <= 50])/1.0/len(t_2_errs)))
 
         plt.show()
 
-    return pose_errs, pose_errs_refref, pose_errs_trans
-        
 
-def multi_scale_template_matching(im1, im2, args_latent):
+    return res
+
+
+
+
+
+
+def multi_scale_template_matching(im1, im2, args_latent, last=False):
 
     min_scale = args_latent.getfloat('Refinement', 'min_scale')
     max_scale = args_latent.getfloat('Refinement', 'max_scale')
@@ -354,11 +554,15 @@ def multi_scale_template_matching(im1, im2, args_latent):
     canny_high = args_latent.getint('Refinement', 'canny_high')
     # verbose = args_latent.getboolean('Visualization', 'verbose')
     verbose = False
+    if last:
+        min_scale = 0.9
+        max_scale = 1.1
+        num_scales = 21
 
     #im2 is target and template
     print im1.dtype, np.min(im1), np.max(im1), im1.shape
     im1_gray = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
-    im1_gray_pad = np.zeros((im1_gray.shape[0]*3/2, im1_gray.shape[1]*3/2),dtype=np.uint8)
+    im1_gray_pad = np.zeros((im1_gray.shape[0]*3//2, im1_gray.shape[1]*3//2),dtype=np.uint8)
     im1_gray_pad[im1_gray.shape[0]//4:im1_gray.shape[0]//4*5,
                    im1_gray.shape[1]//4:im1_gray.shape[1]//4*5] = im1_gray
     im2_gray = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)

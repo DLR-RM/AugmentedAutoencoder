@@ -45,6 +45,7 @@ class Codebook(object):
         
         self.cos_similarity = tf.matmul(self.normalized_embedding_query, self.embedding_normalized,transpose_b=True)
         self._image_ph = tf.placeholder(tf.float32, [None,] + list(self._dataset.shape))
+        self.image_ph_tofloat = self._image_ph/255.
 
     def refined_nearest_rotation(self, session, target_view, top_n, R_init=None, t_init=None, budget=10, epochs=3,
                                  high=6./180*np.pi, obj_id=0, top_n_refine=1, target_bb=None):
@@ -136,7 +137,7 @@ class Codebook(object):
                 bbs.append(obj_bb)
 
 
-            float_imgs = session.run(self._image_ph/255.,{self._image_ph:np.array(fine_views)})
+            float_imgs = session.run(self.image_ph_tofloat,{self._image_ph:np.array(fine_views)})
             normalized_embedding_query = session.run(self.normalized_embedding_query, {self._encoder.x: float_imgs})
             cosine_sim = cosine_similarity(orig_in_emb, normalized_embedding_query)
             idx = np.argmax(cosine_sim, axis=1)
