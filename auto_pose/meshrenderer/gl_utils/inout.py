@@ -50,7 +50,7 @@ def load_ply(path):
                 for i in range(face_n_corners):
                     face_props.append(('ind_' + str(i), elems[3]))
             else:
-                print('Warning: Not supported face property: ' + elems[-1])
+                print(('Warning: Not supported face property: ' + elems[-1]))
         elif line.startswith('format'):
             if 'binary' in line:
                 is_binary = True
@@ -131,7 +131,7 @@ def load_ply(path):
                 if prop[0] == 'n_corners':
                     if val != face_n_corners:
                         print('Error: Only triangular faces are supported.')
-                        print('Number of face corners: ' + str(val))
+                        print(('Number of face corners: ' + str(val)))
                         exit(-1)
                 else:
                     prop_vals[prop[0]] = val
@@ -141,7 +141,7 @@ def load_ply(path):
                 if prop[0] == 'n_corners':
                     if int(elems[prop_id]) != face_n_corners:
                         print('Error: Only triangular faces are supported.')
-                        print('Number of face corners: ' + str(int(elems[prop_id])))
+                        print(('Number of face corners: ' + str(int(elems[prop_id]))))
                         exit(-1)
                 else:
                     prop_vals[prop[0]] = elems[prop_id]

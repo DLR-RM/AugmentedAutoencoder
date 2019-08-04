@@ -2,3 +2,5 @@ install
 *.npy
 *.pyc
 *.vscode
+*.egg-info
+/pysixd
