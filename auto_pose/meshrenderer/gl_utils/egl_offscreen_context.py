@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa
-from lib.utils import logger
 import os
 from ctypes import pointer
 
