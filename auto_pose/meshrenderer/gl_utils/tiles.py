@@ -14,8 +14,8 @@ def tiles(batch, rows, cols, spacing_x=0, spacing_y=0, scale=1.0):
 	W = int(W*scale)
 	img = np.ones((rows*H+(rows-1)*spacing_y, cols*W+(cols-1)*spacing_x, C))
 	i = 0
-	for row in xrange(rows):
-		for col in xrange(cols):
+	for row in range(rows):
+		for col in range(cols):
 			start_y = row*(H+spacing_y)
 			end_y = start_y + H
 			start_x = col*(W+spacing_x)
@@ -37,8 +37,8 @@ def tiles4(batch, rows, cols, spacing_x=0, spacing_y=0, scale=1.0):
 	W = int(W*scale)
 	img = np.ones((2*rows*H+(2*rows-1)*spacing_y, cols*W+(cols-1)*spacing_x, 3))
 	i = 0
-	for row in xrange(0,2*rows,2):
-		for col in xrange(cols):
+	for row in range(0,2*rows,2):
+		for col in range(cols):
 			start_y = row*(H+spacing_y)
 			end_y = start_y + H
 			start_x = col*(W+spacing_x)

@@ -7,15 +7,15 @@ import signal
 import progressbar
 import tensorflow as tf
 
-import ae_factory as factory
-import utils as u
+from . import ae_factory as factory
+from . import utils as u
 
 def main():
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
     if workspace_path == None:
-        print 'Please define a workspace path:\n'
-        print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+        print('Please define a workspace path:\n')
+        print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
         exit(-1)
 
     parser = argparse.ArgumentParser()
@@ -34,13 +34,13 @@ def main():
     ckpt_dir = u.get_checkpoint_dir(log_dir)
     dataset_path = u.get_dataset_path(workspace_path)
 
-    print checkpoint_file
-    print ckpt_dir
-    print '#'*20
+    print(checkpoint_file)
+    print(ckpt_dir)
+    print('#'*20)
 
     if not os.path.exists(cfg_file_path):
-        print 'Could not find config file:\n'
-        print '{}\n'.format(cfg_file_path)
+        print('Could not find config file:\n')
+        print('{}\n'.format(cfg_file_path))
         exit(-1)
 
     args = configparser.ConfigParser()
@@ -63,8 +63,8 @@ def main():
 
     with tf.Session(config=config) as sess:
 
-        print ckpt_dir
-        print '#'*20
+        print(ckpt_dir)
+        print('#'*20)
 
         factory.restore_checkpoint(sess, saver, ckpt_dir, at_step=at_step)
 
@@ -82,11 +82,11 @@ def main():
         else:
             codebook.update_embedding(sess, batch_size)
 
-        print 'Saving new checkoint ..',
+        print('Saving new checkoint ..', end=' ')
 
         saver.save(sess, checkpoint_file, global_step=ae.global_step)
 
-        print 'done',
+        print('done', end=' ')
 
 if __name__ == '__main__':
     main()

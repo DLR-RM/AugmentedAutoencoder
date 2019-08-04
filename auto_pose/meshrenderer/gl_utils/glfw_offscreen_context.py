@@ -10,7 +10,7 @@ class OffscreenContext(object):
 
     def __init__(self):
         assert glfw.Init(), 'Glfw Init failed!'
-        glfw.WindowHint(glfw.VISIBLE, False);
+        glfw.WindowHint(glfw.VISIBLE, False)
         self._offscreen_context = glfw.CreateWindow(1, 1, "", None)
         assert self._offscreen_context, 'Could not create Offscreen Context!'
         glfw.MakeContextCurrent(self._offscreen_context)
@@ -47,4 +47,3 @@ class OffscreenContext(object):
 
     def __exit__(self, type, value, traceback):
         self.close()
-

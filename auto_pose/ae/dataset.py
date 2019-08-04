@@ -8,9 +8,9 @@ import os
 import progressbar
 import cv2
 
-from pysixd_stuff import transform
-from pysixd_stuff import view_sampler
-from utils import lazy_property
+from .pysixd_stuff import transform
+from .pysixd_stuff import view_sampler
+from .utils import lazy_property
 
 
 class Dataset(object):
@@ -93,7 +93,7 @@ class Dataset(object):
             self.render_training_images()
             np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
         self.noof_obj_pixels = np.count_nonzero(self.mask_x==0,axis=(1,2))
-        print 'loaded %s training images' % len(self.train_x)
+        print('loaded %s training images' % len(self.train_x))
 
     def get_sprite_training_images(self, train_args):
         
@@ -156,7 +156,7 @@ class Dataset(object):
 
 
             for j,fname in enumerate(file_list):
-                print 'loading bg img %s/%s' % (j,self.noof_bg_imgs)
+                print('loading bg img %s/%s' % (j,self.noof_bg_imgs))
                 bgr = cv2.imread(fname)
                 H,W = bgr.shape[:2]
                 y_anchor = int(np.random.rand() * (H-self.shape[0]))
@@ -172,7 +172,7 @@ class Dataset(object):
 
 
 
-        print 'loaded %s bg images' % self.noof_bg_imgs
+        print('loaded %s bg images' % self.noof_bg_imgs)
 
 
     def render_rot(self, R, t=None ,downSample = 1):
@@ -274,7 +274,7 @@ class Dataset(object):
             try:
                 obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             except ValueError as e:
-                print 'Object in Rendering not visible. Have you scaled the vertices to mm?'
+                print('Object in Rendering not visible. Have you scaled the vertices to mm?')
                 break
 
 
@@ -413,7 +413,7 @@ class Dataset(object):
             random_syn_masks.fromfile(fh)
         occlusion_masks = np.fromstring(random_syn_masks.unpack(), dtype=np.bool)
         occlusion_masks = occlusion_masks.reshape(-1,224,224,1).astype(np.float32)
-        print occlusion_masks.shape
+        print(occlusion_masks.shape)
 
         occlusion_masks = np.array([cv2.resize(mask,(self.shape[0],self.shape[1]), interpolation = cv2.INTER_NEAREST) for mask in occlusion_masks])           
         return occlusion_masks
@@ -439,7 +439,7 @@ class Dataset(object):
                 if overlap < max_occl and overlap > min_occl:
                     new_masks[idx,...] = np.logical_xor(mask.astype(np.bool), overlap_matrix)
                     if verbose:
-                        print 'overlap is ', overlap    
+                        print('overlap is ', overlap)    
                     break
 
         return new_masks
@@ -451,7 +451,7 @@ class Dataset(object):
             new_masks[idcs] = self._aug_occl.augment_images(np.invert(masks[idcs]))
             new_noof_obj_pixels = np.count_nonzero(new_masks,axis=(1,2))
             idcs = np.where(new_noof_obj_pixels/self.noof_obj_pixels[rand_idcs].astype(np.float32) < 1-max_occl)[0]
-            print idcs
+            print(idcs)
         return np.invert(new_masks)
 
     def batch(self, batch_size):
