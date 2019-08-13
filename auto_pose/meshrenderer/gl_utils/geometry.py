@@ -20,7 +20,7 @@ def load_meshes_sixd( obj_files, vertex_tmp_store_folder , recalculate_normals=F
 
     out_file = os.path.join( vertex_tmp_store_folder, hashed_file_name)
     if os.path.exists(out_file):
-        return np.load(out_file)
+        return np.load(out_file, allow_pickle=True)
     else:
         bar = progressbar.ProgressBar()
         attributes = []

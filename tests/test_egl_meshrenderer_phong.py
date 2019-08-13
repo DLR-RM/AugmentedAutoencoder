@@ -4,8 +4,6 @@ import os.path as osp
 import sys
 cur_dir = osp.dirname(osp.abspath(__file__))
 sys.path.insert(0, osp.join(cur_dir, '..'))
-sys.path.insert(0, '/path/to/bop_toolkit/')
-# ln -sf /path/to/bop_toolkit/ $ROOT/pysixd
 import glob
 import numpy as np
 import random
@@ -20,7 +18,9 @@ random.seed(12)
 
 def test_egl():
     # cad_path = '/home_local/sund_ma/data/linemod_dataset/models'
-    cad_path = '/path/to/SIXD_DATASETS/hinterstoisser/models'
+    # NOTE: in $ROOT, mkdir -p data; ln -sf /path/to/SIXD_DATASETS data/SIXD_DATASETS
+    cad_path = osp.join(cur_dir, '../data/SIXD_DATASETS/hinterstoisser/models')
+    assert osp.exists(cad_path), "cad_path {} does not exist. Check your dataset path!".format(cad_path)
     K = np.array([[572.4114, 0.0, 325.2611], [0.0, 573.57043, 242.04899], [0.0, 0.0, 1.0]])
     height = 480
     width = 640

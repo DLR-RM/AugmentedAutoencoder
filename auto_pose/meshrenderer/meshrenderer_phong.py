@@ -6,7 +6,7 @@ from OpenGL.GL import *
 
 from . import gl_utils as gu
 
-from pysixd import misc
+from .pysixd import misc
 
 class Renderer(object):
 
