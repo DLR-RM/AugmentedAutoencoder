@@ -1,5 +1,6 @@
  # -*- coding: utf-8 -*-
 import os
+os.environ["PYOPENGL_PLATFORM"] = "egl"
 import configparser
 import argparse
 import numpy as np
@@ -18,7 +19,7 @@ from . import utils as u
 def main():
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
-    if workspace_path == None:
+    if workspace_path is None:
         print('Please define a workspace path:\n')
         print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
         exit(-1)
@@ -36,10 +37,10 @@ def main():
     arguments = parser.parse_args()
 
     full_name = arguments.experiment_name.split('/')
-    
+
     experiment_name = full_name.pop()
     experiment_group = full_name.pop() if len(full_name) > 0 else ''
-    
+
     debug_mode = arguments.d
     generate_data = arguments.gen
 
@@ -49,19 +50,19 @@ def main():
     ckpt_dir = u.get_checkpoint_dir(log_dir)
     train_fig_dir = u.get_train_fig_dir(log_dir)
     dataset_path = u.get_dataset_path(workspace_path)
-    
+
     if not os.path.exists(cfg_file_path):
         print('Could not find config file:\n')
         print('{}\n'.format(cfg_file_path))
         exit(-1)
-        
+
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir)
     if not os.path.exists(train_fig_dir):
         os.makedirs(train_fig_dir)
     if not os.path.exists(dataset_path):
         os.makedirs(dataset_path)
-        
+
 
 
 
@@ -115,12 +116,12 @@ def main():
 
         merged_loss_summary = tf.summary.merge_all()
         summary_writer = tf.summary.FileWriter(ckpt_dir, sess.graph)
-        
-                
+
+
         if not debug_mode:
             print('Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH')))
             bar.start()
-        
+
         queue.start(sess)
         for i in range(ae.global_step.eval(), num_iter):
             if not debug_mode:
@@ -158,4 +159,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
