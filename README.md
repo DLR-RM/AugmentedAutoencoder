@@ -61,6 +61,13 @@ pip install --user imgaug
 pip install --user progressbar
 ```
 
+### Headless Rendering ###
+Please note that we use the GLFW context as default which does not support headless rendering. To allow for both, onscreen rendering & headless rendering on a remote server, set the context to EGL: 
+```
+export PYOPENGL_PLATFORM='egl'
+```
+In order to make the EGL context work, you might need to change PyOpenGL like [here](https://github.com/mcfletch/pyopengl/issues/27)
+
 ## Preparatory Steps
 
 *1. Pip installation*
@@ -81,10 +88,6 @@ ae_init_workspace
 ```
 
 ## Train an Augmented Autoencoder
-*0. Rendering Context FYI
-Please note that we use the EGL context as default to allow for both, onscreen rendering & headless rendering on a remote server.  
-In order to make the EGL context work, you might need to change PyOpenGL like [here](https://github.com/mcfletch/pyopengl/issues/27)  
-If this does not work for you, simply comment out os.environ["PYOPENGL_PLATFORM"] = "egl" and render onscreen
 
 *1. Create the training config file. Insert the paths to your 3D model and background images.*
 ```bash
@@ -94,15 +97,19 @@ gedit $AE_WORKSPACE_PATH/cfg/exp_group/my_autoencoder.cfg
 ```
 
 *2. Generate and check training data. The object views should be strongly augmented but identifiable.*
+
 (Press *ESC* to close the window.)
 ```bash
 ae_train exp_group/my_autoencoder -d
 ```
-This command does not start training.
+This command does not start training and should be run on a PC with a display connected.  
+
 Output:
 ![](docs/training_images_29999.png)
 
 *3. Train the model*
+(See the [Headless Rendering](#the-headless-rendering) section if you want to train directly on a server without display)
+
 ```bash
 ae_train exp_group/my_autoencoder
 ```
