@@ -85,7 +85,7 @@ ae_init_workspace
 + Please note that we use the EGL context as default to allow for both, onscreen rendering & headless rendering on a remote server.
 + In order to make the EGL context work, you might need to change PyOpenGL like [here](https://github.com/mcfletch/pyopengl/issues/27)
 + If this does not work for you, simply comment out os.environ["PYOPENGL_PLATFORM"] = "egl" and render onscreen
-```
+
 
 *1. Create the training config file. Insert the paths to your 3D model and background images.*
 ```bash
