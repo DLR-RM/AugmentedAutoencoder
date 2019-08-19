@@ -1,8 +1,5 @@
 
 #from .offscreen_context import OffscreenContext
-<<<<<<< Updated upstream
-from .glfw_offscreen_context import OffscreenContext
-=======
 import os
 if os.environ.get('PYOPENGL_PLATFORM', None) == 'egl':
     print('using egl')
@@ -10,7 +7,6 @@ if os.environ.get('PYOPENGL_PLATFORM', None) == 'egl':
 else:
     print('using glfw')
     from .glfw_offscreen_context import OffscreenContext
->>>>>>> Stashed changes
 from .fbo import Framebuffer
 from .renderbuffer import Renderbuffer, RenderbufferMultisample
 from .texture import Texture, TextureMultisample, Texture1D, Texture3D
@@ -23,5 +19,5 @@ from .ebo import EBO
 from .camera import Camera
 from .window import Window
 from .material import Material
-import geometry as geo
+from . import geometry as geo
 from .tiles import tiles, tiles4

@@ -5,8 +5,8 @@ import numpy as np
 import tensorflow as tf
 import progressbar
 
-from utils import lazy_property
-import utils as u
+from .utils import lazy_property
+from . import utils as u
 
 
 class Codebook(object):
@@ -174,7 +174,7 @@ class Codebook(object):
         J = self._encoder.latent_space_size
         embedding_z = np.empty( (embedding_size, J) )
 
-        print 'Creating embedding ..'
+        print('Creating embedding ..')
 
         self._dataset.get_sprite_training_images(train_args)
 

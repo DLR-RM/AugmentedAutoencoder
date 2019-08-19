@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 
 
-from dataset import Dataset
-from queue import Queue
-from ae import AE
-from encoder import Encoder
-from decoder import Decoder
-from codebook import Codebook
+from .dataset import Dataset
+from .queue import Queue
+from .ae import AE
+from .encoder import Encoder
+from .decoder import Decoder
+from .codebook import Codebook
 
 def build_dataset(dataset_path, args):
-    dataset_args = { k:v for k,v in 
-        args.items('Dataset') + 
-        args.items('Paths') + 
-        args.items('Augmentation')+ 
+    dataset_args = { k:v for k,v in
+        args.items('Dataset') +
+        args.items('Paths') +
+        args.items('Augmentation')+
         args.items('Queue') +
         args.items('Embedding')}
     dataset = Dataset(dataset_path, **dataset_args)
@@ -23,9 +23,9 @@ def build_queue(dataset, args):
     QUEUE_SIZE = args.getint('Queue', 'QUEUE_SIZE')
     BATCH_SIZE = args.getint('Training', 'BATCH_SIZE')
     queue = Queue(
-        dataset, 
-        NUM_THREADS, 
-        QUEUE_SIZE, 
+        dataset,
+        NUM_THREADS,
+        QUEUE_SIZE,
         BATCH_SIZE
     )
     return queue
@@ -38,9 +38,9 @@ def build_encoder(x, args, is_training=False):
     BATCH_NORM = args.getboolean('Network', 'BATCH_NORMALIZATION')
     encoder = Encoder(
         x,
-        LATENT_SPACE_SIZE, 
-        NUM_FILTER, 
-        KERNEL_SIZE_ENCODER, 
+        LATENT_SPACE_SIZE,
+        NUM_FILTER,
+        KERNEL_SIZE_ENCODER,
         STRIDES,
         BATCH_NORM,
         is_training=is_training
@@ -98,11 +98,11 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
     if workspace_path == None:
-        print 'Please define a workspace path:\n'
-        print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+        print('Please define a workspace path:\n')
+        print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
         exit(-1)
 
-    import utils as u
+    from . import utils as u
     import tensorflow as tf
 
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
@@ -114,7 +114,7 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
         args = configparser.ConfigParser()
         args.read(cfg_file_path)
     else:
-        print 'ERROR: Config File not found: ', cfg_file_path
+        print('ERROR: Config File not found: ', cfg_file_path)
         exit()
 
     with tf.variable_scope(experiment_name):
@@ -147,13 +147,11 @@ def restore_checkpoint(session, saver, ckpt_dir, at_step=None):
             saver.restore(session, chkpt.model_checkpoint_path)
         else:
             for ckpt_path in chkpt.all_model_checkpoint_paths:
-                
+
                 if str(at_step) in str(ckpt_path):
                     saver.restore(session, ckpt_path)
-                    print 'restoring' , os.path.basename(ckpt_path)
+                    print('restoring' , os.path.basename(ckpt_path))
     else:
-        print 'No checkpoint found. Expected one in:\n'
-        print '{}\n'.format(ckpt_dir)
+        print('No checkpoint found. Expected one in:\n')
+        print('{}\n'.format(ckpt_dir))
         exit(-1)
-
-        
