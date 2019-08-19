@@ -3,6 +3,5 @@ install
 *.pyc
 *.vscode
 *.egg-info
-/pysixd
 /data
 /AAE_workspace

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+os.environ["PYOPENGL_PLATFORM"] = "egl"
 import configparser
 import argparse
 import numpy as np
@@ -82,11 +83,11 @@ def main():
         else:
             codebook.update_embedding(sess, batch_size)
 
-        print('Saving new checkoint ..', end=' ')
+        print('Saving new checkoint ..')
 
         saver.save(sess, checkpoint_file, global_step=ae.global_step)
 
-        print('done', end=' ')
+        print('done')
 
 if __name__ == '__main__':
     main()
