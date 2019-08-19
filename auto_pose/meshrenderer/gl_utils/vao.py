@@ -3,7 +3,7 @@ import numpy as np
 
 from OpenGL.GL import *
 
-from ebo import EBO
+from .ebo import EBO
 
 class VAO(object):
 
@@ -11,7 +11,7 @@ class VAO(object):
         self.__id = np.empty(1, dtype=np.uint32)
         glCreateVertexArrays(len(self.__id), self.__id)
         i = 0
-        for vbo_offset_stride, attribs in vbo_attrib.iteritems():
+        for vbo_offset_stride, attribs in vbo_attrib.items():
             vbo = vbo_offset_stride[0]
             offset = vbo_offset_stride[1]
             stride = vbo_offset_stride[2]

@@ -4,9 +4,9 @@ import numpy as np
 
 from OpenGL.GL import *
 
-import gl_utils as gu
+from . import gl_utils as gu
 
-from pysixd import misc
+from .pysixd import misc
 
 class Renderer(object):
 
@@ -63,7 +63,7 @@ class Renderer(object):
         vao.bind()
         ibo.bind()
         shader.use()
-        
+
         glEnable(GL_DEPTH_TEST)
         glClearColor(0.0, 0.0, 0.0, 1.0)
 
@@ -114,7 +114,7 @@ class Renderer(object):
         if self._samples > 1:
             self._fbo.bind()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-            
+
             glNamedFramebufferDrawBuffer(self._fbo.id, GL_COLOR_ATTACHMENT1)
             glDrawArraysIndirect(GL_TRIANGLES, ctypes.c_void_p(obj_id*16))
 
@@ -194,4 +194,4 @@ class Renderer(object):
 
 
     def close(self):
-        self._context.close() 
+        self._context.close()

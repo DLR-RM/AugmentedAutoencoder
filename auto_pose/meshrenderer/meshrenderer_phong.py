@@ -4,16 +4,16 @@ import numpy as np
 
 from OpenGL.GL import *
 
-import gl_utils as gu
+from . import gl_utils as gu
 
-from pysixd import misc
+from .pysixd import misc
 
 class Renderer(object):
 
     MAX_FBO_WIDTH = 2000
     MAX_FBO_HEIGHT = 2000
 
-    def __init__(self, models_cad_files, samples=1, vertex_tmp_store_folder='.',clamp=False, vertex_scale=1.0):
+    def __init__(self, models_cad_files, samples=1, vertex_tmp_store_folder='.', clamp=False, vertex_scale=1.0):
         self._samples = samples
         self._context = gu.OffscreenContext()
 
@@ -58,10 +58,10 @@ class Renderer(object):
         # IBO
         vertex_count = [np.prod(vert[3].shape) for vert in attributes]
         instance_count = np.ones(len(attributes))
-        first_index = [sum(vertex_count[:i]) for i in xrange(len(vertex_count))]
-        
+        first_index = [sum(vertex_count[:i]) for i in range(len(vertex_count))]
+
         vertex_sizes = [vert[0].shape[0] for vert in attributes]
-        base_vertex = [sum(vertex_sizes[:i]) for i in xrange(len(vertex_sizes))]
+        base_vertex = [sum(vertex_sizes[:i]) for i in range(len(vertex_sizes))]
         base_instance = np.zeros(len(attributes))
 
         ibo = gu.IBO(vertex_count, instance_count, first_index, base_vertex, base_instance)
@@ -132,7 +132,7 @@ class Renderer(object):
         glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, ctypes.c_void_p(obj_id*4*5))
 
         # if self._samples > 1:
-        #     for i in xrange(2):
+        #     for i in range(2):
         #         glNamedFramebufferReadBuffer(self._render_fbo.id, GL_COLOR_ATTACHMENT0 + i)
         #         glNamedFramebufferDrawBuffer(self._fbo.id, GL_COLOR_ATTACHMENT0 + i)
         #         glBlitNamedFramebuffer(self._render_fbo.id, self._fbo.id, 0, 0, W, H, 0, 0, W, H, GL_COLOR_BUFFER_BIT, GL_NEAREST)
@@ -181,7 +181,7 @@ class Renderer(object):
             self.set_specular_light(phong['specular'])
 
         bbs = []
-        for i in xrange(len(obj_ids)):
+        for i in range(len(obj_ids)):
             o = obj_ids[i]
             R = Rs[i]
             t = ts[i]

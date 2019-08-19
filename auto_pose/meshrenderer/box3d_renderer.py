@@ -4,7 +4,7 @@ import numpy as np
 
 from OpenGL.GL import *
 
-import gl_utils as gu
+from . import gl_utils as gu
 
 class Renderer(object):
 
@@ -43,7 +43,7 @@ class Renderer(object):
             self._gradient_fbo = gu.Framebuffer( { GL_COLOR_ATTACHMENT0: gu.Texture(GL_TEXTURE_2D, 1, GL_RGB32F, self.W, self.H) } )
         # VAO
         vert_norms = gu.geo.load_meshes(models_cad_files, vertex_tmp_store_folder, recalculate_normals=True )
-        
+
         vertices = np.empty(0, dtype=np.float32)
         self.min_vert = {}
         self.max_vert = {}
@@ -99,11 +99,11 @@ class Renderer(object):
 
     def render(self, obj_id, K, R, t, near, far, row=0.0, col=0.0, reconst=False):
         W, H = self.W, self.H
-        
+
         camera = gu.Camera()
         camera.realCamera(W, H, K, R, t, near, far)
         self._scene_buffer.update(camera.data)
-        
+
         self._fbo.bind()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glViewport(0, 0, W, H)
@@ -111,7 +111,7 @@ class Renderer(object):
         # if reconst:
         #     self.scene_shader.use()
         #     glDrawArraysIndirect(GL_TRIANGLES, ctypes.c_void_p(obj_id*16))
-        
+
         #     self._gradient_fbo.bind()
         #     self.outline_shader.use()
         #     glClear(GL_COLOR_BUFFER_BIT)
@@ -126,14 +126,14 @@ class Renderer(object):
 
         rgb_flipped = np.frombuffer( glReadPixels(0, 0, W, H, GL_RGB, GL_UNSIGNED_BYTE), dtype=np.uint8 ).reshape(H,W,3)
         return np.flipud(rgb_flipped).copy()
- 
+
     # def render(self, obj_id, K, R, t, near, far, scale, row, col, outline=False,reconst=False):
 
         # assert scale <= 1.0
         # W = int(1.*self.W*scale)
         # H = int(1.*self.H*scale)
         # K[[0,1,2],[0,1,2]] *= scale
-        
+
         # self._fbo.bind()
         # glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         # glViewport(0, 0, W, H)
@@ -142,7 +142,7 @@ class Renderer(object):
         # self._scene_buffer.update(self.camera.data)
 
         # self.scene_shader.use()
-        
+
         # glEnable(GL_DEPTH_TEST)
         # if reconst:
         #     glDrawArraysIndirect(GL_TRIANGLES, ctypes.c_void_p(obj_id*16))
@@ -158,7 +158,7 @@ class Renderer(object):
         #     self.edge_shader.use()
         # glUniform1f(0, scale)
         # glDrawArrays(GL_TRIANGLE_FAN, 0, 4)
-        
+
         # self.line_shader.use()
         # #number of lines
         # glUniform3f(0, self.min_vert[0], self.min_vert[1], self.min_vert[2])

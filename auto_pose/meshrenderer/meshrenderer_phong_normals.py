@@ -4,9 +4,9 @@ import numpy as np
 
 from OpenGL.GL import *
 
-import gl_utils as gu
+from . import gl_utils as gu
 
-from pysixd import misc
+from .pysixd import misc
 
 class Renderer(object):
 
@@ -60,7 +60,7 @@ class Renderer(object):
         vertex_count = [np.prod(vert[3].shape) for vert in attributes]
         instance_count = np.ones(len(attributes))
         first_index = [sum(vertex_count[:i]) for i in xrange(len(vertex_count))]
-        
+
         vertex_sizes = [vert[0].shape[0] for vert in attributes]
         base_vertex = [sum(vertex_sizes[:i]) for i in xrange(len(vertex_sizes))]
         base_instance = np.zeros(len(attributes))
