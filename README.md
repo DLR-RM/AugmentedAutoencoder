@@ -61,7 +61,7 @@ pip install --user imgaug
 pip install --user progressbar
 ```
 
-### Headless Rendering ###
+### Headless Rendering
 Please note that we use the GLFW context as default which does not support headless rendering. To allow for both, onscreen rendering & headless rendering on a remote server, set the context to EGL: 
 ```
 export PYOPENGL_PLATFORM='egl'
@@ -108,7 +108,7 @@ Output:
 ![](docs/training_images_29999.png)
 
 *3. Train the model*
-(See the [Headless Rendering](#the-headless-rendering) section if you want to train directly on a server without display)
+(See the [Headless Rendering](#headless-rendering) section if you want to train directly on a server without display)
 
 ```bash
 ae_train exp_group/my_autoencoder
