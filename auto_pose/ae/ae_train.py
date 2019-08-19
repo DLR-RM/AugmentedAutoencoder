@@ -61,9 +61,6 @@ def main():
         os.makedirs(train_fig_dir)
     if not os.path.exists(dataset_path):
         os.makedirs(dataset_path)
-        
-
-
 
     args = configparser.ConfigParser()
     args.read(cfg_file_path)
@@ -80,7 +77,7 @@ def main():
         train_op = factory.build_train_op(ae, args)
         saver = tf.train.Saver(save_relative_paths=True)
 
-    num_iter = args.getint('Training', 'NUM_ITER') if not debug_mode else np.iinfo(np.int32).max
+    num_iter = args.getint('Training', 'NUM_ITER') if not debug_mode else 100000
     save_interval = args.getint('Training', 'SAVE_INTERVAL')
     model_type = args.get('Dataset', 'MODEL')
 
