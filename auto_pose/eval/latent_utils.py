@@ -374,7 +374,7 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
                 red_chan = full_target_view[:, :, 2]
                 green_chan = full_target_view[:, :, 1]
                 red_chan[start_edge > 0] = start_edge[start_edge>0]
-                green_chan[end_edge > 0] = end_edge[end_edge > 0]
+                green_chan[(end_edge > 0) & (start_edge == 0)] = end_edge[(end_edge > 0) & (start_edge == 0)]
                 full_target_view[:, :, 1] = green_chan
                 full_target_view[:, :, 2] = red_chan
 
@@ -500,7 +500,8 @@ def compute_pose_errors(res_dict, args_latent, dataset):
     res['<5deg_<5cm_R2_t2'] = len(R_2_errs[(R_2_errs <= 5) & (t_2_errs <= 50)])/1.0/len(R_2_errs)
     res['<5deg_<5cm_R3_t2'] = len(R_3_errs[(R_3_errs <= 5) & (t_2_errs <= 50)])/1.0/len(R_3_errs)
     res['<5deg_<5cm'] = len(R_3_errs[(R_3_errs <= 5) & (t_3_errs <= 50)])/1.0/len(R_3_errs)
-
+    res['mean_rot_err'] = np.mean(R_3_errs)
+    res['median_rot_err'] = np.median(R_3_errs)
     print res
 
     print ('pose_errs_init: median: ' + str(np.median(R_init_errs)) 
@@ -511,9 +512,9 @@ def compute_pose_errors(res_dict, args_latent, dataset):
 
     print ('pose_errs_final: median: ' + str(np.median(R_3_errs)) 
     + ', mean: ' + str(np.mean(R_3_errs)) + ', <5deg & <5cm: ' 
-    + str(len(R_3_errs[(R_3_errs <= 5) & (t_2_errs <= 50)])/1.0/len(R_3_errs))
+    + str(len(R_3_errs[(R_3_errs <= 5) & (t_3_errs <= 50)])/1.0/len(R_3_errs))
     + ', <5deg: ' + str(len(R_3_errs[(R_3_errs <= 5)])/1.0/len(R_3_errs))
-    + ', <5cm: ' + str(len(t_2_errs[t_2_errs <= 50])/1.0/len(t_2_errs)))
+    + ', <5cm: ' + str(len(t_3_errs[t_3_errs <= 50])/1.0/len(t_3_errs)))
 
 
     if args_latent.getboolean('Visualization', 'rot_err_histogram'):

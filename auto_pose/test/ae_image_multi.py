@@ -107,8 +107,8 @@ renderer = meshrenderer_phong.Renderer(
 )
 
 
-for file in files*10:
-    for i,(codebook,train_args) in enumerate(zip(all_codebooks,all_train_args)):
+# for file in files*10:
+#     for i,(codebook,train_args) in enumerate(zip(all_codebooks,all_train_args)):
                 
         # detect some objects here
 

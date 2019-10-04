@@ -86,9 +86,6 @@ def main():
         os.makedirs(eval_dir)
     shutil.copy2(eval_cfg_file_path, eval_dir)
 
-
-    print eval_args
-
     codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True)
     dataset._kw['model_path'] = [model_path] #'/net/rmc-lx0314/home_local/sund_ma/data/t-less/models_reconst/obj_11.ply'
     dataset._kw['model'] = 'cad' if 'cad' in model_path else 'reconst'

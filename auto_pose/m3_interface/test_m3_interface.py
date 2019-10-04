@@ -28,44 +28,58 @@ if workspace_path == None:
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 # example input, replace with camera stream
-img = cv2.imread(os.path.join(this_dir,'sample_data','cup.png'))
+# img = cv2.imread(os.path.join(this_dir,'sample_data','cup.png'))
 
 # img = cv2.imread('/home_local/sund_ma/data/t-less/t-less_v2/test_primesense/01/rgb/0205.png')
 # depth_img = load_depth2('/home_local/sund_ma/data/t-less/t-less_v2/test_primesense/01/depth/0205.png')
 
+img = cv2.imread('/volume/USERSTORE/proj_bosch_pose-estimation/boschObject_testScenes/02/rgb/001.png')
+depth_img = load_depth2('/volume/USERSTORE/proj_bosch_pose-estimation/boschObject_testScenes/02/depth/001.png')
+
+# img = cv2.imread('/volume/USERSTORE/project_indu/sixd/test_sr300/01/rgb/100.png')
+# depth_img = load_depth2('/volume/USERSTORE/project_indu/sixd/test_sr300/01/depth/100.png')
+
 H,W,_ = img.shape
 # replace with a detector
 # bb = BoundingBox(xmin=0.517,xmax=0.918,ymin=0.086,ymax=0.592,classes={'benchviseblue':1.0}) 
-bb2 = BoundingBox(xmin=0.517,xmax=0.918,ymin=0.086,ymax=0.592,classes={'obj25':1.0}) 
+bb2 = BoundingBox(xmin=0.32916666666666666,xmax=0.47135416666666663,ymin=0.13166666666666665,ymax=0.3883333333333333,classes={'1':1.0}) 
 # test camera matrix
-camK = np.array([[1075.65,0,W//2],[0,1073.90,H//2],[0,0,1]]) 
+# camK = np.array([[1075.65,0,W//2],[0,1073.90,H//2],[0,0,1]]) 
+camK = np.array([2754.411920, 0, 987.463486, 0, 2753.228305, 600.587903, 0, 0, 1]).reshape(3,3)
 
+m3_config_path = '/home_local/sund_ma/m3_ws/new/multi_m3.cfg'
+ae_pose_est = AePoseEstimator(m3_config_path)
+pose_ests = ae_pose_est.process([bb2],img,camK, depth_img=depth_img)
+print(len(ae_pose_est.all_train_args))
 
-ae_pose_est = AePoseEstimator(os.path.join(workspace_path,'cfg_m3vision/test_config.cfg'))
-pose_ests = ae_pose_est.process([bb2],img,camK)#,depth_img=depth_img)
-
-
-print pose_ests[0].trafo
-
+try:
+    print pose_ests[0].trafo
+except:
+    print 'nothing detected'
 if args.vis:
-    ply_model_paths = [str(train_args.get('Paths','MODEL_PATH')) for train_args in ae_pose_est.all_train_args]
-    cad_reconst = [str(train_args.get('Dataset','MODEL')) for train_args in ae_pose_est.all_train_args]
-    print cad_reconst
+    
+    # ply_model_paths = [str(train_args.get('Paths', 'MODEL_PATH')) for train_args in ae_pose_est.all_train_args]
+    ply_model_paths = [ae_pose_est.model_path]
     print ply_model_paths
+    
+    # cad_reconst = [str(train_args.get('Dataset','MODEL')) for train_args in ae_pose_est.all_train_args]
+    cad_reconst = ['cad' if 'cad' in ae_pose_est.model_path else 'reconst']
+    print cad_reconst
     from meshrenderer import meshrenderer, meshrenderer_phong
     if all([model == 'cad' for model in cad_reconst]):   
         renderer = meshrenderer.Renderer(ply_model_paths, 
                         samples=1, 
                         vertex_tmp_store_folder=get_dataset_path(workspace_path),
-                        vertex_scale=float(1000)) # float(1) for some models
+                        vertex_scale=float(1)) # float(1) for some models
     else:
         # for textured ply
         renderer = meshrenderer_phong.Renderer(ply_model_paths, 
                         samples=1, 
                         vertex_tmp_store_folder=get_dataset_path(workspace_path)
-                        ) 
+                        )
 
-    bgr, depth,_ = renderer.render_many(obj_ids = [ae_pose_est.class_names.index(pose_est.name) for pose_est in pose_ests],
+
+    bgr, depth,_ = renderer.render_many(obj_ids = [0],#[ae_pose_est.class_names.index(pose_est.name) for pose_est in pose_ests],
                 W = W,
                 H = H,
                 K = camK, 
