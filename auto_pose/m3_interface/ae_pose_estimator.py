@@ -85,21 +85,48 @@ class AePoseEstimator(PoseEstInterface):
         return self._image_format
 
 
-    def extract_square_patch(self, scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST):
+    # def extract_square_patch(self, scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST):
+
+    #     x, y, w, h = np.array(bb_xywh).astype(np.int32)
+    #     size = int(np.maximum(h, w) * pad_factor)
+        
+    #     left = np.maximum(x+w//2-size//2, 0)
+    #     right = x+w//2+size/2
+    #     top = np.maximum(y+h//2-size//2, 0)
+    #     bottom = y+h//2+size//2
+
+    #     scene_crop = scene_img[top:bottom, left:right]
+    #     scene_crop = cv2.resize(scene_crop, resize, interpolation = interpolation)
+    #     return scene_crop
+
+    def extract_square_patch(self, scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST,black_borders=False):
 
         x, y, w, h = np.array(bb_xywh).astype(np.int32)
         size = int(np.maximum(h, w) * pad_factor)
-        
-        left = np.maximum(x+w//2-size//2, 0)
-        right = x+w//2+size/2
-        top = np.maximum(y+h//2-size//2, 0)
-        bottom = y+h//2+size//2
 
-        scene_crop = scene_img[top:bottom, left:right]
-        scene_crop = cv2.resize(scene_crop, resize, interpolation = interpolation)
+
+        scene_crop = np.zeros((size, size, 3),dtype=np.uint8)
+        if black_borders:
+            scene_crop[(size-h)//2:(size-h)//2 + h,
+                    (size-w)//2:(size-w)//2 + w] = scene_img[y:y+h, x:x+w].copy()
+        else:
+
+            left_trunc = np.maximum(x+w/2-size/2, 0)
+            right_trunc = np.minimum(x+w/2+size/2, scene_img.shape[1])
+            top_trunc = np.maximum(y+h/2-size/2, 0)
+            bottom_trunc = np.minimum(y+h/2+size/2, scene_img.shape[0])
+
+            size_h = (bottom_trunc - top_trunc)
+            size_w = (right_trunc - left_trunc)
+
+            scene_crop[(size-size_h)//2:(size-size_h)//2 + size_h,
+                       (size-size_w)//2:(size-size_w)//2 + size_w] = scene_img[top_trunc:bottom_trunc, left_trunc:right_trunc].copy()
+
+        scene_crop = cv2.resize(scene_crop, resize, interpolation=interpolation)
+
         return scene_crop
 
-    def process(self, bboxes, color_img, camK, depth_img=None, camPose=None, rois3ds=[]):
+    def process(self, bboxes, color_img, camK, depth_img=None, camPose=None, rois3ds=[], mm=False):
 
         H, W = color_img.shape[:2]
 
@@ -111,19 +138,24 @@ class AePoseEstimator(PoseEstInterface):
 
         for j,box in enumerate(bboxes):
             H_est = np.eye(4)
-            pred_clas = max(box.classes)
+            pred_clas = max(box.classes, key=box.classes.get)
 
             if not pred_clas in self.class_2_encoder:
-                print('%s not contained in config class_names %s', (pred_clas, self.class_2_encoder))
+                print('%s not contained in config class_names %s' % (pred_clas, self.class_2_encoder.keys()))
                 continue
 
-            box_xywh = [box.xmin*W, box.ymin*H, (box.xmax-box.xmin)*W, (box.ymax-box.ymin)*H]
+            box_xywh = [box.xmin * W, box.ymin * H, (box.xmax - box.xmin) * W, (box.ymax - box.ymin) * H]
+            if np.any(np.array(box_xywh) < 0):
+                print 'invalid bb', box_xywh
+                continue
 
+            print box_xywh
             det_img = self.extract_square_patch(color_img, 
                                                 box_xywh, 
                                                 self.pad_factors[pred_clas],
                                                 resize=self.patch_sizes[pred_clas], 
-                                                interpolation=cv2.INTER_LINEAR)
+                                                interpolation=cv2.INTER_LINEAR,
+                                                black_borders=True)
 
             Rs_est, ts_est, _ = self.all_codebooks[pred_clas].auto_pose6d(self.sess, 
                                                                         det_img, 
@@ -180,8 +212,11 @@ class AePoseEstimator(PoseEstInterface):
                     
            
             H_est[:3,:3] = R_est
-            H_est[:3,3] = t_est / 1000.
-            print 'translation from camera: ',  H_est[:3,3]
+            if mm:
+                H_est[:3,3] = t_est
+            else:
+                H_est[:3,3] = t_est / 1000.
+            # print 'translation from camera: ',  H_est[:3,3]
 
             if self._camPose:
                 H_est = np.dot(camPose, H_est)           

@@ -120,13 +120,19 @@ def main():
                 # inout.save_yaml(os.path.join(scene_res_dir,'bb_preds.yml'), bb_preds)
                 print bb_preds
             else:
-                bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'),'{:02d}.yml'.format(scene_id)))
+                if estimate_masks:
+                    bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'), '{:02d}/mask_rcnn_predict.yml'.format(scene_id)))
+                    print bb_preds[0][0].keys()
+                    mask_paths = glob.glob(os.path.join(eval_args.get('BBOXES','EXTERNAL'), '{:02d}/masks/*.npy'.format(scene_id)))
+                    maskrcnn_scene_masks = [np.load(mp) for mp in mask_paths] 
+                else:
+                    maskrcnn_scene_masks = None
+                    bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'),'{:02d}.yml'.format(scene_id)))
 
-
-            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.generate_scene_crops(test_imgs, test_imgs_depth, bb_preds, eval_args, train_args)
+            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.generate_scene_crops(test_imgs, test_imgs_depth, bb_preds, eval_args, train_args, inst_masks = maskrcnn_scene_masks)
         else:
             test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks = gt_masks)
-
+        
         if len(test_img_crops) == 0:
             print 'ERROR: object %s not in scene %s' % (obj_id,scene_id)
             exit()
@@ -138,9 +144,12 @@ def main():
         gts = inout.load_gt(data_params['scene_gt_mpath'].format(scene_id))
         visib_gts = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, 15))
         #######
+
         W_test, H_test = data_params['test_im_size']
 
         icp_renderer = icp_utils.SynRenderer(train_args) if icp else None
+
+
         noof_scene_views = eval_utils.noof_scene_views(scene_id, eval_args)
 
         test_embeddings.append([])

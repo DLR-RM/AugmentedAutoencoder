@@ -59,7 +59,7 @@ class Dataset(object):
 
     @lazy_property
     def renderer(self):
-        from meshrenderer import meshrenderer, meshrenderer_phong
+        from auto_pose.meshrenderer import meshrenderer, meshrenderer_phong
         if self._kw['model'] == 'cad':
             renderer = meshrenderer.Renderer(
                [self._kw['model_path']], 
@@ -68,11 +68,12 @@ class Dataset(object):
                float(self._kw['vertex_scale'])
             )
         elif self._kw['model'] == 'reconst':
+            # print(meshrenderer)
             renderer = meshrenderer_phong.Renderer(
                [self._kw['model_path']], 
                int(self._kw['antialiasing']), 
-               self.dataset_path, 
-               float(self._kw['vertex_scale'])
+               vertex_tmp_store_folder = '.',
+               vertex_scale = float(self._kw['vertex_scale'])
             )
         else:
             'Error: neither cad nor reconst in model path!'
@@ -281,13 +282,14 @@ class Dataset(object):
                 t=t,
                 near=clip_near,
                 far=clip_far,
-                random_light=False
+                random_light=False,
+                phong = lighting
             )
 
 
-
+            # cv2.imshow('bgr_y',bgr_y)
+            # cv2.waitKey(0)
             ys, xs = np.nonzero(depth_x > 0)
-
 
             try:
                 obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
@@ -314,6 +316,12 @@ class Dataset(object):
             if self.shape[2] == 1:
                 bgr_x = cv2.cvtColor(np.uint8(bgr_x), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
                 bgr_y = cv2.cvtColor(np.uint8(bgr_y), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
+
+
+            if kw.has_key('target_bg_color'):
+                depth_y = self.extract_square_patch(depth_y, obj_bb, pad_factor, resize=(W, H), interpolation=cv2.INTER_NEAREST)
+                mask_y = depth_y == 0.
+                bgr_y[mask_y] = eval(kw['target_bg_color'])
 
 
             self.train_x[i] = bgr_x.astype(np.uint8)
@@ -399,8 +407,7 @@ class Dataset(object):
             Grayscale,GaussianBlur,AverageBlur,MedianBlur,Convolve, \
             Sharpen,Emboss,EdgeDetect,DirectedEdgeDetect,Add,AddElementwise, \
             AdditiveGaussianNoise,Multiply,MultiplyElementwise,Dropout, \
-            CoarseDropout,Invert,ContrastNormalization,Affine,PiecewiseAffine, \
-            ElasticTransformation
+            CoarseDropout,Invert,ContrastNormalization,Affine,PiecewiseAffine, ElasticTransformation
         return eval(self._kw['code'])
 
     @lazy_property
@@ -464,7 +471,7 @@ class Dataset(object):
             new_masks[idcs] = self._aug_occl.augment_images(np.invert(masks[idcs]))
             new_noof_obj_pixels = np.count_nonzero(new_masks,axis=(1,2))
             idcs = np.where(new_noof_obj_pixels/self.noof_obj_pixels[rand_idcs].astype(np.float32) < 1-max_occl)[0]
-            print idcs
+            # print idcs
         return np.invert(new_masks)
 
     def batch(self, batch_size):

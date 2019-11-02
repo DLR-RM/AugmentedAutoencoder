@@ -82,4 +82,4 @@ if args.vis:
                 phong={'ambient':0.4,'diffuse':0.8, 'specular':0.3})
     cv2.imshow('', bgr)
     cv2.imshow('real', img)
-    cv2.waitKey(0)
+cv2.waitKey(0)
