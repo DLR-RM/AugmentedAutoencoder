@@ -12,7 +12,7 @@ from scipy import interpolate
 import glob
 import pickle as pl
 
-from meshrenderer import box3d_renderer
+from auto_pose.meshrenderer import box3d_renderer
 from sixd_toolkit.pysixd import inout,pose_error
 from sixd_toolkit.params import dataset_params
 

@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import os
 from sklearn.neighbors import NearestNeighbors
 
-from meshrenderer import meshrenderer, meshrenderer_phong
+from auto_pose.meshrenderer import meshrenderer, meshrenderer_phong
 from auto_pose.ae.utils import lazy_property
 
 from sixd_toolkit.pysixd import transform, misc

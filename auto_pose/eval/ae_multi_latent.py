@@ -97,13 +97,14 @@ def main():
     split = args_latent.get('Data', 'split')
     num_obj = args_latent.getint('Data', 'num_obj')
     num_views = args_latent.getint('Data', 'num_views')
-
+    print(base_path, test_class)
     models_train = sorted(glob.glob(os.path.join(base_path, test_class, 'train', '*_normalized.off')))
     models_test = sorted(glob.glob(os.path.join(base_path, test_class, 'test', '*_normalized.off')))
     # models_test = [m for m in models_test if not '_normalized' in m]
     # models_train = [m for m in models_train if not '_normalized' in m]
     # print models_train
     # print models_test[:10]
+    print(models_test)
     if split == 'train':
         dataset._kw['model_path'] = models_train[0:num_obj]
     elif split == 'test':

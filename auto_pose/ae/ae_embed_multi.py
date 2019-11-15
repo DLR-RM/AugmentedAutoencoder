@@ -21,6 +21,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_name")
     parser.add_argument('--at_step', default=None,  type=int, required=False)
+    parser.add_argument("-joint", action='store_true', default=False)
     parser.add_argument('--model_path', type=str, required=True)
     arguments = parser.parse_args()
     full_name = arguments.experiment_name.split('/')
@@ -29,10 +30,12 @@ def main():
     experiment_name = full_name.pop()
     experiment_group = full_name.pop() if len(full_name) > 0 else ''
     at_step = arguments.at_step
+    joint = arguments.joint
     model_path = arguments.model_path
 
     cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
+
 
     ckpt_dir = u.get_checkpoint_dir(log_dir)
     dataset_path = u.get_dataset_path(workspace_path)
@@ -44,6 +47,17 @@ def main():
 
     args = configparser.ConfigParser()
     args.read(cfg_file_path)
+    iteration = args.getint('Training', 'NUM_ITER') if at_step is None else at_step
+    
+    checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir, latest=iteration, joint=joint)
+    checkpoint_single_encoding = u.get_checkpoint_basefilename(log_dir, latest=iteration, model_path=model_path)
+    target_checkpoint_file = u.get_checkpoint_basefilename(log_dir, joint=True)
+
+    print checkpoint_file_basename
+    print target_checkpoint_file
+    print ckpt_dir
+    print '#'*20
+
 
     with tf.variable_scope(experiment_name):
         dataset = factory.build_dataset(dataset_path, args)
@@ -52,21 +66,12 @@ def main():
         # decoder = factory.build_decoder(queue.y, encoder, args)
         # ae = factory.build_ae(encoder, decoder, args)
         # before_cb = set(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES))
+        codebook_multi = factory.build_codebook_multi(encoder, dataset, args, checkpoint_file_basename)
         restore_saver = tf.train.Saver(save_relative_paths=True, max_to_keep=100)
-        codebook = factory.build_codebook(encoder, dataset, args)
+
+        codebook_multi.add_new_codebook_to_graph(model_path)
         # inters_vars = before_cb.intersection(set(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)))
         saver = tf.train.Saver(save_relative_paths=True, max_to_keep=100)
-
-    if at_step is None:
-        checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=args.getint('Training', 'NUM_ITER'))
-    else:
-        checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=at_step)
-
-    target_checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path)
-    print checkpoint_file_basename
-    print target_checkpoint_file
-    print ckpt_dir
-    print '#'*20
 
     batch_size = args.getint('Training', 'BATCH_SIZE')*len(eval(args.get('Paths', 'MODEL_PATH')))
     model = args.get('Dataset', 'MODEL')
@@ -92,15 +97,21 @@ def main():
         #     print 'No checkpoint found. Expected one in:\n'
         #     print '{}\n'.format(ckpt_dir)
         #     exit(-1)
+        try:
+            loaded_emb = tf.train.load_variable(checkpoint_single_encoding, experiment_name + '/embedding_normalized')
+            loaded_obj_bbs = tf.train.load_variable(checkpoint_single_encoding, experiment_name + '/embed_obj_bbs_var')
+        except:
+            loaded_emb = None
+            loaded_obj_bbs = None
 
         if model=='dsprites':
-            codebook.update_embedding_dsprites(sess, args)
+            codebook_multi.update_embedding_dsprites(sess, args)
         else:
-            codebook.update_embedding(sess, batch_size, model_path)
+            codebook_multi.update_embedding(sess, batch_size, model_path, loaded_emb=loaded_emb, loaded_obj_bbs=loaded_obj_bbs)
 
         print 'Saving new checkoint ..',
         
-        saver.save(sess, target_checkpoint_file, global_step=args.getint('Training', 'NUM_ITER') if at_step is None else at_step)
+        saver.save(sess, target_checkpoint_file, global_step=iteration)
 
         print 'done',
 

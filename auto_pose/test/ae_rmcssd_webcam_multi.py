@@ -7,7 +7,7 @@ import configparser
 import re
 import time
 
-from meshrenderer import meshrenderer_phong
+from auto_pose.meshrenderer import meshrenderer_phong
 from sixd_toolkit.pysixd import misc
 
 from auto_pose.ae import factory, utils

@@ -62,8 +62,11 @@ class Dataset(object):
 
     @lazy_property
     def renderer(self):
-        from meshrenderer import meshrenderer, meshrenderer_phong
-
+        from auto_pose.meshrenderer import meshrenderer, meshrenderer_phong
+        # print(eval(str(self._kw['model_path'])))
+        # print(int(self._kw['antialiasing']))
+        # print(self.dataset_path)
+        # print(float(self._kw['vertex_scale']))
         if self._kw['model'] == 'cad':
             renderer = meshrenderer.Renderer(
                eval(str(self._kw['model_path'])), 
@@ -216,7 +219,7 @@ class Dataset(object):
             K = np.array(K).reshape(3,3)
 
 
-        K[:2,2] = K[:2,2] / downSampledownSample
+        K[:2,2] = K[:2,2] / downSample
 
         clip_near = float(kw['clip_near'])
         clip_far = float(kw['clip_far'])
@@ -265,6 +268,7 @@ class Dataset(object):
         pad_factor = float(kw['pad_factor'])
         max_rel_offset = float(kw['max_rel_offset'])
         t = np.array([0, 0, float(kw['radius'])])
+        lighting = eval(kw['lighting']) if kw.has_key('lighting') else None
 
 
         widgets = ['Rendering Training Data: ', progressbar.Percentage(),
@@ -289,7 +293,8 @@ class Dataset(object):
                 t=t,
                 near=clip_near,
                 far=clip_far,
-                random_light=True
+                random_light=True,
+                phong = lighting
             )
             bgr_y, depth_y = self.renderer.render( 
                 obj_id=obj_id,
@@ -300,7 +305,8 @@ class Dataset(object):
                 t=t,
                 near=clip_near,
                 far=clip_far,
-                random_light=False
+                random_light=False,
+                phong = lighting
             )
             # render_time = time.time() - start_time
             # cv2.imshow('bgr_x',bgr_x)
@@ -336,6 +342,11 @@ class Dataset(object):
                 bgr_x = cv2.cvtColor(np.uint8(bgr_x), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
                 bgr_y = cv2.cvtColor(np.uint8(bgr_y), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
 
+            if kw.has_key('target_bg_color'):
+                depth_y = self.extract_square_patch(depth_y, obj_bb, pad_factor, resize=(W, H), interpolation=cv2.INTER_NEAREST)
+                mask_y = depth_y == 0.
+                bgr_y[mask_y] = eval(kw['target_bg_color'])
+                
             train_x = bgr_x.astype(np.uint8)
             mask_x = mask_x
             train_y = bgr_y.astype(np.uint8)
@@ -355,6 +366,7 @@ class Dataset(object):
         render_dims = eval(kw['render_dims'])
         K = eval(kw['k'])
         K = np.array(K).reshape(3,3)
+        lighting = eval(kw['lighting']) if kw.has_key('lighting') else None
 
         clip_near = float(kw['clip_near'])
         clip_far = float(kw['clip_far'])
@@ -374,7 +386,8 @@ class Dataset(object):
                 t=t,
                 near=clip_near,
                 far=clip_far,
-                random_light=False
+                random_light=False,
+                phong=lighting
             )
             # cv2.imshow('depth',depth_y)
             # cv2.imshow('bgr',bgr_y)

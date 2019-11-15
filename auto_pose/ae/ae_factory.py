@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
+from tensorflow.contrib.framework.python.framework import checkpoint_utils
+
 
 from dataset import Dataset
 from queue import Queue
@@ -7,7 +9,7 @@ from multi_queue import MultiQueue
 from ae import AE
 from encoder import Encoder
 from decoder import Decoder
-from codebook import Codebook
+from codebook_multi import Codebook
 
 def build_dataset(dataset_path, args):
     dataset_args = { k:v for k,v in 
@@ -149,7 +151,23 @@ def build_train_op(ae, args):
 
 def build_codebook(encoder, dataset, args):
     embed_bb = args.getboolean('Embedding', 'EMBED_BB')
+    from codebook import Codebook
     codebook = Codebook(encoder, dataset, embed_bb)
+    return codebook
+
+def build_codebook_multi(encoder, dataset, args, checkpoint_file_basename=None):
+    embed_bb = args.getboolean('Embedding', 'EMBED_BB')
+
+    existing_embs = []
+    if checkpoint_file_basename is not None:
+        var_list = checkpoint_utils.list_variables(checkpoint_file_basename)
+        for v in var_list:
+            if 'embedding_normalized_' in v[0]:
+                print(v)
+                existing_embs.append(v[0].split('/embedding_normalized_')[-1].split('.')[0])
+
+    print(existing_embs)
+    codebook = Codebook(encoder, dataset, embed_bb, existing_embs)
     return codebook
 
 def build_codebook_from_name(experiment_name, experiment_group='', return_dataset=False, return_decoder = False):

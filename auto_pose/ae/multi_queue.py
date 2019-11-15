@@ -30,6 +30,7 @@ class MultiQueue(object):
         self.max_off_brightness = eval(aug_args['max_off_brightness'])
         self.gaussian_blur = eval(aug_args['gaussian_blur'])
         self.invert = eval(aug_args['invert'])
+        self.invert_whole = eval(aug_args['invert_whole'])
         self._random_bg = eval(aug_args['random_bg'])
         self.occl = eval(aug_args['transparent_shape_occlusion'])
 
@@ -122,8 +123,8 @@ class MultiQueue(object):
         # change to load from numpy array
         background_imgs_dataset = tf.data.Dataset.from_tensor_slices(bg_paths)
         background_imgs_dataset = background_imgs_dataset.map(map_func=self.load_bg_imgs, num_parallel_calls = 4)
-        background_imgs_dataset = background_imgs_dataset.cache()
-        background_imgs_dataset = background_imgs_dataset.shuffle(self._dataset.noof_bg_imgs)
+        # background_imgs_dataset = background_imgs_dataset.cache()
+        background_imgs_dataset = background_imgs_dataset.shuffle(1000)
         background_imgs_dataset = background_imgs_dataset.repeat()
         background_imgs_dataset = background_imgs_dataset.prefetch(1)
 
@@ -146,12 +147,11 @@ class MultiQueue(object):
 
     def preprocess_pipeline(self, dataset):
         dataset = dataset.map(self.deserialize_tfrecord)  
-        dataset = dataset.shuffle(buffer_size=self._noof_training_imgs//self._num_objects)
+        dataset = dataset.shuffle(buffer_size=1000)#self._noof_training_imgs//self._num_objects)
         dataset = dataset.map(lambda train_x, mask_x, train_y : self._float_cast(train_x, mask_x, train_y))
         dataset = dataset.repeat()
         dataset = dataset.map(lambda train_x, mask_x, train_y : self._tf_augmentations(train_x, mask_x, train_y, self.bg_img_init.get_next()))
         dataset = dataset.batch(self._batch_size)
-
         # dataset = dataset.map(lambda train_x, mask_x, train_y : tuple(tf.py_func(self._dataset.preprocess_aae, 
         #                                                                         [train_x, mask_x, train_y], 
         #                                                                         [tf.uint8, tf.uint8, tf.uint8])))
@@ -163,7 +163,7 @@ class MultiQueue(object):
 
         background_img_paths = glob.glob(args.get('Paths','BACKGROUND_IMAGES_GLOB'))
 
-        background_img_paths = self._dataset.filter_voc_paths(background_img_paths)
+        #background_img_paths = self._dataset.filter_voc_paths(background_img_paths)
 
         self.create_background_image_iterator(background_img_paths)
         dsets = []
@@ -182,7 +182,7 @@ class MultiQueue(object):
             current_file_name = os.path.join(dataset_path, current_config_hash + '.tfrecord')
             tfrecord_dataset = tf.data.TFRecordDataset(current_file_name)
             dsets.append(self.preprocess_pipeline(tfrecord_dataset))
-
+            print(model)
         joint_dataset = tf.data.Dataset.zip(tuple(dsets))
         iterator = joint_dataset.make_initializable_iterator()
         self.next_element = iterator.get_next()

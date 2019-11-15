@@ -39,8 +39,6 @@ def main():
 
     full_name = arguments.experiment_name.split('/')
     
-
-
     experiment_name = full_name.pop()
     experiment_group = full_name.pop() if len(full_name) > 0 else ''
     
@@ -201,7 +199,7 @@ def main():
                     train_imgs = np.hstack(( u.tiles(this_x, 4, 4), u.tiles(reconstr_train, 4,4),u.tiles(this_y, 4, 4)))
                     cv2.imwrite(os.path.join(train_fig_dir,'training_images_%s.png' % i), train_imgs*255)
             else:
-
+                
                 this,_,reconstr_train  = sess.run([multi_queue.next_element,multi_queue.next_bg_element,[decoder.x for decoder in decoders]])
 
                 this_x = np.concatenate([el[0] for el in this])

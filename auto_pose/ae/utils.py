@@ -58,7 +58,7 @@ def get_train_config_exp_file_path(log_dir, experiment_name):
         '{}.cfg'.format(experiment_name)
     )
 
-def get_checkpoint_basefilename(log_dir, model_path=False, latest=False):
+def get_checkpoint_basefilename(log_dir, model_path=False, latest=False, joint=False):
     import glob
 
     file_name = os.path.join(
@@ -66,7 +66,8 @@ def get_checkpoint_basefilename(log_dir, model_path=False, latest=False):
         'checkpoints',
         'chkpt'
     )
-    
+    if joint:
+        file_name += '-joint'
     if model_path:
         file_name += '-' + os.path.basename(model_path).split('.')[0]
     if latest:

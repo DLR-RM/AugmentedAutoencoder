@@ -215,8 +215,6 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
                 print angle_off * 180 / np.pi
                 print random_t_pert
             
-            
-
             full_perturbed_view, _ = dataset.renderer.render(obj_id=i,
                                                     W=render_dims[0],
                                                     H=render_dims[1],
@@ -227,6 +225,7 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
                                                     far=clip_far,
                                                     random_light=False
                                                 )
+                                                
             init_perturbed_view = dataset.extract_square_patch(full_perturbed_view, target_bb, pad_factor)
             start_time = time.time()
 

@@ -8,7 +8,7 @@ import argparse
 import configparser 
 
 from auto_pose.ae import factory,utils
-from meshrenderer import meshrenderer
+from auto_pose.meshrenderer import meshrenderer
 
 
 def extract_square_patch(scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST):

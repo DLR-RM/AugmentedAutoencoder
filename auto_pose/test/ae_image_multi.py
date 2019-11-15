@@ -4,7 +4,7 @@ import numpy as np
 import glob
 import os
 import configparser
-from meshrenderer import meshrenderer_phong
+from auto_pose.meshrenderer import meshrenderer_phong
 from sixd_toolkit.pysixd import misc
 
 from auto_pose.ae import factory
