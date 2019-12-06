@@ -69,9 +69,6 @@ def main():
         os.makedirs(eval_dir)
     shutil.copy2(eval_cfg_file_path, eval_dir)
 
-
-    print eval_args
-
     codebook, dataset, decoder = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True, return_decoder = True)
     dataset.renderer
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.5)
@@ -81,14 +78,14 @@ def main():
     factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir, at_step=at_step)
     
 
-    if estimate_bbs:
-        #Object Detection, seperate from main
-        # sys.path.append('/net/rmc-lx0050/home_local/sund_ma/src/SSD_Tensorflow')
-        # from ssd_detector import SSD_detector
-        # #TODO: set num_classes, network etc.
-        # ssd = SSD_detector(sess, num_classes=31, net_shape=(300,300))
-        from rmcssd.bin import detector
-        ssd = detector.Detector(eval_args.get('BBOXES','CKPT'))
+    # if estimate_bbs:
+    #     #Object Detection, seperate from main
+    #     # sys.path.append('/net/rmc-lx0050/home_local/sund_ma/src/SSD_Tensorflow')
+    #     # from ssd_detector import SSD_detector
+    #     # #TODO: set num_classes, network etc.
+    #     # ssd = SSD_detector(sess, num_classes=31, net_shape=(300,300))
+    #     from rmcssd.bin import detector
+    #     ssd = detector.Detector(eval_args.get('BBOXES','CKPT'))
 
     
     t_errors = []
@@ -108,12 +105,14 @@ def main():
         if estimate_bbs:
             print eval_args.get('BBOXES','EXTERNAL')
             if eval_args.get('BBOXES','EXTERNAL') == 'False':
-                bb_preds = {}
-                for i,img in enumerate(test_imgs):
-                    print img.shape
-                    bb_preds[i] = ssd.detectSceneBBs(img, min_score=.2, nms_threshold=.45)
-                # inout.save_yaml(os.path.join(scene_res_dir,'bb_preds.yml'), bb_preds)
-                print bb_preds
+                # bb_preds = {}
+                # for i,img in enumerate(test_imgs):
+                #     print img.shape
+                #     bb_preds[i] = ssd.detectSceneBBs(img, min_score=.2, nms_threshold=.45)
+                # # inout.save_yaml(os.path.join(scene_res_dir,'bb_preds.yml'), bb_preds)
+                # print bb_preds
+                print('only externally loaded BBOXES suppported. Precompute and save them as yaml files.')
+                exit()
             else:
                 bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'),'{:02d}.yml'.format(scene_id)))
 
