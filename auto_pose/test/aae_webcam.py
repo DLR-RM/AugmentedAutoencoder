@@ -48,7 +48,7 @@ with tf.Session() as sess:
 
         R = codebook.nearest_rotation(sess, img)
         pred_view = dataset.render_rot(R,downSample = 1)
-        print R
+        print(R)
         cv2.imshow('resized webcam input', img)
         cv2.imshow('pred view rendered', pred_view)
         cv2.waitKey(1)

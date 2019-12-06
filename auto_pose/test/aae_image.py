@@ -28,8 +28,8 @@ else:
 
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 if workspace_path == None:
-    print 'Please define a workspace path:\n'
-    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    print('Please define a workspace path:\n')
+    print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
     exit(-1)
 log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
 ckpt_dir = utils.get_checkpoint_dir(log_dir)
@@ -46,7 +46,7 @@ with tf.Session() as sess:
         im = cv2.resize(im,(128,128))
 
         R = codebook.nearest_rotation(sess, im)
-        print R
+        print(R)
 
         pred_view = dataset.render_rot( R,downSample = 1)
     

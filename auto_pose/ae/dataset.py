@@ -476,7 +476,7 @@ class Dataset(object):
         batch_x[masks] = rand_vocs[masks]
 
         # random in-plane rotation, not necessary
-        # for i in xrange(batch_size):
+        # for i in range(batch_size):
         #   rot_angle= np.random.rand()*360
         #   cent = int(self.shape[0]/2)
         #   M = cv2.getRotationMatrix2D((cent,cent),rot_angle,1)

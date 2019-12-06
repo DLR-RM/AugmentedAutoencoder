@@ -62,7 +62,7 @@ class Renderer(object):
 
         # IBO
         sizes = [vert[0].shape[0] for vert in vert_norms]
-        offsets = [sum(sizes[:i]) for i in xrange(len(sizes))]
+        offsets = [sum(sizes[:i]) for i in range(len(sizes))]
 
         ibo = gu.IBO(sizes, np.ones(len(vert_norms)), offsets, np.zeros(len(vert_norms)))
         ibo.bind()
@@ -217,7 +217,7 @@ class Renderer(object):
         self.outline_shader.use()
 
         if self._samples > 1:
-            for i in xrange(2):
+            for i in range(2):
                 glNamedFramebufferReadBuffer(self._render_fbo.id, GL_COLOR_ATTACHMENT0 + i)
                 glNamedFramebufferDrawBuffer(self._fbo.id, GL_COLOR_ATTACHMENT0 + i)
                 glBlitNamedFramebuffer(self._render_fbo.id, self._fbo.id, 0, 0, W, H, 0, 0, W, H, GL_COLOR_BUFFER_BIT, GL_NEAREST)
