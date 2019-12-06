@@ -68,10 +68,10 @@ def main():
         print '{}\n'.format(cfg_file_path)
         exit(-1)
 
-    args = configparser.ConfigParser()
+    args = configparser.ConfigParser(inline_comment_prefixes="#")
     args.read(cfg_file_path)
 
-    args_latent = configparser.ConfigParser()
+    args_latent = configparser.ConfigParser(inline_comment_prefixes="#")
     args_latent.read(latent_cfg_file_path)
 
     if at_step is None:
@@ -93,11 +93,13 @@ def main():
     ######
     dataset_exp = args_latent.get('Data', 'dataset')
     base_path = args_latent.get('Data', 'base_path')
-    test_class = args_latent.get('Data', 'test_class')
     split = args_latent.get('Data', 'split')
     num_obj = args_latent.getint('Data', 'num_obj')
     num_views = args_latent.getint('Data', 'num_views')
-    print(base_path, test_class)
+    # print(base_path, test_class)
+    test_class = args_latent.get('Data', 'test_class')
+
+    # for test_class in test_classes:
     models_train = sorted(glob.glob(os.path.join(base_path, test_class, 'train', '*_normalized.off')))
     models_test = sorted(glob.glob(os.path.join(base_path, test_class, 'test', '*_normalized.off')))
     # models_test = [m for m in models_test if not '_normalized' in m]

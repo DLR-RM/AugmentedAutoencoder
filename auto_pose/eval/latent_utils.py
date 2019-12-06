@@ -142,6 +142,7 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
 
     num_obj = args_latent.getint('Data', 'num_obj')
     num_views = args_latent.getint('Data', 'num_views')
+    
     test_class = args_latent.get('Data', 'test_class')
 
     K = eval(dataset._kw['k'])
@@ -225,7 +226,7 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
                                                     far=clip_far,
                                                     random_light=False
                                                 )
-                                                
+
             init_perturbed_view = dataset.extract_square_patch(full_perturbed_view, target_bb, pad_factor)
             start_time = time.time()
 
@@ -338,18 +339,44 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
             print refine_R_3
             print refine_t_3
             print 'object: ', i
-            if args_latent.getboolean('Visualization','verbose'):
-                full_est_view_final, _ = dataset.renderer.render(obj_id=i,
-                                                                W=render_dims[0],
-                                                                H=render_dims[1],
-                                                                K=K.copy(),
-                                                                R=R_refined_refined_refined[0],
-                                                                t=t_refined_refined,
-                                                                near=clip_near,
-                                                                far=clip_far,
-                                                                random_light=False
-                                                                )
+            if args_latent.getboolean('Visualization', 'verbose'):
+                Rs = [R_refined, R_refined, R_refined_refined, R_refined_refined, R_refined_refined_refined]
+                ts = [random_t_pert, t_refined, t_refined, t_refined_refined, t_refined_refined]
 
+                est_views = [full_perturbed_view.copy()]
+                for R,t in zip(Rs,ts):
+                    est_view, _ = dataset.renderer.render(obj_id=i,
+                                                                    W=render_dims[0],
+                                                                    H=render_dims[1],
+                                                                    K=K.copy(),
+                                                                    R=R[0],
+                                                                    t=t,
+                                                                    near=clip_near,
+                                                                    far=clip_far,
+                                                                    random_light=False
+                                                                    )
+                    est_views.append(est_view)
+
+                for p, v in enumerate(est_views):
+                    full_target_view_copy = full_target_view.copy()
+                    start_edge = cv2.Canny(cv2.cvtColor(full_perturbed_view, cv2.COLOR_BGR2GRAY), 80, 200, apertureSize=3)
+                    end_edge = cv2.Canny(cv2.cvtColor(v, cv2.COLOR_BGR2GRAY), 80, 200, apertureSize=3)
+                    red_chan = full_target_view_copy[:, :, 2]
+                    green_chan = full_target_view_copy[:,:, 1]
+                    red_chan[start_edge > 0] = start_edge[start_edge>0]
+                    green_chan[(end_edge > 0) & (start_edge == 0)] = end_edge[(end_edge > 0) & (start_edge == 0)]
+                    full_target_view_copy[:,:, 1] = green_chan
+                    full_target_view_copy[:, :, 2] = red_chan
+
+                    # cv2.imshow('deep_im_vis', full_target_view_copy/255.)
+                    cv2.imwrite('/net/rmc-lx0314/home_local/sund_ma/autoencoder_ws/iccv_results/final3/%s_%s_%s_%s.png' % (test_class,i,j,p), full_target_view_copy)
+                    # cv2.waitKey(0)
+                    if p == 0:
+                        full_target_view_copy = full_target_view.copy()
+                        full_target_view_copy[:,:, 1] = red_chan
+                        # cv2.imshow('deep_im_vis', full_target_view_copy/255.)
+                        cv2.imwrite('/net/rmc-lx0314/home_local/sund_ma/autoencoder_ws/iccv_results/final3/%s_%s_%s_%s_init.png' % (test_class,i,j,p), full_target_view_copy)
+                        # cv2.waitKey(0)
                 # full_perturbed_view_3, _ = dataset.renderer.render(obj_id=i,
                 #                                                 W=render_dims[0],
                 #                                                 H=render_dims[1],
@@ -368,18 +395,6 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
                 # cv2.imshow('est_view_2', perturbed_view_3/255.)
                 # cv2.imshow('est_view_3', est_view_final/255.)
                 
-                start_edge = cv2.Canny(cv2.cvtColor(full_perturbed_view, cv2.COLOR_BGR2GRAY), 80, 200, apertureSize=3)
-                end_edge = cv2.Canny(cv2.cvtColor(full_est_view_final, cv2.COLOR_BGR2GRAY), 80, 200, apertureSize=3)
-                red_chan = full_target_view[:, :, 2]
-                green_chan = full_target_view[:, :, 1]
-                red_chan[start_edge > 0] = start_edge[start_edge>0]
-                green_chan[(end_edge > 0) & (start_edge == 0)] = end_edge[(end_edge > 0) & (start_edge == 0)]
-                full_target_view[:, :, 1] = green_chan
-                full_target_view[:, :, 2] = red_chan
-
-                cv2.imshow('deep_im_vis', full_target_view/255.)
-                cv2.imwrite('/net/rmc-lx0314/home_local/sund_ma/autoencoder_ws/iccv_results/%s_%s.png' % (i,j), full_target_view)
-                cv2.waitKey(0)
 
 
     return res_dict

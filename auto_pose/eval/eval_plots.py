@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D 
 from matplotlib2tikz import save as tikz_save
 import cv2
@@ -172,22 +173,28 @@ def plot_scene_with_3DBoxes(scene_res_dirs,dataset_name='tless',scene_id=1,save=
                 t_est = e['t']
                 K = scene_infos[view]['cam_K']
                 lines = renderer_line.render(obj_id-1,K,R_est,t_est,10,5000)
-                lines_mask = (np.sum(lines,axis=2) < 20)[:,:,None]
+                lines_mask_inv = (np.sum(lines,axis=2) < 20)[:,:,None]
+                lines_mask = lines_mask_inv == False
                 # img[lines>0] = lines[lines>0]
-                if obj_id % 7 == 1:
-                    lines[:,:,0] = lines[:,:,1] 
-                elif obj_id % 7 == 2:
-                    lines[:,:,2] = lines[:,:,1]
-                elif obj_id % 7 == 3:
-                    lines[:,:,0] = lines[:,:,1]
-                    lines[:,:,1] = lines[:,:,2]
 
-                img = lines_mask*img + lines
+                col = np.array(cm.hsv((obj_id-1)*8))[:3]
+
+                lines = col * np.dstack((lines_mask,lines_mask,lines_mask))
+
+                # if obj_id % 7 == 1:
+                #     lines[:,:,0] = lines[:,:,1] 
+                # elif obj_id % 7 == 2:
+                #     lines[:,:,2] = lines[:,:,1]
+                # elif obj_id % 7 == 3:
+                #     lines[:,:,0] = lines[:,:,1]
+                #     lines[:,:,1] = lines[:,:,2]
+
+                img = lines_mask_inv * img + (lines*255).astype(np.uint8)
             except:
                 print 'undeteceted obj: ', scene_dir
-        cv2.imshow('',img)
-        if cv2.waitKey(1) == 32:
-            cv2.waitKey(0)
+        # cv2.imshow('',img)
+        # if cv2.waitKey(1) == 32:
+        #     cv2.waitKey(0)
         if save:
             if 'icp' in scene_res_dirs:
 
