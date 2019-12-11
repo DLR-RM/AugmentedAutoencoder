@@ -27,4 +27,4 @@ proc_img, _ = detector.preprocess_image(dummy_img, 'rgb', dummy_img.dtype)
 
 #detection happens here:
 dets = detector.process(proc_img)
-print dets
+print(dets)

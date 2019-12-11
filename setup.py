@@ -15,7 +15,10 @@ setup(
                             'ae_embed = auto_pose.ae.ae_embed:main',
                             'ae_eval = auto_pose.eval.ae_eval:main',
                             'ae_test_embedding = auto_pose.test.ae_test_embedding:main',
-                            'ae_compare = auto_pose.eval.comparative_report:main']
+                            'ae_compare = auto_pose.eval.comparative_report:main'],
+	"m3vision.models": [
+                            "auto_pose = auto_pose.m3_interface.ae_pose_estimator:AePoseEstimator"
+                            ]
     },
     package_data={'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*', 'm3_interface/sample_data/*']},
     # include_package_data=True

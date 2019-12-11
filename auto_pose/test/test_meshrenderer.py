@@ -31,7 +31,7 @@ for i in xrange(100):
                 far = 10000,
                 random_light=False,
                 phong={'ambient':0.4, 'diffuse':0.8+0.2*np.random.rand(), 'specular':0.3+0.2*np.random.rand()})
-    print time.time() - st
+    print((time.time() - st))
 
     cv2.imshow('rgb',rgb)
     #### visualization ####

@@ -30,34 +30,34 @@ height = 720
 
 videoStream = WebcamVideoStream(0,width,height).start()
 
-print 'here'
+print('here')
 
 if arguments.s:
     out = cv2.VideoWriter('outpy.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (width,height))
 
-print 'here'
+print('here')
 ssd_name = arguments.ssd_name
 ssd = detector.Detector(os.path.join('/home_local/sund_ma/ssd_ws/checkpoints', ssd_name))
-print 'here'
+print('here')
 
 start_var_list =set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
-print 'here'
+print('here')
 
 codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
-print 'here'
+print('here')
 
 all_var_list = set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
 ae_var_list = all_var_list.symmetric_difference(start_var_list)
 saver = tf.train.Saver(ae_var_list)
-print 'here'
+print('here')
 
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
-print 'here'
+print('here')
 
 
 if workspace_path == None:
-    print 'Please define a workspace path:\n'
-    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    print('Please define a workspace path:\n')
+    print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
     exit(-1)
 log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
 ckpt_dir = utils.get_checkpoint_dir(log_dir)
@@ -134,7 +134,7 @@ while videoStream.isActive():
             ts.append(t.squeeze())
         # Rs = codebook.nearest_rotation(ssd.isess, ssd_imgs)
         ssd_rot_imgs = 0.3*np.ones_like(ssd_imgs)
-        print ts[0][2]
+        print((ts[0][2]))
 
 
         # for j,R in enumerate(Rs):
@@ -156,7 +156,7 @@ while videoStream.isActive():
             ts_flat[i]=ts[i].flatten()
 
         z_sort = np.argsort(ts_flat[:,2])
-        print z_sort
+        print(z_sort)
         for t,R in zip(ts_flat[z_sort[::-1]],Rs_flat[z_sort[::-1]]):
             bgr_y, depth_y  = dataset.renderer.render( 
                 obj_id=0,
@@ -190,7 +190,7 @@ while videoStream.isActive():
         cv2.imshow('img', img_show)
         cv2.waitKey(1)
     except:
-        print 'no frame'
+        print('no frame')
 if arguments.s:
     out.release()
 

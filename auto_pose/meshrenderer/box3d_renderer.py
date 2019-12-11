@@ -53,7 +53,7 @@ class Renderer(object):
             self.min_vert[obj_id] = np.min(vert_norm[0],axis=0)
             self.max_vert[obj_id] = np.max(vert_norm[0],axis=0)
 
-        print  self.min_vert,  self.max_vert
+        print((self.min_vert,  self.max_vert))
 
         vao = gu.VAO({(gu.Vertexbuffer(vertices), 0, 6*4):
                         [   (0, 3, GL_FLOAT, GL_FALSE, 0*4),

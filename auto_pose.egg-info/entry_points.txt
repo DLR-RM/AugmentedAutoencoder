@@ -1,0 +1,11 @@
+[console_scripts]
+ae_compare = auto_pose.eval.comparative_report:main
+ae_embed = auto_pose.ae.ae_embed:main
+ae_eval = auto_pose.eval.ae_eval:main
+ae_init_workspace = auto_pose.ae.ae_init_workspace:main
+ae_test_embedding = auto_pose.test.ae_test_embedding:main
+ae_train = auto_pose.ae.ae_train:main
+
+[m3vision.models]
+auto_pose = auto_pose.m3_interface.ae_pose_estimator:AePoseEstimator
+

@@ -45,8 +45,8 @@ else:
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
 if workspace_path == None:
-    print 'Please define a workspace path:\n'
-    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    print('Please define a workspace path:\n')
+    print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
     exit(-1)
 
 
@@ -132,7 +132,7 @@ for file in files:
             # if bb['class'] == 10 or bb['class'] == 9:
                 
             im_show =orig_im.copy()
-            print orig_im.shape
+            print((orig_im.shape))
             H,W = orig_im.shape[:2]
             x = int(W * bb['bbox']['minx'])
             y = int(H * bb['bbox']['miny'])

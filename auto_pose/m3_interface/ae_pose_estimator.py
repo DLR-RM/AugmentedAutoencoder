@@ -20,8 +20,8 @@ class AePoseEstimator(PoseEstInterface):
         workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
         if workspace_path == None:
-            print 'Please define a workspace path:\n'
-            print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+            print('Please define a workspace path:\n')
+            print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
             exit(-1)
 
         self._process_requirements = ['color_img', 'camK', 'bboxes']
@@ -31,7 +31,7 @@ class AePoseEstimator(PoseEstInterface):
         self._upright = test_args.getboolean('auto_pose','upright')
         self._topk = test_args.getint('auto_pose','topk')
         if self._topk > 1:
-            print 'ERROR: topk > 1 not implemented yet'
+            print('ERROR: topk > 1 not implemented yet')
             exit()
 
         self._image_format = {'color_format':test_args.get('auto_pose','color_format'), 
@@ -61,7 +61,7 @@ class AePoseEstimator(PoseEstInterface):
             log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
             ckpt_dir = utils.get_checkpoint_dir(log_dir)
             train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
-            print train_cfg_file_path
+            print(train_cfg_file_path)
             # train_cfg_file_path = utils.get_config_file_path(workspace_path, experiment_name, experiment_group)
             train_args = configparser.ConfigParser(inline_comment_prefixes="#")
             train_args.read(train_cfg_file_path)
@@ -141,15 +141,15 @@ class AePoseEstimator(PoseEstInterface):
             pred_clas = max(box.classes, key=box.classes.get)
 
             if not pred_clas in self.class_2_encoder:
-                print('%s not contained in config class_names %s' % (pred_clas, self.class_2_encoder.keys()))
+                print(('%s not contained in config class_names %s' % (pred_clas, self.class_2_encoder.keys())))
                 continue
 
             box_xywh = [box.xmin * W, box.ymin * H, (box.xmax - box.xmin) * W, (box.ymax - box.ymin) * H]
             if np.any(np.array(box_xywh) < 0):
-                print 'invalid bb', box_xywh
+                print(('invalid bb', box_xywh))
                 continue
 
-            print box_xywh
+            print(box_xywh)
             det_img = self.extract_square_patch(color_img, 
                                                 box_xywh, 
                                                 self.pad_factors[pred_clas],

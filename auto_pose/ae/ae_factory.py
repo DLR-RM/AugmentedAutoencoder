@@ -98,8 +98,8 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
     if workspace_path == None:
-        print 'Please define a workspace path:\n'
-        print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+        print('Please define a workspace path:\n')
+        print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
         exit(-1)
 
     import utils as u
@@ -114,7 +114,7 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
         args = configparser.ConfigParser(inline_comment_prefixes="#")
         args.read(cfg_file_path)
     else:
-        print 'ERROR: Config File not found: ', cfg_file_path
+        print(('ERROR: Config File not found: ', cfg_file_path))
         exit()
 
     with tf.variable_scope(experiment_name):
@@ -150,10 +150,10 @@ def restore_checkpoint(session, saver, ckpt_dir, at_step=None):
                 
                 if str(at_step) in str(ckpt_path):
                     saver.restore(session, ckpt_path)
-                    print 'restoring' , os.path.basename(ckpt_path)
+                    print(('restoring' , os.path.basename(ckpt_path)))
     else:
-        print 'No checkpoint found. Expected one in:\n'
-        print '{}\n'.format(ckpt_dir)
+        print('No checkpoint found. Expected one in:\n')
+        print(('{}\n'.format(ckpt_dir)))
         exit(-1)
 
         

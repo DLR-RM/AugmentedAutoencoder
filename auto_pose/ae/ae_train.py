@@ -19,8 +19,8 @@ def main():
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
     if workspace_path == None:
-        print 'Please define a workspace path:\n'
-        print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+        print('Please define a workspace path:\n')
+        print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
         exit(-1)
 
     gentle_stop = np.array((1,), dtype=np.bool)
@@ -51,8 +51,8 @@ def main():
     dataset_path = u.get_dataset_path(workspace_path)
     
     if not os.path.exists(cfg_file_path):
-        print 'Could not find config file:\n'
-        print '{}\n'.format(cfg_file_path)
+        print('Could not find config file:\n')
+        print(('{}\n'.format(cfg_file_path)))
         exit(-1)
         
     if not os.path.exists(ckpt_dir):
@@ -89,8 +89,8 @@ def main():
         dataset.load_bg_images(dataset_path)
 
     if generate_data:
-        print 'finished generating synthetic training data for ' + experiment_name
-        print 'exiting...'
+        print(('finished generating synthetic training data for ' + experiment_name))
+        print('exiting...')
         exit()
 
 
@@ -117,7 +117,7 @@ def main():
         
                 
         if not debug_mode:
-            print 'Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))
+            print(('Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))))
             bar.start()
         
         # print 'before starting queue'
@@ -159,8 +159,8 @@ def main():
         if not debug_mode:
             bar.finish()
         if not gentle_stop[0] and not debug_mode:
-            print 'To create the embedding run:\n'
-            print 'ae_embed {}\n'.format(full_name)
+            print('To create the embedding run:\n')
+            print(('ae_embed {}\n'.format(full_name)))
 
 if __name__ == '__main__':
     main()

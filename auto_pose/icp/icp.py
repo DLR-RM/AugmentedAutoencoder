@@ -169,21 +169,21 @@ class ICP():
         K_test_crop[1,2] = depth_crop.shape[1]/2
         real_depth_pts = misc.rgbd_to_point_cloud(K_test_crop,depth_crop)[0]
 
-        print 'noofpoints real/syn: ', len(real_depth_pts)
+        print(('noofpoints real/syn: ', len(real_depth_pts)))
         real_synmean_dist = np.linalg.norm(real_depth_pts-centroid_synthetic_pts,axis=1)
         real_depth_pts = real_depth_pts[real_synmean_dist < max_mean_dist_factor*max_mean_dist]
-        print 'noofpoints real/syn: ', len(real_depth_pts), len(synthetic_pts)
+        print(('noofpoints real/syn: ', len(real_depth_pts), len(synthetic_pts)))
 
-        print 'real min max x', np.min(real_depth_pts[:,0]), np.max(real_depth_pts[:,0])
-        print 'real min max y', np.min(real_depth_pts[:,1]), np.max(real_depth_pts[:,1])
-        print 'real min max z', np.min(real_depth_pts[:,2]), np.max(real_depth_pts[:,2])
-        print 'syn min max x', np.min(synthetic_pts[:,0]), np.max(synthetic_pts[:,0])
-        print 'syn min max y', np.min(synthetic_pts[:,1]), np.max(synthetic_pts[:,1])
-        print 'syn min max z', np.min(synthetic_pts[:,2]), np.max(synthetic_pts[:,2])
+        print(('real min max x', np.min(real_depth_pts[:,0]), np.max(real_depth_pts[:,0])))
+        print(('real min max y', np.min(real_depth_pts[:,1]), np.max(real_depth_pts[:,1])))
+        print(('real min max z', np.min(real_depth_pts[:,2]), np.max(real_depth_pts[:,2])))
+        print(('syn min max x', np.min(synthetic_pts[:,0]), np.max(synthetic_pts[:,0])))
+        print(('syn min max y', np.min(synthetic_pts[:,1]), np.max(synthetic_pts[:,1])))
+        print(('syn min max z', np.min(synthetic_pts[:,2]), np.max(synthetic_pts[:,2])))
 
 
         if len(real_depth_pts) < len(synthetic_pts)/8.:
-            print 'not enough visible points'
+            print('not enough visible points')
             R_refined = R_est
             t_refined = t_est
         else:

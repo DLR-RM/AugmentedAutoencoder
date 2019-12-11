@@ -39,8 +39,8 @@ saver = tf.train.Saver(ae_var_list)
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
 if workspace_path == None:
-    print 'Please define a workspace path:\n'
-    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    print('Please define a workspace path:\n')
+    print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
     exit(-1)
 
 log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
@@ -57,7 +57,7 @@ factory.restore_checkpoint(ssd.isess, saver, ckpt_dir)
 result_dict = {}
 
 files = glob.glob(os.path.join(str(folder_str),'*.png'))+glob.glob(os.path.join(str(folder_str),'*.jpeg'))
-print files
+print(files)
 width = 640
 height = 480
 
@@ -108,7 +108,7 @@ for file in files:
             ts.append(t.squeeze())
         # Rs = codebook.nearest_rotation(ssd.isess, ssd_imgs)
         ssd_rot_imgs = 0.3*np.ones_like(ssd_imgs)
-        print ts
+        print(ts)
 
         # idcs = np.argsort(rscores)
 
@@ -133,7 +133,7 @@ for file in files:
             ts_flat[i]=ts[i].flatten()
 
         z_sort = np.argsort(ts_flat[:,2])
-        print z_sort
+        print(z_sort)
         for t,R in zip(ts_flat[z_sort[::-1]],Rs_flat[z_sort[::-1]]):
             bgr_y, depth_y  = dataset.renderer.render( 
                 obj_id=0,

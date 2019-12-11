@@ -66,6 +66,6 @@ class Queue(object):
                 session.run(self.enqueue_op, feed_dict)
                 # print 'enqueued something'
             except tf.errors.CancelledError as e:
-                print 'worker was cancelled'
+                print('worker was cancelled')
                 pass
             

@@ -21,8 +21,8 @@ args = parser.parse_args()
 
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 if workspace_path == None:
-    print 'Please define a workspace path:\n'
-    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    print('Please define a workspace path:\n')
+    print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
     exit(-1)
 
 
@@ -48,14 +48,14 @@ ae_pose_est = AePoseEstimator(os.path.join(workspace_path,'cfg_m3vision/test_con
 pose_ests = ae_pose_est.process([bb2],img,camK,depth_img=depth_img)
 
 try:
-    print pose_ests[0].trafo
+    print((pose_ests[0].trafo))
 except:
-    print 'nothing detected'
+    print('nothing detected')
 if args.vis:
     ply_model_paths = [str(train_args.get('Paths','MODEL_PATH')) for train_args in ae_pose_est.all_train_args]
     cad_reconst = [str(train_args.get('Dataset','MODEL')) for train_args in ae_pose_est.all_train_args]
-    print cad_reconst
-    print ply_model_paths
+    print(cad_reconst)
+    print(ply_model_paths)
     from meshrenderer import meshrenderer, meshrenderer_phong
     if all([model == 'cad' for model in cad_reconst]):   
         renderer = meshrenderer.Renderer(ply_model_paths, 

@@ -47,7 +47,7 @@ with tf.Session() as sess:
         files = glob.glob(os.path.join(str(file_str),'*.png'))+glob.glob(os.path.join(str(file_str),'*.jpg'))+glob.glob(os.path.join(str(file_str),'*.pgm'))
     else:
         files = [file_str]
-    print files
+    print(files)
     for file in files*10:
 
         im = cv2.imread(file)
@@ -68,13 +68,13 @@ with tf.Session() as sess:
             im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)[:,:,None]
         st = time.time()
         R = codebook.nearest_rotation(sess, im)
-        print time.time()-st
+        print((time.time()-st))
         pred_view = dataset.render_rot( R ,downSample = 1)
         
         
         cv2.imshow('resized img', cv2.resize(im/255.,(256,256)))
         cv2.imshow('pred_view', cv2.resize(pred_view,(256,256)))
-        print R
+        print(R)
         cv2.waitKey(0)
 
 
