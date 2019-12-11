@@ -44,7 +44,10 @@ def load_meshes_sixd( obj_files, vertex_tmp_store_folder , recalculate_normals=F
 
 
 def load_meshes(obj_files, vertex_tmp_store_folder, recalculate_normals=False):
-    hashed_file_name = hashlib.md5( ''.join(obj_files) + 'load_meshes' + str(recalculate_normals).encode('utf-8') ).hexdigest() + '.npy'
+    md5_string = str(''.join(obj_files) + 'load_meshes' + str(recalculate_normals))
+    md5_string = md5_string.encode('utf-8')
+    hashed_file_name = hashlib.md5(md5_string).hexdigest() + '.npy'
+    #hashed_file_name = hashlib.md5( ''.join(obj_files) + 'load_meshes' + str(recalculate_normals).encode('utf-8') ).hexdigest() + '.npy'
 
     out_file = os.path.join( vertex_tmp_store_folder, hashed_file_name)
     if os.path.exists(out_file):
