@@ -3,7 +3,7 @@ import os
 import glob
 import shutil
 
-import utils as u
+from . import utils as u
 
 def main():
 

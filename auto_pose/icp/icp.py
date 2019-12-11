@@ -2,7 +2,7 @@ import os
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from auto_pose.ae.pysixd_stuff import transform, misc
-from renderer import SynRenderer
+from .renderer import SynRenderer
 
 # Constants
 N = 3000                                 # number of random points in the dataset

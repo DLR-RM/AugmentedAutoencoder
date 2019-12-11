@@ -31,14 +31,14 @@ class MultiQueue(object):
         self.invert = eval(aug_args['invert'])
         self.occl = eval(aug_args['transparent_shape_occlusion'])
 
-        print(self.zoom_range)
-        print(self.g_noise) 
-        print(self.contrast_norm_range)
-        print(self.mult_brightness)
-        print(self.max_off_brightness)
-        print(self.gaussian_blur)
-        print(self.invert)
-        print(self.occl)
+        print((self.zoom_range))
+        print((self.g_noise)) 
+        print((self.contrast_norm_range))
+        print((self.mult_brightness))
+        print((self.max_off_brightness))
+        print((self.gaussian_blur))
+        print((self.invert))
+        print((self.occl))
     
         self.bg_img_init = None
         self.next_bg_element = None
@@ -81,9 +81,9 @@ class MultiQueue(object):
                 writer = tf.python_io.TFRecordWriter(current_file_name)
                 self._dataset.render_training_images(serialize_func = self.serialize_tfrecord, obj_id = m, tfrec_writer = writer)
                 writer.close()
-                print('generated tfrecord for training images', model)
+                print(('generated tfrecord for training images', model))
             else:
-                print('tfrecord exists for', model)
+                print(('tfrecord exists for', model))
 
     def _tf_augmentations(self, train_x, mask_x, train_y, bg):
         # train_x = add_black_patches(train_x)
@@ -121,7 +121,7 @@ class MultiQueue(object):
         self.next_bg_element = self.bg_img_init.get_next()
 
     def _float_cast(self, train_x, mask_x, train_y):
-        print('here', 100*'g')
+        print(('here', 100*'g'))
         train_x = tf.image.convert_image_dtype(train_x,tf.float32)
         train_y = tf.image.convert_image_dtype(train_y,tf.float32)
         return (train_x, mask_x, train_y)

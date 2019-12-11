@@ -5,8 +5,8 @@ import numpy as np
 import tensorflow as tf
 import progressbar
 
-from utils import lazy_property
-import utils as u
+from .utils import lazy_property
+from . import utils as u
 
 
 class Codebook(object):

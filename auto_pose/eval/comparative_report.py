@@ -153,7 +153,7 @@ def main():
 					'top': topn, 'sixd_recall': auc_rerect, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 					'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
 
-				if not data_paper_auc.has_key(int(data[3])):
+				if int(data[3]) not in data_paper_auc:
 					data_paper_auc[int(data[3])] = {}
 					data_paper_auc[int(data[3])]['eval_obj'] = int(data[3])
 				data_paper_auc[int(data[3])][eval_name+'_'+'auc_re'+'_'+str(data[1]) + occl] = float(auc_re)*100
@@ -169,7 +169,7 @@ def main():
 			data_vsd.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': int(data[3]) if '[' not in data[3] else eval(data[3])[0]})
-			if not data_paper_vsd.has_key(int(data[3])):
+			if int(data[3]) not in data_paper_vsd:
 				data_paper_vsd[int(data[3])] = {}
 				data_paper_vsd[int(data[3])]['eval_obj'] = int(data[3])
 			data_paper_vsd[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1]) + occl] = float(sixd_recall)*100
@@ -183,7 +183,7 @@ def main():
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
 			if int(data[3]) not in [3,7]:
-				if not data_paper_add.has_key(int(data[3])):
+				if int(data[3]) not in data_paper_add:
 					data_paper_add[int(data[3])] = {}
 					data_paper_add[int(data[3])]['eval_obj'] = int(data[3])
 				data_paper_add[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1]) + occl] = float(sixd_recall)*100
@@ -197,7 +197,7 @@ def main():
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
 			if int(data[3]) not in [3,7]:
-				if not data_paper_adi.has_key(int(data[3])):
+				if int(data[3]) not in data_paper_adi:
 					data_paper_adi[int(data[3])] = {}
 					data_paper_adi[int(data[3])]['eval_obj'] = int(data[3])
 				data_paper_adi[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1]) + occl] = float(sixd_recall)*100

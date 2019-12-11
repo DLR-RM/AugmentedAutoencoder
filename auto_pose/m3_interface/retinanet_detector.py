@@ -34,7 +34,7 @@ class RetinaNetDetector(BoundingBoxDetector):
             self._modelpath = modelpath
         else:
             self._params = self.get_params(config)
-            if self._params.has_key('model_path'):
+            if 'model_path' in self._params:
                 self._modelpath = self._params['model_path']
             else:
                 self._modelpath = modelpath

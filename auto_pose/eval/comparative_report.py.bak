@@ -159,7 +159,7 @@ def main():
 				data_paper_auc[int(data[3])][eval_name+'_'+'auc_re'+'_'+str(data[1]) + occl] = float(auc_re)*100
 				data_paper_auc[int(data[3])][eval_name+'_'+'auc_rerect'+'_'+str(data[1])+ occl] = float(auc_rerect)*100
 			except:
-				print(err_file, 'not found')
+				print((err_file, 'not found'))
 			
 		elif error_type=='te':
 			data_te.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
@@ -202,7 +202,7 @@ def main():
 					data_paper_adi[int(data[3])]['eval_obj'] = int(data[3])
 				data_paper_adi[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1]) + occl] = float(sixd_recall)*100
 		else:
-			print('error not known: ', error_type)
+			print(('error not known: ', error_type))
 
 
 	

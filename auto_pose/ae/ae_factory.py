@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 
-from dataset import Dataset
-from queue import Queue
-from ae import AE
-from encoder import Encoder
-from decoder import Decoder
-from codebook import Codebook
+from .dataset import Dataset
+from .queue import Queue
+from .ae import AE
+from .encoder import Encoder
+from .decoder import Decoder
+from .codebook import Codebook
 
 def build_dataset(dataset_path, args):
     dataset_args = { k:v for k,v in 
@@ -102,7 +102,7 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
         print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
         exit(-1)
 
-    import utils as u
+    from . import utils as u
     import tensorflow as tf
 
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)

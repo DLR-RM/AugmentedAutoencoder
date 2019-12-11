@@ -8,9 +8,9 @@ import os
 import progressbar
 import cv2
 
-from pysixd_stuff import transform
-from pysixd_stuff import view_sampler
-from utils import lazy_property
+from .pysixd_stuff import transform
+from .pysixd_stuff import view_sampler
+from .utils import lazy_property
 
 
 class Dataset(object):
@@ -40,8 +40,8 @@ class Dataset(object):
     def viewsphere_for_embedding(self):
         kw = self._kw
         num_cyclo = int(kw['num_cyclo'])
-        azimuth_range = eval(kw['azimuth_range']) if kw.has_key('azimuth_range') else (0, 2 * np.pi)
-        elev_range = eval(kw['elev_range']) if kw.has_key('elev_range') else (-0.5 * np.pi, 0.5 * np.pi)
+        azimuth_range = eval(kw['azimuth_range']) if 'azimuth_range' in kw else (0, 2 * np.pi)
+        elev_range = eval(kw['elev_range']) if 'elev_range' in kw else (-0.5 * np.pi, 0.5 * np.pi)
         views, _ = view_sampler.sample_views(
             int(kw['min_n_views']), 
             float(kw['radius']), 
@@ -230,7 +230,7 @@ class Dataset(object):
         clip_far = float(kw['clip_far'])
         pad_factor = float(kw['pad_factor'])
         max_rel_offset = float(kw['max_rel_offset'])
-        lighting = eval(kw['lighting']) if kw.has_key('lighting') else None
+        lighting = eval(kw['lighting']) if 'lighting' in kw else None
         t = np.array([0, 0, float(kw['radius'])])
 
 
@@ -318,7 +318,7 @@ class Dataset(object):
                 bgr_y = cv2.cvtColor(np.uint8(bgr_y), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
 
 
-            if kw.has_key('target_bg_color'):
+            if 'target_bg_color' in kw:
                 depth_y = self.extract_square_patch(depth_y, obj_bb, pad_factor, resize=(W, H), interpolation=cv2.INTER_NEAREST)
                 mask_y = depth_y == 0.
                 bgr_y[mask_y] = eval(kw['target_bg_color'])

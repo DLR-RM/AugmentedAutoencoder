@@ -132,7 +132,7 @@ for file in files:
             # if bb['class'] == 10 or bb['class'] == 9:
                 
             im_show =orig_im.copy()
-            print(orig_im.shape)
+            print((orig_im.shape))
             H,W = orig_im.shape[:2]
             x = int(W * bb['bbox']['minx'])
             y = int(H * bb['bbox']['miny'])

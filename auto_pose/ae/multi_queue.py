@@ -2,7 +2,7 @@
 
 import tensorflow as tf
 
-from utils import lazy_property
+from .utils import lazy_property
 from image_augmentation_functions import *
 import time
 import hashlib

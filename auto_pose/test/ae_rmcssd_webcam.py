@@ -10,7 +10,7 @@ from auto_pose.eval import eval_utils
 
 import argparse
 import rmcssd.bin.detector as detector
-from webcam_video_stream import WebcamVideoStream
+from .webcam_video_stream import WebcamVideoStream
 
 
 parser = argparse.ArgumentParser()

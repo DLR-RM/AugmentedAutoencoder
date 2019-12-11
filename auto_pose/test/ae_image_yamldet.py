@@ -115,7 +115,7 @@ K_test = np.array([[2730.3754266211604,0.0,960.0],[0.0,2730.3754266211604,600.0]
 for file in files:
     orig_im = cv2.imread(file)
     
-    if bb_dicts.has_key(os.path.basename(file).split('png')[0]):
+    if os.path.basename(file).split('png')[0] in bb_dicts:
         bb_dict = bb_dicts[os.path.basename(file).split('png')[0]]
 
         Rs = []

@@ -52,7 +52,7 @@ def main():
     
     if not os.path.exists(cfg_file_path):
         print('Could not find config file:\n')
-        print('{}\n'.format(cfg_file_path))
+        print(('{}\n'.format(cfg_file_path)))
         exit(-1)
         
     if not os.path.exists(ckpt_dir):
@@ -89,7 +89,7 @@ def main():
         dataset.load_bg_images(dataset_path)
 
     if generate_data:
-        print('finished generating synthetic training data for ' + experiment_name)
+        print(('finished generating synthetic training data for ' + experiment_name))
         print('exiting...')
         exit()
 
@@ -117,7 +117,7 @@ def main():
         
                 
         if not debug_mode:
-            print('Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH')))
+            print(('Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))))
             bar.start()
         
         # print 'before starting queue'
@@ -160,7 +160,7 @@ def main():
             bar.finish()
         if not gentle_stop[0] and not debug_mode:
             print('To create the embedding run:\n')
-            print('ae_embed {}\n'.format(full_name))
+            print(('ae_embed {}\n'.format(full_name)))
 
 if __name__ == '__main__':
     main()

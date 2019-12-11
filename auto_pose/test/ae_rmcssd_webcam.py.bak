@@ -134,7 +134,7 @@ while videoStream.isActive():
             ts.append(t.squeeze())
         # Rs = codebook.nearest_rotation(ssd.isess, ssd_imgs)
         ssd_rot_imgs = 0.3*np.ones_like(ssd_imgs)
-        print(ts[0][2])
+        print((ts[0][2]))
 
 
         # for j,R in enumerate(Rs):

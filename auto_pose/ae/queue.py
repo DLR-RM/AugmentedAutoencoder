@@ -4,7 +4,7 @@ import threading
 
 import tensorflow as tf
 
-from utils import lazy_property
+from .utils import lazy_property
 import time
 
 class Queue(object):

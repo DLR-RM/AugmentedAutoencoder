@@ -42,7 +42,7 @@ def plot_reconstruction_test_batch(sess, codebook, decoder, test_img_crops, noof
     i=0
     j=0
     while i < 16:
-        if test_img_crops[sample_views[j]].has_key(obj_id):
+        if obj_id in test_img_crops[sample_views[j]]:
             sample_batch.append(test_img_crops[sample_views[j]][obj_id][0])
             i += 1
         j += 1
@@ -757,7 +757,7 @@ def animate_embedding_path(z_test):
 def main():
     import argparse
     import configparser
-    import eval_utils
+    from . import eval_utils
     parser = argparse.ArgumentParser()
     
     parser.add_argument('experiment_name')

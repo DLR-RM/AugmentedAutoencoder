@@ -8,7 +8,7 @@ import os
 
 from auto_pose.ae import factory
 from auto_pose.ae import utils as u
-from webcam_video_stream import WebcamVideoStream
+from .webcam_video_stream import WebcamVideoStream
 
 # def initializeWebcam(width, height):
 #     #initialise pygame   
