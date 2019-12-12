@@ -73,8 +73,9 @@ class MultiQueue(object):
     def create_tfrecord_training_images(self, dataset_path, args):
 
         for m,model in enumerate(self._model_paths):
-
-            current_config_hash = hashlib.md5(str(args.items('Dataset')) + model).hexdigest()
+            md5_string = str(str(args.items('Dataset')) + model)
+            md5_string = md5_string.encode('utf-8')
+            current_config_hash = hashlib.md5(md5_string).hexdigest()
             current_file_name = os.path.join(dataset_path, current_config_hash + '.tfrecord')
             
             if not os.path.exists(current_file_name):

@@ -35,7 +35,7 @@ class Decoder(object):
 
         h, w, c = self._reconstruction_target.get_shape().as_list()[1:]
         print((h,w,c))
-        layer_dimensions = [ [h/np.prod(self._strides[i:]), w/np.prod(self._strides[i:])]  for i in range(len(self._strides))]
+        layer_dimensions = [ [h//np.prod(self._strides[i:]), w//np.prod(self._strides[i:])]  for i in range(len(self._strides))]
         print(layer_dimensions)
         x = tf.layers.dense(
             inputs=self._latent_code,
@@ -97,7 +97,7 @@ class Decoder(object):
                     x_flat,
                     reduction=tf.losses.Reduction.NONE
                 )
-                l2_val,_ = tf.nn.top_k(l2,k=l2.shape[1]/self._bootstrap_ratio)
+                l2_val,_ = tf.nn.top_k(l2,k=l2.shape[1]//self._bootstrap_ratio)
                 loss = tf.reduce_mean(l2_val)
             else:
                 loss = tf.losses.mean_squared_error (

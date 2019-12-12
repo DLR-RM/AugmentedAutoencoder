@@ -27,6 +27,7 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
     H = train_args.getint('Dataset','H')
 
     cfg_string = str([scene_id] + eval_args.items('DATA') + eval_args.items('BBOXES') + [H])
+    cfg_string = cfg_string.encode('utf-8')
     current_config_hash = hashlib.md5(cfg_string).hexdigest()
 
     current_file_name = os.path.join(dataset_path, current_config_hash + '.npz')
