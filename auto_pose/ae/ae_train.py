@@ -11,8 +11,14 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import progressbar
 import tensorflow as tf
 
-from . import ae_factory as factory
-from . import utils as u
+from auto_pose.ae import ae_factory as factory
+from auto_pose.ae import utils as u
+
+try:
+    range = xrange
+except NameError:
+    # when running on Python3
+    pass
 
 
 def main():
@@ -111,7 +117,6 @@ def main():
             saver.restore(sess, chkpt.model_checkpoint_path)
         else:
             sess.run(tf.global_variables_initializer())
-
         merged_loss_summary = tf.summary.merge_all()
         summary_writer = tf.summary.FileWriter(ckpt_dir, sess.graph)
         
@@ -120,9 +125,7 @@ def main():
             print(('Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))))
             bar.start()
         
-        # print 'before starting queue'
         queue.start(sess)
-        # print 'after starting queue'
         for i in range(ae.global_step.eval(), num_iter):
             if not debug_mode:
                 # print 'before optimize'
@@ -141,6 +144,7 @@ def main():
                     train_imgs = np.hstack(( u.tiles(this_x, 4, 4), u.tiles(reconstr_train, 4,4),u.tiles(this_y, 4, 4)))
                     cv2.imwrite(os.path.join(train_fig_dir,'training_images_%s.png' % i), train_imgs*255)
             else:
+                print("getting x, y")
                 this_x, this_y = sess.run([queue.x, queue.y])
                 reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
                 # print np.min(this_x), np.max(this_x)
@@ -154,7 +158,7 @@ def main():
             if gentle_stop[0]:
                 break
 
-
+        print("Oficially stopping queue")
         queue.stop(sess)
         if not debug_mode:
             bar.finish()

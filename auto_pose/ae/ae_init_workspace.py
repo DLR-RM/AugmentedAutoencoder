@@ -5,6 +5,12 @@ import shutil
 
 from . import utils as u
 
+try:
+    range = xrange
+except NameError:
+    # when running on Python3
+    pass
+
 def main():
 
 	workspace_path = os.environ.get('AE_WORKSPACE_PATH')

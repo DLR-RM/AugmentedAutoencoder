@@ -15,7 +15,6 @@ def load(filename):
     return mesh.vertices, mesh.normals, mesh.texturecoords[0,:,:2]
 
 def load_meshes_sixd( obj_files, vertex_tmp_store_folder , recalculate_normals=False):
-    from . import inout
     md5_string = str(''.join(obj_files) + 'load_meshes' + str(recalculate_normals))
     md5_string = md5_string.encode('utf-8')
     hashed_file_name = hashlib.md5(md5_string).hexdigest() + '.npy'
@@ -45,6 +44,7 @@ def load_meshes_sixd( obj_files, vertex_tmp_store_folder , recalculate_normals=F
 
 
 def load_meshes(obj_files, vertex_tmp_store_folder, recalculate_normals=False):
+    from . import inout
     md5_string = str(''.join(obj_files) + 'load_meshes' + str(recalculate_normals))
     md5_string = md5_string.encode('utf-8') # ('utf-8')
     hashed_file_name = hashlib.md5(md5_string).hexdigest() + '.npy'
