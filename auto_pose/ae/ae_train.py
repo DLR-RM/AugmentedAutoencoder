@@ -18,7 +18,7 @@ from . import utils as u
 def main():
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
-    if workspace_path == None:
+    if workspace_path is None:
         print('Please define a workspace path:\n')
         print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
         exit(-1)

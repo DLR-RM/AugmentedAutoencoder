@@ -186,7 +186,7 @@ class Dataset(object):
         render_dims = eval(kw['render_dims'])
         K = eval(kw['k'])
         K = np.array(K).reshape(3,3)
-        K[:2,:] = K[:2,:] / downSample
+        K[:2,:] = K[:2,:] // downSample
 
         clip_near = float(kw['clip_near'])
         clip_far = float(kw['clip_far'])
@@ -196,8 +196,8 @@ class Dataset(object):
 
         bgr_y, depth_y = self.renderer.render( 
             obj_id=0,
-            W=render_dims[0]/downSample, 
-            H=render_dims[1]/downSample,
+            W=render_dims[0]//downSample, 
+            H=render_dims[1]//downSample,
             K=K.copy(), 
             R=R, 
             t=t,
@@ -212,10 +212,10 @@ class Dataset(object):
             x, y, w, h = obj_bb
 
             size = int(np.maximum(h, w) * pad_factor)
-            left = x+w/2-size/2
-            right = x+w/2+size/2
-            top = y+h/2-size/2
-            bottom = y+h/2+size/2
+            left = x+w//2-size//2
+            right = x+w//2+size//2
+            top = y+h//2-size//2
+            bottom = y+h//2+size//2
 
             bgr_y = bgr_y[top:bottom, left:right]
         except:
@@ -385,10 +385,10 @@ class Dataset(object):
         x, y, w, h = np.array(bb_xywh).astype(np.int32)
         size = int(np.maximum(h, w) * pad_factor)
         
-        left = np.maximum(x+w/2-size/2, 0)
-        right = x+w/2+size/2
-        top = np.maximum(y+h/2-size/2, 0)
-        bottom = y+h/2+size/2
+        left = np.maximum(x+w//2-size//2, 0)
+        right = x+w//2+size//2
+        top = np.maximum(y+h//2-size//2, 0)
+        bottom = y+h//2+size//2
 
         scene_crop = scene_img[top:bottom, left:right].copy()
 
@@ -503,7 +503,7 @@ class Dataset(object):
         # random in-plane rotation, not necessary
         # for i in xrange(batch_size):
         #   rot_angle= np.random.rand()*360
-        #   cent = int(self.shape[0]/2)
+        #   cent = int(self.shape[0]//2)
         #   M = cv2.getRotationMatrix2D((cent,cent),rot_angle,1)
         #   batch_x[i] = cv2.warpAffine(batch_x[i],M,self.shape[:2])[:,:,np.newaxis]
         #   batch_y[i] = cv2.warpAffine(batch_y[i],M,self.shape[:2])[:,:,np.newaxis]
