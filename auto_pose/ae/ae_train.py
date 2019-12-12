@@ -123,7 +123,7 @@ def main():
         # print 'before starting queue'
         queue.start(sess)
         # print 'after starting queue'
-        for i in xrange(ae.global_step.eval(), num_iter):
+        for i in range(ae.global_step.eval(), num_iter):
             if not debug_mode:
                 # print 'before optimize'
                 sess.run(train_op)

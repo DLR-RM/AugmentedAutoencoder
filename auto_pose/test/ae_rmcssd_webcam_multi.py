@@ -120,7 +120,7 @@ while videoStream.isActive():
     rclasses, rscores, rbboxes = ssd.process(img,select_threshold=0.4,nms_threshold=.5)
     print(rclasses)
 
-    ssd_boxes = [ (int(rbboxes[i][0]*H), int(rbboxes[i][1]*W), int(rbboxes[i][2]*H), int(rbboxes[i][3]*W)) for i in xrange(len(rbboxes))]
+    ssd_boxes = [ (int(rbboxes[i][0]*H), int(rbboxes[i][1]*W), int(rbboxes[i][2]*H), int(rbboxes[i][3]*W)) for i in range(len(rbboxes))]
     ssd_imgs = np.empty((len(rbboxes),) + (h_train,w_train,c))
 
     #print vis_img.shape
@@ -226,7 +226,7 @@ while videoStream.isActive():
             # cv2.imshow('render6D',img_show)
 
 
-        for i in xrange(len(rscores)):
+        for i in range(len(rscores)):
             if not rclasses[i] in class_i_mapping:
                 continue
             score = rscores[i]

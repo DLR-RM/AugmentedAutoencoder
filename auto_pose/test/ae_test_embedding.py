@@ -47,9 +47,9 @@ def main():
     idcs_random = []
     idcs_random_scale = np.arange(1024*40+512+16,1024*80,1024)
     idcs_orig = np.arange(1024*200+512+16,1024*240,1024)
-    for i in xrange(200,240):
+    for i in range(200,240):
         idcs_random_trans.append(np.random.randint(i*1024,(i+1)*1024))
-    for i in xrange(40):
+    for i in range(40):
         s = np.random.randint(0,6)
         idcs_random.append(np.random.randint((s*40+i)*1024,(s*40+i+1)*1024))
 

@@ -37,7 +37,7 @@ class Queue(object):
     def start(self, session):
         assert len(self._threads) == 0
         tf.train.start_queue_runners(session, self._coordinator)
-        for _ in xrange(self._num_threads):
+        for _ in range(self._num_threads):
             thread = threading.Thread(
                         target=Queue.__run__, 
                         args=(self, session)

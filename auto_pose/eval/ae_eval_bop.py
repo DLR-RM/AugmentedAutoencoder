@@ -158,7 +158,7 @@ def main():
         if not os.path.exists(scene_res_dir):
             os.makedirs(scene_res_dir)
 
-        for view in xrange(noof_scene_views):
+        for view in range(noof_scene_views):
             try:
                 test_crops, test_crops_depth, test_bbs, test_scores, test_visibs = eval_utils.select_img_crops(test_img_crops[view][obj_id], 
                                                                                                                test_img_depth_crops[view][obj_id] if icp else None,
@@ -196,7 +196,7 @@ def main():
 
                 if eval_args.getboolean('EVALUATION','gt_trans'):
                     ts_est = np.empty((top_nn,3))
-                    for n in xrange(top_nn):
+                    for n in range(top_nn):
                         smallest_diff = np.inf
                         for visib_gt,gt in zip(visib_gts[view],gts[view]):
                             if gt['obj_id'] == obj_id:
@@ -220,7 +220,7 @@ def main():
                 # icp = False if view<350 else True
                 #TODO: 
                 Rs_est_old, ts_est_old = Rs_est.copy(), ts_est.copy()
-                for p in xrange(top_nn):
+                for p in range(top_nn):
                     if icp:
                         start = time.time()
                         # depth icp

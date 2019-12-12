@@ -19,7 +19,7 @@ renderer = meshrenderer_phong.Renderer(['/volume/pekdat/datasets/public/YCB_Vide
               vertex_tmp_store_folder='.',
               vertex_scale=float(1000))
 
-for i in xrange(100):
+for i in range(100):
     st = time.time()
     rgb, depth = renderer.render(obj_id = 0,
                 W = 1920,

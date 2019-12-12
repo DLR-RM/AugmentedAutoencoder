@@ -133,7 +133,7 @@ def plot_scene_with_3DBoxes(scene_res_dirs,dataset_name='tless',scene_id=1,save=
     scene_dirs = [d for d in scene_result_dirs if '%02d' % scene_id == d.split('/')[-1]]
     print(scene_dirs)
 
-    for view in xrange(len(scene_infos)):
+    for view in range(len(scene_infos)):
         sixd_img_path = data_params['test_rgb_mpath'].format(scene_id,view)
         img = cv2.imread(sixd_img_path)
         box_img = img.copy()
@@ -349,7 +349,7 @@ def plot_t_err_hist_vis(eval_args, eval_dir, scene_ids, bins=20):
         visib_gts = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, 15))
         te_dict = inout.load_yaml(error_file_path)
 
-        for view in xrange(len(gts)):
+        for view in range(len(gts)):
             res = te_dict[view*top_n:(view+1)*top_n]
             for gt,visib_gt in zip(gts[view],visib_gts[view]):
                 if gt['obj_id'] == obj_id:
@@ -374,7 +374,7 @@ def plot_t_err_hist2(t_errors, eval_dir, bins=15):
     print((t_errors.shape))
     # eucl_terr = np.linalg.norm(t_errors,axis=1)
     eucl_terr = t_errors
-    for idx in xrange(bins):
+    for idx in range(bins):
         bin_idcs = np.where((eucl_terr>bounds[idx]) & (eucl_terr<bounds[idx+1]))
         bin_count.append(len(bin_idcs[0]))
     middle_bin = bounds[:-1] + (bounds[1]-bounds[0])/2.
@@ -389,7 +389,7 @@ def plot_R_err_hist2(R_errors, eval_dir, bins=15, save=True):
     plt.ylabel('views')
     bounds = np.linspace(0,180,bins+1)
     bin_count = []
-    for idx in xrange(bins):
+    for idx in range(bins):
         bin_idcs = np.where((R_errors>bounds[idx]) & (R_errors<bounds[idx+1]))
         bin_count.append(len(bin_idcs[0]))
     middle_bin = bounds[:-1] + (bounds[1]-bounds[0])/2.
@@ -424,7 +424,7 @@ def plot_R_err_hist_vis(eval_args, eval_dir, scene_ids, bins=20):
         visib_gts = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, 15))
         re_dict = inout.load_yaml(error_file_path)
 
-        for view in xrange(len(gts)):
+        for view in range(len(gts)):
             res = re_dict[view*top_n:(view+1)*top_n]
             for gt,visib_gt in zip(gts[view],visib_gts[view]):
                 if gt['obj_id'] == obj_id:
@@ -467,7 +467,7 @@ def plot_R_err_recall(eval_args, eval_dir, scene_ids):
         visib_gts = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, 15))
         re_dict = inout.load_yaml(error_file_path)
 
-        for view in xrange(len(gts)):
+        for view in range(len(gts)):
             res = re_dict[view*top_n:(view+1)*top_n]
             for gt,visib_gt in zip(gts[view],visib_gts[view]):
                 if gt['obj_id'] == obj_id:
@@ -494,7 +494,7 @@ def plot_R_err_recall(eval_args, eval_dir, scene_ids):
         min_angle_errs = np.empty((total_views,))
         min_angle_errs_rect = np.empty((total_views,))
 
-        for view in xrange(total_views):
+        for view in range(total_views):
             top_n_errors = angle_errs[view*top_n:(view+1)*top_n]
             if n == 1:
                 top_n_errors = top_n_errors[np.newaxis,0]
@@ -607,7 +607,7 @@ def plot_vsd_err_hist(eval_args, eval_dir, scene_ids):
         total_views = len(vsd_errs)/top_n
         min_vsd_errs = np.empty((total_views,))
 
-        for view in xrange(total_views):
+        for view in range(total_views):
             top_n_errors = vsd_errs[view*top_n:(view+1)*top_n]
             if n == 1:
                 top_n_errors = top_n_errors[np.newaxis,0]
@@ -670,7 +670,7 @@ def plot_vsd_occlusion(eval_args, eval_dir, scene_ids, all_test_visibs, bins = 1
     total_views = len(all_vsd_errs)/top_n
     vsd_errs = np.empty((total_views,))
 
-    for view in xrange(total_views):
+    for view in range(total_views):
         top_n_errors = all_vsd_errs[view*top_n:(view+1)*top_n]
         vsd_errs[view] = top_n_errors[0]
 
@@ -678,7 +678,7 @@ def plot_vsd_occlusion(eval_args, eval_dir, scene_ids, all_test_visibs, bins = 1
     bin_vsd_errs = []
     bin_count = []
 
-    for idx in xrange(bins):
+    for idx in range(bins):
         bin_idcs = np.where((all_test_visibs>bounds[idx]) & (all_test_visibs<bounds[idx+1]))
         bin_vsd_errs.append(vsd_errs[bin_idcs])
         bin_count.append(len(bin_idcs[0]))
@@ -727,7 +727,7 @@ def plot_re_rect_occlusion(eval_args, eval_dir, scene_ids, all_test_visibs, bins
     total_views = len(all_angle_errs)/top_n
     angle_errs_rect = np.empty((total_views,))
 
-    for view in xrange(total_views):
+    for view in range(total_views):
         top_n_errors = all_angle_errs[view*top_n:(view+1)*top_n]
         angle_errs_rect[view] = np.min([top_n_errors[0], 180-top_n_errors[0]])
 
@@ -735,7 +735,7 @@ def plot_re_rect_occlusion(eval_args, eval_dir, scene_ids, all_test_visibs, bins
     bin_angle_errs = []
     bin_count = []
 
-    for idx in xrange(bins):
+    for idx in range(bins):
         bin_idcs = np.where((all_test_visibs>bounds[idx]) & (all_test_visibs<bounds[idx+1]))
         # median_angle_err[idx] = np.median(angle_errs_rect[bin_idcs])
         bin_angle_errs.append(angle_errs_rect[bin_idcs])
@@ -794,7 +794,7 @@ def main():
 def main2():
     R_errors = []
     
-    for R in xrange(100000):
+    for R in range(100000):
         R_gt = transform.random_rotation_matrix()[:3,:3]
         R_est = transform.random_rotation_matrix()[:3,:3]
         R_errors.append(pose_error.re(R_est,R_gt))
