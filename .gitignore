@@ -6,3 +6,4 @@ ae.sublime-workspace
 *.pyc
 *.bak
 .vscode
+auto_pose.egg-info

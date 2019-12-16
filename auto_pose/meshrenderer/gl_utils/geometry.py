@@ -7,6 +7,8 @@ import pyassimp
 import pyassimp.postprocess
 import progressbar
 
+import auto_pose.ae.utils as ae_utils
+
 
 
 def load(filename):
@@ -22,7 +24,8 @@ def load_meshes_sixd( obj_files, vertex_tmp_store_folder , recalculate_normals=F
     out_file = os.path.join( vertex_tmp_store_folder, hashed_file_name)
     print(out_file)
     if os.path.exists(out_file):
-        return np.load(out_file, allow_pickle=True, encoding="latin1")
+        loaded_obj = ae_utils.load_pickled_data(out_file)
+        return loaded_obj
     else:
         bar = progressbar.ProgressBar()
         attributes = []
@@ -39,10 +42,9 @@ def load_meshes_sixd( obj_files, vertex_tmp_store_folder , recalculate_normals=F
                 attributes.append( (vertices, normals, colors, faces) )
             else:
                 attributes.append( (vertices, normals, faces) )
-        np.save(out_file, attributes)
+        ae_utils.save_pickled_data(attributes, out_file)
         return attributes
-
-
+   
 def load_meshes(obj_files, vertex_tmp_store_folder, recalculate_normals=False):
     from . import inout
     md5_string = str(''.join(obj_files) + 'load_meshes' + str(recalculate_normals))
@@ -53,7 +55,8 @@ def load_meshes(obj_files, vertex_tmp_store_folder, recalculate_normals=False):
     print(md5_string)
     print(hashed_file_name)
     if os.path.exists(out_file):
-        return np.load(out_file, allow_pickle=True, encoding="latin1")
+        loaded_obj = ae_utils.load_pickled_data(out_file)
+        return loaded_obj
     else:
         bar = progressbar.ProgressBar()
         attributes = []
@@ -64,7 +67,7 @@ def load_meshes(obj_files, vertex_tmp_store_folder, recalculate_normals=False):
             normals = calc_normals(vertices) if recalculate_normals else mesh.normals
             attributes.append( (vertices, normals) )
             pyassimp.release(scene)
-        np.save(out_file, attributes)
+        ae_utils.save_pickled_data(attributes, out_file)
         return attributes
 
 def calc_normals(vertices):
