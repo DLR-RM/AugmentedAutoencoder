@@ -7,6 +7,8 @@ import pyassimp
 import pyassimp.postprocess
 import progressbar
 
+
+from . import inout
 import auto_pose.ae.utils as ae_utils
 
 
@@ -19,7 +21,7 @@ def load(filename):
 def load_meshes_sixd( obj_files, vertex_tmp_store_folder , recalculate_normals=False):
     md5_string = str(''.join(obj_files) + 'load_meshes' + str(recalculate_normals))
     md5_string = md5_string.encode('utf-8')
-    hashed_file_name = hashlib.md5(md5_string).hexdigest() + '.npy'
+    hashed_file_name = hashlib.md5(md5_string).hexdigest() + '.pickle'
 
     out_file = os.path.join( vertex_tmp_store_folder, hashed_file_name)
     print(out_file)
@@ -46,10 +48,9 @@ def load_meshes_sixd( obj_files, vertex_tmp_store_folder , recalculate_normals=F
         return attributes
    
 def load_meshes(obj_files, vertex_tmp_store_folder, recalculate_normals=False):
-    from . import inout
     md5_string = str(''.join(obj_files) + 'load_meshes' + str(recalculate_normals))
     md5_string = md5_string.encode('utf-8') # ('utf-8')
-    hashed_file_name = hashlib.md5(md5_string).hexdigest() + '.npy'
+    hashed_file_name = hashlib.md5(md5_string).hexdigest() + '.pickle'
     
     out_file = os.path.join( vertex_tmp_store_folder, hashed_file_name)
     print(md5_string)

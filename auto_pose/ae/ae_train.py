@@ -144,7 +144,6 @@ def main():
                     train_imgs = np.hstack(( u.tiles(this_x, 4, 4), u.tiles(reconstr_train, 4,4),u.tiles(this_y, 4, 4)))
                     cv2.imwrite(os.path.join(train_fig_dir,'training_images_%s.png' % i), train_imgs*255)
             else:
-                print("getting x, y")
                 this_x, this_y = sess.run([queue.x, queue.y])
                 reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
                 # print np.min(this_x), np.max(this_x)

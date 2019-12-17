@@ -82,11 +82,11 @@ def main():
         else:
             codebook.update_embedding(sess, batch_size)
 
-        print('Saving new checkoint ..', end=' ')
+        print('Saving new checkoint ..')
 
         saver_with_codebook.save(sess, checkpoint_file, global_step=ae.global_step)
 
-        print('done', end=' ')
+        print('done')
 
 if __name__ == '__main__':
     main()
