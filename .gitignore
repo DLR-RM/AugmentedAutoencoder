@@ -2,6 +2,7 @@ install
 .vscode
 ae.sublime-project
 ae.sublime-workspace
+*.pickle
 *.npy
 *.pyc
 *.bak
