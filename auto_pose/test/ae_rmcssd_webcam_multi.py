@@ -15,7 +15,7 @@ from auto_pose.eval import eval_utils
 
 import argparse
 import rmcssd.bin.detector as detector
-from webcam_video_stream import WebcamVideoStream
+from .webcam_video_stream import WebcamVideoStream
 
 
 parser = argparse.ArgumentParser()
@@ -49,8 +49,8 @@ ssd = detector.Detector(arguments.ssd_frozen_ckpt_path)
 
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 if workspace_path == None:
-    print 'Please define a workspace path:\n'
-    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    print('Please define a workspace path:\n')
+    print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
     exit(-1)
 
 
@@ -73,7 +73,7 @@ for i,experiment_name in enumerate(arguments.experiment_names):
         obj_id = int(re.findall(r"(\d+)", experiment_name)[-1])
         class_i_mapping[obj_id] = i
     except:
-        print 'no obj_id in name, needed to get the mapping for the detector'
+        print('no obj_id in name, needed to get the mapping for the detector')
         class_i_mapping[i] = i
 
     train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
@@ -108,7 +108,7 @@ renderer = meshrenderer_phong.Renderer(
 #     print 'concurrent: ', time.time()-st
 # exit()
 
-print class_i_mapping
+print(class_i_mapping)
 while videoStream.isActive():
 
     img = videoStream.read()
@@ -118,9 +118,9 @@ while videoStream.isActive():
     # img_show = cv2.resize(img_show, (width/arguments.down,height/arguments.down))
 
     rclasses, rscores, rbboxes = ssd.process(img,select_threshold=0.4,nms_threshold=.5)
-    print rclasses
+    print(rclasses)
 
-    ssd_boxes = [ (int(rbboxes[i][0]*H), int(rbboxes[i][1]*W), int(rbboxes[i][2]*H), int(rbboxes[i][3]*W)) for i in xrange(len(rbboxes))]
+    ssd_boxes = [ (int(rbboxes[i][0]*H), int(rbboxes[i][1]*W), int(rbboxes[i][2]*H), int(rbboxes[i][3]*W)) for i in range(len(rbboxes))]
     ssd_imgs = np.empty((len(rbboxes),) + (h_train,w_train,c))
 
     #print vis_img.shape
@@ -226,7 +226,7 @@ while videoStream.isActive():
             # cv2.imshow('render6D',img_show)
 
 
-        for i in xrange(len(rscores)):
+        for i in range(len(rscores)):
             if not rclasses[i] in class_i_mapping:
                 continue
             score = rscores[i]
@@ -246,7 +246,7 @@ while videoStream.isActive():
         cv2.imshow('img', img_show)
         cv2.waitKey(10)
     except:
-        print 'no frame'
+        print('no frame')
 if arguments.s:
     out.release()
 

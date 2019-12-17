@@ -141,7 +141,7 @@ for file in files*10:
         cv2.imshow('resized img', cv2.resize(im/255.,(256,256)))
         cv2.imshow('pred_view', cv2.resize(pred_view/255.,(256,256)))
         cv2.imshow('reconst', cv2.resize(reconst[0],(256,256)))
-        print R
+        print(R)
         cv2.waitKey(0)
 
 

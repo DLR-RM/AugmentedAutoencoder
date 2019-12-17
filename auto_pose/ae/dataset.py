@@ -8,9 +8,9 @@ import os
 import progressbar
 import cv2
 
-from pysixd_stuff import transform
-from pysixd_stuff import view_sampler
-from utils import lazy_property
+from .pysixd_stuff import transform
+from .pysixd_stuff import view_sampler
+from .utils import lazy_property
 
 
 class Dataset(object):
@@ -40,8 +40,8 @@ class Dataset(object):
     def viewsphere_for_embedding(self):
         kw = self._kw
         num_cyclo = int(kw['num_cyclo'])
-        azimuth_range = eval(kw['azimuth_range']) if kw.has_key('azimuth_range') else (0, 2 * np.pi)
-        elev_range = eval(kw['elev_range']) if kw.has_key('elev_range') else (-0.5 * np.pi, 0.5 * np.pi)
+        azimuth_range = eval(kw['azimuth_range']) if 'azimuth_range' in kw else (0, 2 * np.pi)
+        elev_range = eval(kw['elev_range']) if 'elev_range' in kw else (-0.5 * np.pi, 0.5 * np.pi)
         views, _ = view_sampler.sample_views(
             int(kw['min_n_views']), 
             float(kw['radius']), 
@@ -81,8 +81,9 @@ class Dataset(object):
         return renderer
 
     def get_training_images(self, dataset_path, args):
-
-        current_config_hash = hashlib.md5(str(args.items('Dataset')+args.items('Paths'))).hexdigest()
+        md5_string = str(args.items('Dataset')+args.items('Paths'))
+        md5_string = md5_string.encode('utf-8')
+        current_config_hash = hashlib.md5(md5_string).hexdigest()
         current_file_name = os.path.join(dataset_path, current_config_hash + '.npz')
 
         if os.path.exists(current_file_name):
@@ -94,7 +95,7 @@ class Dataset(object):
             self.render_training_images()
             np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
         self.noof_obj_pixels = np.count_nonzero(self.mask_x==0,axis=(1,2))
-        print 'loaded %s training images' % len(self.train_x)
+        print(('loaded %s training images' % len(self.train_x)))
 
     def get_sprite_training_images(self, train_args):
         
@@ -146,7 +147,9 @@ class Dataset(object):
     #     print 'loaded %s training images' % len(self.train_x)
 
     def load_bg_images(self, dataset_path):
-        current_config_hash = hashlib.md5(str(self.shape) + str(self.noof_bg_imgs) + str(self._kw['background_images_glob'])).hexdigest()
+        md5_string = str(str(self.shape) + str(self.noof_bg_imgs) + str(self._kw['background_images_glob']))
+        md5_string = md5_string.encode('utf-8')
+        current_config_hash = hashlib.md5(md5_string).hexdigest()
         current_file_name = os.path.join(dataset_path, current_config_hash +'.npy')
         if os.path.exists(current_file_name):
             self.bg_imgs = np.load(current_file_name)
@@ -157,7 +160,7 @@ class Dataset(object):
 
 
             for j,fname in enumerate(file_list):
-                print 'loading bg img %s/%s' % (j,self.noof_bg_imgs)
+                print(('loading bg img %s/%s' % (j,self.noof_bg_imgs)))
                 bgr = cv2.imread(fname)
                 H,W = bgr.shape[:2]
                 y_anchor = int(np.random.rand() * (H-self.shape[0]))
@@ -173,7 +176,7 @@ class Dataset(object):
 
 
 
-        print 'loaded %s bg images' % self.noof_bg_imgs
+        print(('loaded %s bg images' % self.noof_bg_imgs))
 
 
     def render_rot(self, R, downSample = 1):
@@ -183,7 +186,7 @@ class Dataset(object):
         render_dims = eval(kw['render_dims'])
         K = eval(kw['k'])
         K = np.array(K).reshape(3,3)
-        K[:2,:] = K[:2,:] / downSample
+        K[:2,:] = K[:2,:] // downSample
 
         clip_near = float(kw['clip_near'])
         clip_far = float(kw['clip_far'])
@@ -193,8 +196,8 @@ class Dataset(object):
 
         bgr_y, depth_y = self.renderer.render( 
             obj_id=0,
-            W=render_dims[0]/downSample, 
-            H=render_dims[1]/downSample,
+            W=render_dims[0]//downSample, 
+            H=render_dims[1]//downSample,
             K=K.copy(), 
             R=R, 
             t=t,
@@ -209,14 +212,14 @@ class Dataset(object):
             x, y, w, h = obj_bb
 
             size = int(np.maximum(h, w) * pad_factor)
-            left = x+w/2-size/2
-            right = x+w/2+size/2
-            top = y+h/2-size/2
-            bottom = y+h/2+size/2
+            left = x+w//2-size//2
+            right = x+w//2+size//2
+            top = y+h//2-size//2
+            bottom = y+h//2+size//2
 
             bgr_y = bgr_y[top:bottom, left:right]
         except:
-            print 'error in extracting bounding box from rendered object'
+            print('error in extracting bounding box from rendered object')
         return cv2.resize(bgr_y, self.shape[:2])
 
 
@@ -230,7 +233,7 @@ class Dataset(object):
         clip_far = float(kw['clip_far'])
         pad_factor = float(kw['pad_factor'])
         max_rel_offset = float(kw['max_rel_offset'])
-        lighting = eval(kw['lighting']) if kw.has_key('lighting') else None
+        lighting = eval(kw['lighting']) if 'lighting' in kw else None
         t = np.array([0, 0, float(kw['radius'])])
 
 
@@ -294,7 +297,7 @@ class Dataset(object):
             try:
                 obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             except ValueError as e:
-                print 'Object in Rendering not visible. Have you scaled the vertices to mm?'
+                print('Object in Rendering not visible. Have you scaled the vertices to mm?')
                 break
 
             x, y, w, h = obj_bb
@@ -318,7 +321,7 @@ class Dataset(object):
                 bgr_y = cv2.cvtColor(np.uint8(bgr_y), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
 
 
-            if kw.has_key('target_bg_color'):
+            if 'target_bg_color' in kw:
                 depth_y = self.extract_square_patch(depth_y, obj_bb, pad_factor, resize=(W, H), interpolation=cv2.INTER_NEAREST)
                 mask_y = depth_y == 0.
                 bgr_y[mask_y] = eval(kw['target_bg_color'])
@@ -382,10 +385,10 @@ class Dataset(object):
         x, y, w, h = np.array(bb_xywh).astype(np.int32)
         size = int(np.maximum(h, w) * pad_factor)
         
-        left = np.maximum(x+w/2-size/2, 0)
-        right = x+w/2+size/2
-        top = np.maximum(y+h/2-size/2, 0)
-        bottom = y+h/2+size/2
+        left = np.maximum(x+w//2-size//2, 0)
+        right = x+w//2+size//2
+        top = np.maximum(y+h//2-size//2, 0)
+        bottom = y+h//2+size//2
 
         scene_crop = scene_img[top:bottom, left:right].copy()
 
@@ -433,7 +436,7 @@ class Dataset(object):
             random_syn_masks.fromfile(fh)
         occlusion_masks = np.fromstring(random_syn_masks.unpack(), dtype=np.bool)
         occlusion_masks = occlusion_masks.reshape(-1,224,224,1).astype(np.float32)
-        print occlusion_masks.shape
+        print((occlusion_masks.shape))
 
         occlusion_masks = np.array([cv2.resize(mask,(self.shape[0],self.shape[1]), interpolation = cv2.INTER_NEAREST) for mask in occlusion_masks])           
         return occlusion_masks
@@ -458,7 +461,7 @@ class Dataset(object):
                 if overlap < max_occl and overlap > min_occl:
                     new_masks[idx,...] = np.logical_xor(mask.astype(np.bool), overlap_matrix)
                     if verbose:
-                        print 'overlap is ', overlap    
+                        print(('overlap is ', overlap))    
                     break
 
         return new_masks
@@ -500,7 +503,7 @@ class Dataset(object):
         # random in-plane rotation, not necessary
         # for i in xrange(batch_size):
         #   rot_angle= np.random.rand()*360
-        #   cent = int(self.shape[0]/2)
+        #   cent = int(self.shape[0]//2)
         #   M = cv2.getRotationMatrix2D((cent,cent),rot_angle,1)
         #   batch_x[i] = cv2.warpAffine(batch_x[i],M,self.shape[:2])[:,:,np.newaxis]
         #   batch_y[i] = cv2.warpAffine(batch_y[i],M,self.shape[:2])[:,:,np.newaxis]

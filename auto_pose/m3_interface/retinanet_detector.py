@@ -34,12 +34,12 @@ class RetinaNetDetector(BoundingBoxDetector):
             self._modelpath = modelpath
         else:
             self._params = self.get_params(config)
-            if self._params.has_key('model_path'):
+            if 'model_path' in self._params:
                 self._modelpath = self._params['model_path']
             else:
                 self._modelpath = modelpath
 
-        print(self._params)
+        print((self._params))
         gpu_options = tf.GPUOptions(
                 allow_growth=True,
                 per_process_gpu_memory_fraction = \
@@ -54,7 +54,7 @@ class RetinaNetDetector(BoundingBoxDetector):
         #
         # self._det = self._load_model_with_nms()
 
-        print 'LOADED'
+        print('LOADED')
 
     def process_raw(self, image_in):
         image = preprocess_image(image_in)

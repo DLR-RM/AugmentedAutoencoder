@@ -18,7 +18,7 @@ m3_args.read(args.m3_config_path)
 #######
 
 ####### this is manually hacked to load a frozen model without non-maxima suppression, change the path to your checkpoint: 
-from retinanet_detector import RetinaNetDetector
+from .retinanet_detector import RetinaNetDetector
 detector = RetinaNetDetector('/net/rmc-lx0314/home_local/sund_ma/tmp/resnet50_csv_27_frozen2.h5', args.m3_config_path)
 #######
 
@@ -27,4 +27,4 @@ proc_img, _ = detector.preprocess_image(dummy_img, 'rgb', dummy_img.dtype)
 
 #detection happens here:
 dets = detector.process(proc_img)
-print dets
+print(dets)

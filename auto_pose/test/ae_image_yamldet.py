@@ -45,8 +45,8 @@ else:
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
 if workspace_path == None:
-    print 'Please define a workspace path:\n'
-    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    print('Please define a workspace path:\n')
+    print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
     exit(-1)
 
 
@@ -115,7 +115,7 @@ K_test = np.array([[2730.3754266211604,0.0,960.0],[0.0,2730.3754266211604,600.0]
 for file in files:
     orig_im = cv2.imread(file)
     
-    if bb_dicts.has_key(os.path.basename(file).split('png')[0]):
+    if os.path.basename(file).split('png')[0] in bb_dicts:
         bb_dict = bb_dicts[os.path.basename(file).split('png')[0]]
 
         Rs = []
@@ -132,7 +132,7 @@ for file in files:
             # if bb['class'] == 10 or bb['class'] == 9:
                 
             im_show =orig_im.copy()
-            print orig_im.shape
+            print((orig_im.shape))
             H,W = orig_im.shape[:2]
             x = int(W * bb['bbox']['minx'])
             y = int(H * bb['bbox']['miny'])

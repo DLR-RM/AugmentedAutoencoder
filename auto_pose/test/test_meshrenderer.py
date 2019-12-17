@@ -19,7 +19,7 @@ renderer = meshrenderer_phong.Renderer(['/volume/pekdat/datasets/public/YCB_Vide
               vertex_tmp_store_folder='.',
               vertex_scale=float(1000))
 
-for i in xrange(100):
+for i in range(100):
     st = time.time()
     rgb, depth = renderer.render(obj_id = 0,
                 W = 1920,
@@ -31,7 +31,7 @@ for i in xrange(100):
                 far = 10000,
                 random_light=False,
                 phong={'ambient':0.4, 'diffuse':0.8+0.2*np.random.rand(), 'specular':0.3+0.2*np.random.rand()})
-    print time.time() - st
+    print((time.time() - st))
 
     cv2.imshow('rgb',rgb)
     #### visualization ####

@@ -27,6 +27,7 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
     H = train_args.getint('Dataset','H')
 
     cfg_string = str([scene_id] + eval_args.items('DATA') + eval_args.items('BBOXES') + [H])
+    cfg_string = cfg_string.encode('utf-8')
     current_config_hash = hashlib.md5(cfg_string).hexdigest()
 
     current_file_name = os.path.join(dataset_path, current_config_hash + '.npz')
@@ -63,10 +64,10 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
         current_cfg_file_name = os.path.join(dataset_path, current_config_hash + '.cfg')
         with open(current_cfg_file_name, 'w') as f:
             f.write(cfg_string)
-        print 'created new ground truth crops!'
+        print('created new ground truth crops!')
     else:
-        print 'loaded previously generated ground truth crops!'
-        print len(test_img_crops), len(test_img_depth_crops)
+        print('loaded previously generated ground truth crops!')
+        print((len(test_img_crops), len(test_img_depth_crops)))
 
 
 
@@ -162,23 +163,23 @@ def load_scenes(scene_id, eval_args, depth=False):
     noof_imgs = noof_scene_views(scene_id, eval_args)
     if depth:
         imgs = np.empty((noof_imgs,) + p['test_im_size'][::-1], dtype=np.float32)
-        for view_id in xrange(noof_imgs):
+        for view_id in range(noof_imgs):
             depth_path = p['test_depth_mpath'].format(scene_id, view_id)
             try:
                 imgs[view_id,...] = inout.load_depth2(depth_path) * cam_p['depth_scale']
             except:
-                print depth_path,' not found'
+                print((depth_path,' not found'))
     
     else:    
-        print (noof_imgs,) + p['test_im_size'][::-1] + (3,)
+        print(((noof_imgs,) + p['test_im_size'][::-1] + (3,)))
         imgs = np.empty((noof_imgs,) + p['test_im_size'][::-1] + (3,), dtype=np.uint8)
-        print noof_imgs
-        for view_id in xrange(noof_imgs):
+        print(noof_imgs)
+        for view_id in range(noof_imgs):
             img_path = p['test_rgb_mpath'].format(scene_id, view_id)
             try:
                 imgs[view_id,...] = cv2.imread(img_path)
             except:
-                print img_path,' not found'
+                print((img_path,' not found'))
 
     return imgs
 
@@ -205,11 +206,11 @@ def get_all_scenes_for_obj(eval_args):
         
         obj_scene_dict = {}
         scene_gts = []
-        for scene_id in xrange(1,p['scene_count']+1):
-            print scene_id
+        for scene_id in range(1,p['scene_count']+1):
+            print(scene_id)
             scene_gts.append(inout.load_yaml(p['scene_gt_mpath'].format(scene_id)))
 
-        for obj in xrange(1,p['obj_count']+1):
+        for obj in range(1,p['obj_count']+1):
             eval_scenes = set()
             for scene_i,scene_gt in enumerate(scene_gts):
                 for view_gt in scene_gt[0]:
@@ -217,7 +218,7 @@ def get_all_scenes_for_obj(eval_args):
                         eval_scenes.add(scene_i+1)
             obj_scene_dict[obj] = list(eval_scenes)
         np.save(current_file_name,obj_scene_dict)
-    print obj_scene_dict
+    print(obj_scene_dict)
 
     eval_scenes = obj_scene_dict[obj_id]
 

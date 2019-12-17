@@ -7,8 +7,8 @@ import glob2
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
 if workspace_path == None:
-    print 'Please define a workspace path:\n'
-    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    print('Please define a workspace path:\n')
+    print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
     exit(-1)
 
 parser = argparse.ArgumentParser()
@@ -19,8 +19,8 @@ pekdat_path = '/volume/pekdat/trained_models/internal/aae_models'
 
 
 for i,experiment_group_names in enumerate(arguments.experiment_group_names):
-    print 'copying ', experiment_group_names    
-    print '%s/%s' % (i+1,len(arguments.experiment_group_names))
+    print(('copying ', experiment_group_names))    
+    print(('%s/%s' % (i+1,len(arguments.experiment_group_names))))
 
     full_name = experiment_group_names.split('/')
     if len(full_name) > 0:
@@ -31,8 +31,8 @@ for i,experiment_group_names in enumerate(arguments.experiment_group_names):
         all_log_dirs = glob2.glob(log_dir)
 
         for j,log_d in enumerate(all_log_dirs):
-            print 'copying ', log_d    
-            print '%s/%s' % (j+1,len(all_log_dirs))
+            print(('copying ', log_d))    
+            print(('%s/%s' % (j+1,len(all_log_dirs))))
 
             experiment_name = os.path.basename(log_d)
             ckpt_dir = u.get_checkpoint_dir(log_d)
@@ -54,10 +54,10 @@ for i,experiment_group_names in enumerate(arguments.experiment_group_names):
                 shutil.copy(os.path.join(ckpt_dir,base_ckpt_files[-1].replace('.index','.data-00000-of-00001')),target_ckpt_path)
                 shutil.copy(train_cfg_file_path,target_path)
             except:
-                print 'not copied: ',train_cfg_file_path
+                print(('not copied: ',train_cfg_file_path))
     else:
-        print 'need experiment_group/experiment_name as arguments'
-        print 'you can use regex like obj*'
+        print('need experiment_group/experiment_name as arguments')
+        print('you can use regex like obj*')
     
     # gt_bb = arguments.gt_bb
 

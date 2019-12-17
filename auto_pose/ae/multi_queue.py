@@ -2,7 +2,7 @@
 
 import tensorflow as tf
 
-from utils import lazy_property
+from .utils import lazy_property
 from image_augmentation_functions import *
 import time
 import hashlib
@@ -31,14 +31,14 @@ class MultiQueue(object):
         self.invert = eval(aug_args['invert'])
         self.occl = eval(aug_args['transparent_shape_occlusion'])
 
-        print self.zoom_range
-        print self.g_noise 
-        print self.contrast_norm_range
-        print self.mult_brightness
-        print self.max_off_brightness
-        print self.gaussian_blur
-        print self.invert
-        print self.occl
+        print((self.zoom_range))
+        print((self.g_noise)) 
+        print((self.contrast_norm_range))
+        print((self.mult_brightness))
+        print((self.max_off_brightness))
+        print((self.gaussian_blur))
+        print((self.invert))
+        print((self.occl))
     
         self.bg_img_init = None
         self.next_bg_element = None
@@ -73,17 +73,18 @@ class MultiQueue(object):
     def create_tfrecord_training_images(self, dataset_path, args):
 
         for m,model in enumerate(self._model_paths):
-
-            current_config_hash = hashlib.md5(str(args.items('Dataset')) + model).hexdigest()
+            md5_string = str(str(args.items('Dataset')) + model)
+            md5_string = md5_string.encode('utf-8')
+            current_config_hash = hashlib.md5(md5_string).hexdigest()
             current_file_name = os.path.join(dataset_path, current_config_hash + '.tfrecord')
             
             if not os.path.exists(current_file_name):
                 writer = tf.python_io.TFRecordWriter(current_file_name)
                 self._dataset.render_training_images(serialize_func = self.serialize_tfrecord, obj_id = m, tfrec_writer = writer)
                 writer.close()
-                print 'generated tfrecord for training images', model
+                print(('generated tfrecord for training images', model))
             else:
-                print 'tfrecord exists for', model
+                print(('tfrecord exists for', model))
 
     def _tf_augmentations(self, train_x, mask_x, train_y, bg):
         # train_x = add_black_patches(train_x)
@@ -121,13 +122,13 @@ class MultiQueue(object):
         self.next_bg_element = self.bg_img_init.get_next()
 
     def _float_cast(self, train_x, mask_x, train_y):
-        print 'here', 100*'g'
+        print(('here', 100*'g'))
         train_x = tf.image.convert_image_dtype(train_x,tf.float32)
         train_y = tf.image.convert_image_dtype(train_y,tf.float32)
         return (train_x, mask_x, train_y)
 
     def _recover_shapes(self, train_x, mask_x, train_y):
-        print 'here'
+        print('here')
         train_x.set_shape((None,) + self._shape)
         train_y.set_shape((None,) + self._shape)
         mask_x.set_shape((None,) + self._shape[:2])

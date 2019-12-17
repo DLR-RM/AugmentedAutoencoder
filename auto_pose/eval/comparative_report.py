@@ -66,14 +66,14 @@ def main():
 
 	experiment_group = args.experiment_group
 	eval_name = args.eval_name
-	print eval_name
+	print(eval_name)
 
 	workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
 	exp_group_path = os.path.join(workspace_path, 'experiments', experiment_group)
-	print exp_group_path
+	print(exp_group_path)
 	error_score_files = glob.glob(os.path.join(exp_group_path, '*/eval',eval_name,'*/error*/scores*'))
-	print error_score_files
+	print(error_score_files)
 	data_re = []
 	data_auc_re = []
 	data_auc_rerect = []
@@ -96,7 +96,7 @@ def main():
 		occl = 'occlusion' if 'occlusion' in error_score_file else ''
 		test_data = split_path[-3]
 		error_type = split_path[-2].split('_')[0].split('=')[1]
-		print error_type
+		print(error_type)
 		topn = split_path[-2].split('=')[2].split('_')[0]
 		error_thres = split_path[-1].split('=')[1].split('_')[0]
 		
@@ -110,7 +110,7 @@ def main():
 
 		eval_args = configparser.ConfigParser(inline_comment_prefixes="#")
 		eval_args.read(eval_cfg_file_path)
-		print eval_cfg_file_path
+		print(eval_cfg_file_path)
 		estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
 		try:
 			obj_id = eval_args.getint('DATA', 'OBJ_ID')
@@ -130,7 +130,7 @@ def main():
 			sixd_recall = error_score_dict['obj_recalls'][obj_id]
 		except:
 			continue
-			print 'did not find error dict'
+			print('did not find error dict')
 		
 
 
@@ -153,13 +153,13 @@ def main():
 					'top': topn, 'sixd_recall': auc_rerect, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 					'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
 
-				if not data_paper_auc.has_key(int(data[3])):
+				if int(data[3]) not in data_paper_auc:
 					data_paper_auc[int(data[3])] = {}
 					data_paper_auc[int(data[3])]['eval_obj'] = int(data[3])
 				data_paper_auc[int(data[3])][eval_name+'_'+'auc_re'+'_'+str(data[1]) + occl] = float(auc_re)*100
 				data_paper_auc[int(data[3])][eval_name+'_'+'auc_rerect'+'_'+str(data[1])+ occl] = float(auc_rerect)*100
 			except:
-				print err_file, 'not found'
+				print((err_file, 'not found'))
 			
 		elif error_type=='te':
 			data_te.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
@@ -169,7 +169,7 @@ def main():
 			data_vsd.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': int(data[3]) if '[' not in data[3] else eval(data[3])[0]})
-			if not data_paper_vsd.has_key(int(data[3])):
+			if int(data[3]) not in data_paper_vsd:
 				data_paper_vsd[int(data[3])] = {}
 				data_paper_vsd[int(data[3])]['eval_obj'] = int(data[3])
 			data_paper_vsd[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1]) + occl] = float(sixd_recall)*100
@@ -183,7 +183,7 @@ def main():
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
 			if int(data[3]) not in [3,7]:
-				if not data_paper_add.has_key(int(data[3])):
+				if int(data[3]) not in data_paper_add:
 					data_paper_add[int(data[3])] = {}
 					data_paper_add[int(data[3])]['eval_obj'] = int(data[3])
 				data_paper_add[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1]) + occl] = float(sixd_recall)*100
@@ -197,12 +197,12 @@ def main():
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
 			if int(data[3]) not in [3,7]:
-				if not data_paper_adi.has_key(int(data[3])):
+				if int(data[3]) not in data_paper_adi:
 					data_paper_adi[int(data[3])] = {}
 					data_paper_adi[int(data[3])]['eval_obj'] = int(data[3])
 				data_paper_adi[int(data[3])][eval_name+'_'+error_type+'_'+str(data[1]) + occl] = float(sixd_recall)*100
 		else:
-			print 'error not known: ', error_type
+			print(('error not known: ', error_type))
 
 
 	
@@ -349,7 +349,7 @@ def main():
 	check_output(['pdflatex', 'report.tex'], cwd=os.path.dirname(full_filename))
 	Popen(['okular', 'report.pdf'], cwd=os.path.dirname(full_filename))
 
-	print 'finished'
+	print('finished')
 
 
 

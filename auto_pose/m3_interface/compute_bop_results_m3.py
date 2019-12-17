@@ -178,13 +178,13 @@ for target_idx, target in tqdm(enumerate(targets)):
             d_p = dp_split['depth_tpath'].format(scene_id=scene_id, im_id=im_id)
             if dataset_name == 'itodd':
                 d_p = d_p.replace('.png','.tif')
-                print d_p
+                print(d_p)
                 depth_img = load_depth_tif(d_p)
             else:
                 depth_img = load_depth(d_p, shift=shift_depth)
             # depth_img = cv2.imread(d_p)
             depth_img *= scene_camera[im_id]['depth_scale']  # Convert to [mm].
-            print np.histogram(depth_img)
+            print((np.histogram(depth_img)))
             
         cam_K = scene_camera[im_id]['cam_K'].copy()
 
@@ -193,7 +193,7 @@ for target_idx, target in tqdm(enumerate(targets)):
     for inst in range(inst_count):
         try:
             if detector_method == 'mask_rcnn':
-                print(mask_annot[im_id])
+                print((mask_annot[im_id]))
                 print(im_id)
                 score = mask_annot[im_id][obj_id][inst]['score']
                 if score < 0:
@@ -210,7 +210,7 @@ for target_idx, target in tqdm(enumerate(targets)):
                 mask_p = os.path.join(mask_paths,'{:06d}_{:06d}.png'.format(im_id, inst))
                 inst_mask = inout.load_depth(mask_p)/255.
 
-            print(img.shape)
+            print((img.shape))
             img_masked = img * inst_mask[..., None].astype(np.uint8)
 
             x, y, w, h = obj_bb_est
@@ -244,7 +244,7 @@ for target_idx, target in tqdm(enumerate(targets)):
             img_pose_ests += pose_est
             img_dets += det
         except:
-            print(im_id,'not found')
+            print((im_id,'not found'))
 
 res_path = os.path.join(result_folder, 'sundermeyer-{}_{}-{}.csv'.format(args.eval_name, dataset_name, split))
 inout.save_bop_results(res_path, bop_results)

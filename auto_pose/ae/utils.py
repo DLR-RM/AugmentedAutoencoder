@@ -1,5 +1,6 @@
 
 import os
+import pickle
 import numpy as np
 import functools
 import cv2
@@ -19,7 +20,7 @@ def lazy_property(function):
 
 def batch_iteration_indices(N, batch_size):
     end = int(np.ceil(float(N) / float(batch_size)))
-    for i in xrange(end):
+    for i in range(end):
         a = i*batch_size
         e = i*batch_size+batch_size
         e = e if e <= N else N
@@ -89,6 +90,50 @@ def get_eval_dir(log_dir, evaluation_name, data):
         data
     )
 
+def save_pickled_data(data, file_path):
+    """Saves data to file_path. Tries to be python2/3 compatible
+    
+    Args:
+        data (any): Data to be saved
+        file_path (String): Output filepath
+    
+    Return:
+        See pickle.dump return
+    """
+    with open(file_path, "wb") as f:
+        try:
+            # Python3
+            return pickle.dump(data,
+                               f,
+                               protocol=2,
+                               fix_imports=True)
+        except TypeError:
+            # Python2
+            return pickle.dump(data,
+                               f,
+                               protocol=2)
+
+def load_pickled_data(file_path):
+    """Loads a pickled file. Tries to be python2/3 compatible
+    
+    Args:
+        file_path (string): Input filepath
+        
+    Return:
+        loaded_obj (any): Data which was loaded from file
+    """
+    with open(file_path, "rb") as f:
+        try:
+            # Python3
+            loaded_obj = pickle.load(f,
+                        fix_imports=True,
+                        encoding="bytes")
+        except TypeError:
+            # Python2
+            loaded_obj = pickle.load(f)
+    return loaded_obj
+            
+    
 
 def tiles(batch, rows, cols, spacing_x=0, spacing_y=0, scale=1.0):
     if batch.ndim == 4:
@@ -103,8 +148,8 @@ def tiles(batch, rows, cols, spacing_x=0, spacing_y=0, scale=1.0):
     W = int(W*scale)
     img = np.ones((rows*H+(rows-1)*spacing_y, cols*W+(cols-1)*spacing_x, C))
     i = 0
-    for row in xrange(rows):
-        for col in xrange(cols):
+    for row in range(rows):
+        for col in range(cols):
             start_y = row*(H+spacing_y)
             end_y = start_y + H
             start_x = col*(W+spacing_x)

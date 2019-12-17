@@ -14,7 +14,7 @@ class PoseVisualizer:
         self.classes = ae_pose_est.class_2_encoder.keys()
         self.vertex_scale = list(set([ae_pose_est.all_train_args[c].getint('Dataset','VERTEX_SCALE') for c in self.classes]))
         self.ply_model_paths = [str(ae_pose_est.all_train_args[c].get('Paths','MODEL_PATH')) for c in self.classes]
-        print 'renderer', 'Model paths: ', self.ply_model_paths
+        print(('renderer', 'Model paths: ', self.ply_model_paths))
 
     @lazy_property
     def renderer(self):
@@ -80,7 +80,7 @@ class PoseVisualizer:
                         cv2.putText(image_show_rgb, '%s : %1.3f' % (label,score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,0,255), 2)
                         cv2.rectangle(image_show_rgb,(xmin,ymin),(xmax,ymax),(255,0,0),2)
                 except:
-                    print 'failed to plot boxes'
+                    print('failed to plot boxes')
 
         if all_pose_estimates_rgb is not None:
             cv2.imshow('rgb_pose', image_show_rgb)
