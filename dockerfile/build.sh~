@@ -1,0 +1,1 @@
+docker build -t tf1.13-cuda10-opencv3.1 .

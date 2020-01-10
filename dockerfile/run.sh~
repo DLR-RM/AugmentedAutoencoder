@@ -1,0 +1,1 @@
+docker run -ti --rm --runtime=nvidia -v /media/shbe/data/share-to-docker:/shared-folder --privileged -e DISPLAY=$DISPLAY --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" tensorflow-opencv-opengl
