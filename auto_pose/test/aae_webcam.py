@@ -51,7 +51,9 @@ with tf.Session() as sess:
         print(R)
         cv2.imshow('resized webcam input', img)
         cv2.imshow('pred view rendered', pred_view)
-        cv2.waitKey(1)
-
-if __name__ == '__main__':
-    main()
+        k = cv2.waitKey(1)
+        if k == 27:
+            break
+    print("Closing....")
+    videoStream.stop()
+    sess.close()
