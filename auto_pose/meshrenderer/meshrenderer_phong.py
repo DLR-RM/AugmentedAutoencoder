@@ -42,7 +42,12 @@ class Renderer(object):
 
         vertices = []
         indices = []
-        for vertex, normal, color, faces in attributes:
+        for attribute in attributes:
+            if len(attribute) ==4:
+                vertex, normal, color, faces = attribute
+            else:
+                vertex, normal, faces = attribute 
+                color = np.ones_like(vertex)*255.0
             indices.append( faces.flatten() )
             vertices.append(np.hstack((vertex * vertex_scale, normal, color/255.0)).flatten())
 
@@ -56,7 +61,7 @@ class Renderer(object):
         vao.bind()
 
         # IBO
-        vertex_count = [np.prod(vert[3].shape) for vert in attributes]
+        vertex_count = [np.prod(vert[-1].shape) for vert in attributes]
         instance_count = np.ones(len(attributes))
         first_index = [sum(vertex_count[:i]) for i in range(len(vertex_count))]
 
@@ -95,12 +100,14 @@ class Renderer(object):
 
     def render(self, obj_id, W, H, K, R, t, near, far, random_light=False, phong={'ambient':0.4,'diffuse':0.8, 'specular':0.3}):
         assert W <= Renderer.MAX_FBO_WIDTH and H <= Renderer.MAX_FBO_HEIGHT
+        W = int(W)
+        H = int(H)
 
         if self._samples > 1:
             self._render_fbo.bind()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |  GL_STENCIL_BUFFER_BIT)
-        glViewport(0, 0, W, H)
+        glViewport(0, 0, int(W), int(H))
 
         camera = gu.Camera()
         camera.realCamera(W, H, K, R, t, near, far)

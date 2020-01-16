@@ -207,10 +207,10 @@ class Dataset(object):
 
         size = int(np.maximum(h, w) * pad_factor)
 
-        left = np.maximum(x+w/2-size/2, 0)
-        right = np.minimum(x+w/2+size/2, bgr_y.shape[1])
-        top = np.maximum(y+h/2-size/2, 0)
-        bottom = np.minimum(y+h/2+size/2, bgr_y.shape[0])
+        left = int(np.maximum(x+w/2-size/2, 0))
+        right = int(np.minimum(x+w/2+size/2, bgr_y.shape[1]))
+        top = int(np.maximum(y+h/2-size/2, 0))
+        bottom = int(np.minimum(y+h/2+size/2, bgr_y.shape[0]))
 
         bgr_y = bgr_y[top:bottom, left:right]
         return cv2.resize(bgr_y, self.shape[:2])

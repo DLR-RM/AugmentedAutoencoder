@@ -5,7 +5,7 @@
 
 import math
 import numpy as np
-import transform
+from . import transform
 
 
 def hinter_sampling(min_n_pts, radius=1):
