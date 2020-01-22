@@ -47,7 +47,7 @@ class Renderer(object):
                 vertex, normal, color, faces = attribute
             else:
                 vertex, normal, faces = attribute 
-                color = np.ones_like(vertex)*255.0
+                color = np.ones_like(vertex)*160.0
             indices.append( faces.flatten() )
             vertices.append(np.hstack((vertex * vertex_scale, normal, color/255.0)).flatten())
 
