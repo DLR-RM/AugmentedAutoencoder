@@ -1,0 +1,10 @@
+PyOpenGL 
+PyOpenGL_accelerate
+cython
+cyglfw3
+pyassimp==3.3
+imgaug
+progressbar
+tensorflow-gpu
+opencv-python
+numpy==1.17

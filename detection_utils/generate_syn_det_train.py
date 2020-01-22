@@ -29,7 +29,7 @@ if __name__ == '__main__':
     models_cad_files = glob.glob(os.path.join(args.model,'*.ply'))
     obj_ids = [int(file.split('_')[-1].split('.')[0]) for file in models_cad_files]
     # print obj_ids
-    print models_cad_files
+    print ("***************", models_cad_files)
     # obj_ids = [1]
     # models_cad_files = [file for file in models_cad_files]
     # print models_cad_files
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     pbar = pb.ProgressBar(widgets=widgets, maxval=max_round).start()
 
 
-    for round in xrange(max_round):
+    for round in range(max_round):
         filename = str('image_' + str(round))
         
         bgr, obj_info = renderer.render()

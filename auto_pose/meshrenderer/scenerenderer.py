@@ -4,7 +4,7 @@ import glob
 
 import math
 import numpy as np
-from write_xml import *
+from .write_xml import *
 import auto_pose.meshrenderer.meshrenderer as mr
 import auto_pose.meshrenderer.meshrenderer_phong as mr_phong
 import cv2
@@ -47,7 +47,7 @@ class SceneRenderer(object):
 
         # pascal_imgs_path = os.path.join(vocdevkit_path, 'VOC2012/JPEGImages')
         self._voc_imgs = glob.glob( os.path.join(vocdevkit_path , '*.jpg' )) + glob.glob( os.path.join(vocdevkit_path, '*.png') )
-        print len(self._voc_imgs)
+        print (len(self._voc_imgs))
         if model_type == 'reconst':
             self._renderer = mr_phong.Renderer(
                 self._models_cad_files,
@@ -63,7 +63,7 @@ class SceneRenderer(object):
                 vertex_scale=vertex_scale
             )
         else:
-            print 'unknown model_type, ', model_type
+            print ('unknown model_type, ', model_type)
             exit()
 
         azimuth_range =  (0, 2 * math.pi)
@@ -102,7 +102,7 @@ class SceneRenderer(object):
 
                 if len(ts_norm) > 0 and np.any(np.dot(np.array(ts_norm),t_norm.reshape(3,1)) > 0.99):
                     success = False
-                    print 'fail'
+                    print ('fail')
                 else:
                     ts_norm.append(t_norm)
                     ts.append( t )
