@@ -71,14 +71,19 @@ while videoStream.isActive():
         im_bg = cv2.bitwise_and(image,image,mask=(g_y[:,:,1]==0).astype(np.uint8))                 
         image_show = cv2.addWeighted(im_bg,1,g_y,1,0)
 
-        #cv2.imshow('pred view rendered', pred_view)
-        for label,box,score in zip(labels,boxes,scores):
-            box = box.astype(np.int32)
-            xmin,ymin,xmax,ymax = box[0],box[1],box[0]+box[2],box[1]+box[3]
-            print label
-            cv2.putText(image_show, '%s : %1.3f' % (label,score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, color_dict[int(label)], 2)
-            cv2.rectangle(image_show,(xmin,ymin),(xmax,ymax),(255,0,0),2)
+        #Draw bounding boxes
+        #for label,box,score in zip(labels,boxes,scores):
+        #    box = box.astype(np.int32)
+        #    xmin,ymin,xmax,ymax = box[0],box[1],box[0]+box[2],box[1]+box[3]
+        #    print label
+        #    cv2.putText(image_show, '%s : %1.3f' % (label,score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (255,0,0), 2)
+        #    cv2.rectangle(image_show,(xmin,ymin),(xmax,ymax),(255,0,0),2)
 
-        #cv2.imshow('', bgr)
+        cv2.imshow('', bgr)
         cv2.imshow('real', image_show)
-        cv2.waitKey(1)
+        k = cv2.waitKey(1)
+        if k == 27:
+            break
+print("Closing....")
+videoStream.stop()
+ae_pose_est.sess.close()
