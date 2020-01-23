@@ -46,11 +46,19 @@ with tf.Session() as sess:
 
         img = cv2.resize(image,(128,128))
 
-        R = codebook.nearest_rotation(sess, img)
-        pred_view = dataset.render_rot(R,downSample = 1)
-        print(R)
+        # Find and show the 'n' nearest exampels in the codebook
+        n = 10
+        R = codebook.nearest_rotation(sess, img, top_n=n)
+        pred_view = None
+        for i in np.arange(n):
+            curr_view = dataset.render_rot(R[i],downSample = 1)
+            if(pred_view is None):
+                pred_view = curr_view
+            else:
+                pred_view = np.concatenate((pred_view, curr_view), axis=1)
+            print(R[i])
+        cv2.imshow('pred view rendered', pred_view)        
         cv2.imshow('resized webcam input', img)
-        cv2.imshow('pred view rendered', pred_view)
         k = cv2.waitKey(1)
         if k == 27:
             break
