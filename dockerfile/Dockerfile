@@ -61,7 +61,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN ${PIP} --no-cache-dir install --upgrade \
     pip \
-    setuptools
+    'setuptools<45.0.0'
 
 # Some TF tools expect a "python" binary
 RUN ln -s $(which ${PYTHON}) /usr/local/bin/python 
