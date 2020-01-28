@@ -123,14 +123,16 @@ class AePoseEstimator:
 
         H, W = color_img.shape[:2]
 
-        pre_image = preprocess_image(color_img)
-        res_image, scale = resize_image(pre_image)
+        #pre_image = preprocess_image(color_img)
+        #res_image, scale = resize_image(pre_image)
+
+        res_image = color_img
+        scale = 1
 
         batch_image = np.expand_dims(res_image, axis=0)
         print batch_image.shape
         print batch_image.dtype
-        boxes, scores, labels = self.detector.predict_on_batch(batch_image)
-
+        boxes, scores, labels = self.detector.predict(batch_image)
 
         valid_dets = np.where(scores[0] >= self.det_threshold)
 
