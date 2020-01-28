@@ -71,7 +71,7 @@ RUN ln -s $(which ${PYTHON}) /usr/local/bin/python
 #   tensorflow-gpu
 #   tf-nightly
 #   tf-nightly-gpu
-RUN ${PIP} install tensorflow-gpu==1.13.1
+RUN ${PIP} install tensorflow-gpu==1.14.0
 
 COPY bashrc /etc/bash.bashrc
 RUN chmod a+rwx /etc/bash.bashrc
@@ -122,7 +122,14 @@ RUN pip --no-cache-dir install \
     imgaug \
     progressbar \
     configparser \
-    opencv-python \
+    opencv-python==3.4.0.14 \
     opencv-contrib-python
 
+# Install Keras and RetinaNet
+RUN git clone https://github.com/fizyr/keras-retinanet
+RUN cd keras-retinanet && pip install .
 
+# Install AAE (AutoPose) - forked version
+RUN git clone https://github.com/shbe-aau/AugmentedAutoencoder
+RUN cd AugmentedAutoencoder && pip install .
+ENV AE_WORKSPACE_PATH=/shared-folder/autoencoder_ws
