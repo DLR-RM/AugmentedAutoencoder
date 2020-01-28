@@ -28,7 +28,7 @@ test_args.read(test_configpath)
 
 ae_pose_est = AePoseEstimator(test_configpath)
 
-videoStream = WebcamVideoStream(0, ae_pose_est._width, ae_pose_est._height).start()
+videoStream = WebcamVideoStream(3, ae_pose_est._width, ae_pose_est._height).start()
 
 if args.vis:
     from auto_pose.meshrenderer import meshrenderer
@@ -48,6 +48,8 @@ while videoStream.isActive():
     image = videoStream.read()
 
     boxes, scores, labels = ae_pose_est.process_detection(image)
+
+    print(labels)
 
     all_pose_estimates, all_class_idcs = ae_pose_est.process_pose(boxes, labels, image)
 
@@ -71,13 +73,17 @@ while videoStream.isActive():
         im_bg = cv2.bitwise_and(image,image,mask=(g_y[:,:,1]==0).astype(np.uint8))                 
         image_show = cv2.addWeighted(im_bg,1,g_y,1,0)
 
+
+        ts = [pose_est[:3,3] for pose_est in all_pose_estimates]
+        
         #Draw bounding boxes
-        #for label,box,score in zip(labels,boxes,scores):
-        #    box = box.astype(np.int32)
-        #    xmin,ymin,xmax,ymax = box[0],box[1],box[0]+box[2],box[1]+box[3]
-        #    print label
-        #    cv2.putText(image_show, '%s : %1.3f' % (label,score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (255,0,0), 2)
-        #    cv2.rectangle(image_show,(xmin,ymin),(xmax,ymax),(255,0,0),2)
+        for label,box,score,t in zip(labels,boxes,scores,ts):
+           box = box.astype(np.int32)
+           xmin,ymin,xmax,ymax = box[0],box[1],box[0]+box[2],box[1]+box[3]
+           print label
+           cv2.putText(image_show, 'class: %s score: %1.2f' % (label,score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,0,255), 2)
+           cv2.putText(image_show, 'translation: (%1.2f, %1.2f, %1.2f)' % (t[0],t[1],t[2]), (xmin, ymax+40), cv2.FONT_ITALIC, .5, (0,0,255), 2)
+           cv2.rectangle(image_show,(xmin,ymin),(xmax,ymax),(0,0,255),2)
 
         cv2.imshow('', bgr)
         cv2.imshow('real', image_show)
