@@ -133,12 +133,15 @@ class SceneRenderer(object):
         bgr = rand_voc*(depth_three_chan==0.0).astype(np.uint8) + bgr*(depth_three_chan>0).astype(np.uint8)
 
         obj_info = []
-        for (x, y, w, h), obj_id in zip(bbs, self.obj_ids[np.array(obj_is)]):
+        for i, obj_id in enumerate(self.obj_ids[np.array(obj_is)]):
+            (x, y, w, h) = bbs[i]
             xmin = np.minimum(x, x+w)
             xmax = np.maximum(x, x+w)
             ymin = np.minimum(y, y+h)
             ymax = np.maximum(y, y+h)
-            obj_info.append({'id': obj_id, 'bb': [int(xmin), int(ymin), int(xmax), int(ymax)]})
+            print("t: ({0})".format(ts[i]))
+            print("R: ({0})".format(Rs[i]))
+            obj_info.append({'id': obj_id, 'bb': [int(xmin), int(ymin), int(xmax), int(ymax)], 't': ts[i], 'R': Rs[i]})
 
         bgr = (bgr*255.0).astype(np.uint8)
 

@@ -21,7 +21,8 @@ def write_xml(obj_infos, width, height, obj_info, classname, outputpath, filenam
     for obj_info in obj_infos:
         obj = ET.SubElement(annotation, 'object')
         ET.SubElement(obj, 'name').text = str(obj_info['id'])
-        ET.SubElement(obj, 'pose').text = 'Unspecified'
+        ET.SubElement(obj, 'rotation').text = str(obj_info['R'])
+        ET.SubElement(obj, 'translation').text = str(obj_info['t'])
         ET.SubElement(obj, 'truncated').text = '0'
         ET.SubElement(obj, 'difficult').text = '0'
         bbox = ET.SubElement(obj, 'bndbox')
