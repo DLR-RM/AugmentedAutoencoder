@@ -133,7 +133,8 @@ class AePoseEstimator:
         print batch_image.shape
         print batch_image.dtype
         boxes, scores, labels = self.detector.predict(batch_image)
-
+        print(scores)
+        
         valid_dets = np.where(scores[0] >= self.det_threshold)
 
         boxes /= scale

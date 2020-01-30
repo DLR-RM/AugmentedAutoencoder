@@ -8,6 +8,7 @@ from webcam_video_stream import WebcamVideoStream
 from auto_pose.ae.utils import get_dataset_path
 from aae_retina_pose_estimator import AePoseEstimator
 
+from transforms3d.euler import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-test_config", type=str, required=False, default='test_config_webcam.cfg')
@@ -73,16 +74,18 @@ while videoStream.isActive():
         im_bg = cv2.bitwise_and(image,image,mask=(g_y[:,:,1]==0).astype(np.uint8))                 
         image_show = cv2.addWeighted(im_bg,1,g_y,1,0)
 
-
+        Rs = [pose_est[:3,:3] for pose_est in all_pose_estimates]
         ts = [pose_est[:3,3] for pose_est in all_pose_estimates]
         
         #Draw bounding boxes
-        for label,box,score,t in zip(labels,boxes,scores,ts):
+        for label,box,score,t,R in zip(labels,boxes,scores,ts,Rs):
+           euler = mat2euler((np.asarray(R).reshape(3,3)),'sxyz') 
            box = box.astype(np.int32)
            xmin,ymin,xmax,ymax = box[0],box[1],box[0]+box[2],box[1]+box[3]
            print label
            cv2.putText(image_show, 'class: %s score: %1.2f' % (label,score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,0,255), 2)
            cv2.putText(image_show, 'translation: (%1.2f, %1.2f, %1.2f)' % (t[0],t[1],t[2]), (xmin, ymax+40), cv2.FONT_ITALIC, .5, (0,0,255), 2)
+           cv2.putText(image_show, 'rotation: (%1.2f, %1.2f, %1.2f)' % (euler[0],euler[1],euler[2]), (xmin, ymax+60), cv2.FONT_ITALIC, .5, (0,0,255), 2)
            cv2.rectangle(image_show,(xmin,ymin),(xmax,ymax),(0,0,255),2)
 
         cv2.imshow('', bgr)
