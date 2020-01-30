@@ -276,7 +276,13 @@ class Dataset(object):
                 print('Object in Rendering not visible. Have you scaled the vertices to mm?')
                 break
 
-
+            # Augment with random scaling
+            random_scale = np.random.uniform(0.5, 1.5)
+            obj_bb = np.array([obj_bb[0]-(random_scale*obj_bb[2]-obj_bb[2])*0.5,
+                               obj_bb[1]-(random_scale*obj_bb[3]-obj_bb[3])*0.5,
+                               obj_bb[2]*random_scale,
+                               obj_bb[3]*random_scale])
+            
             x, y, w, h = obj_bb
 
             rand_trans_x = np.random.uniform(-max_rel_offset, max_rel_offset) * w
@@ -291,6 +297,12 @@ class Dataset(object):
 
             ys, xs = np.nonzero(depth_y > 0)
             obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
+
+            # Augment with random scaling
+            obj_bb = np.array([obj_bb[0]-(random_scale*obj_bb[2]-obj_bb[2])*0.5,
+                               obj_bb[1]-(random_scale*obj_bb[3]-obj_bb[3])*0.5,
+                               obj_bb[2]*random_scale,
+                               obj_bb[3]*random_scale])
 
             bgr_y = self.extract_square_patch(bgr_y, obj_bb, pad_factor,resize=(W,H),interpolation = cv2.INTER_NEAREST)
 
