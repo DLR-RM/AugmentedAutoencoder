@@ -29,7 +29,7 @@ test_args.read(test_configpath)
 
 ae_pose_est = AePoseEstimator(test_configpath)
 
-videoStream = WebcamVideoStream(3, ae_pose_est._width, ae_pose_est._height).start()
+videoStream = WebcamVideoStream(2, ae_pose_est._width, ae_pose_est._height).start()
 
 if args.vis:
     from auto_pose.meshrenderer import meshrenderer

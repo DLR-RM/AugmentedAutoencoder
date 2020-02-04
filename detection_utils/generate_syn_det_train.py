@@ -54,11 +54,11 @@ if __name__ == '__main__':
         Sometimes(0.1, GaussianBlur(0.5)),
         Sometimes(0.1, GaussianBlur(1.0)),
         Sometimes(0.4, Add((-25, 20), per_channel=0.5)),
-        #Sometimes(0.3, Invert(0.2, per_channel=True)),
+        Sometimes(0.5, Invert(0.2, per_channel=True)),
         Sometimes(0.5, Multiply((0.6, 1.4), per_channel=0.5)),
         Sometimes(0.5, Multiply((0.6, 1.4))),
         Sometimes(0.5, ContrastNormalization((0.5, 2.2), per_channel=0.3)),
-        #Sometimes(0.2, CoarseDropout( p=0.1, size_px = 10, size_percent=0.001) )
+        Sometimes(0.5, CoarseDropout(p=0.2, size_percent=0.02) )
     ], random_order=True)
 
     renderer = SceneRenderer(
