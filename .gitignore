@@ -5,3 +5,4 @@ install
 *.egg-info
 /data
 /AAE_workspace
+*~
