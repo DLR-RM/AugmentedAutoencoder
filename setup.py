@@ -20,6 +20,6 @@ setup(
                             "auto_pose = auto_pose.m3_interface.ae_pose_estimator:AePoseEstimator"
                             ]
     },
-    package_data={'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*', 'm3_interface/sample_data/*']},
+    package_data={'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*', 'm3_interface/sample_data/*', 'meshrenderer/shader/*']},
     # include_package_data=True
 )

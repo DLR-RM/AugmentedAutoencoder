@@ -72,7 +72,7 @@ class Dataset(object):
             renderer = meshrenderer_phong.Renderer(
                [self._kw['model_path']], 
                int(self._kw['antialiasing']), 
-               vertex_tmp_store_folder = '.',
+               vertex_tmp_store_folder = self.dataset_path,
                vertex_scale = float(self._kw['vertex_scale'])
             )
         else:
