@@ -42,7 +42,12 @@ class Renderer(object):
 
         vertices = []
         indices = []
-        for vertex, normal, color, faces in attributes:
+        for attribute in attributes:
+            if len(attribute) ==4:
+                vertex, normal, color, faces = attribute
+            else:
+                vertex, normal, faces = attribute 
+                color = np.ones_like(vertex)*160.0
             indices.append( faces.flatten() )
             vertices.append(np.hstack((vertex * vertex_scale, normal, color/255.0)).flatten())
 
@@ -56,7 +61,7 @@ class Renderer(object):
         vao.bind()
 
         # IBO
-        vertex_count = [np.prod(vert[3].shape) for vert in attributes]
+        vertex_count = [np.prod(vert[-1].shape) for vert in attributes]
         instance_count = np.ones(len(attributes))
         first_index = [sum(vertex_count[:i]) for i in range(len(vertex_count))]
 
