@@ -1,7 +1,7 @@
 PTVERSION = 2
 NAME = auto_pose 
 MAINTAINER = Martin Sundermeyer <Martin.Sundermeyer@dlr.de>
-VERSION = 0.0.21
+VERSION = 0.0.25
 DOCUMENTATION = https://rmc-github.robotic.dlr.de/sund-ma/auto_pose
 LICENSE = Apache v2.0
 
@@ -14,7 +14,7 @@ DEPENDS = 	sw.common.tensorflow==1,
 			sw.common.NumPy==1
 			
 ARCHS = osl42-x86_64,
-DESCRIPTION = 6D Pose Estimation from RGB (fast) or RGB-D (slow but more accurate), trained from a 3D model (textured or un-textured) 
+DESCRIPTION = Fast 6D Pose Estimation from RGB, trained from a 3D model (textured or un-textured) 
 
 EXEC_PATHS = ${ARCH}/bin
 PYTHON_PATHS = ${ARCH}/lib/python2.7/site-packages
