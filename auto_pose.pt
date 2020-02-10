@@ -1,7 +1,7 @@
 PTVERSION = 2
 NAME = auto_pose 
 MAINTAINER = Martin Sundermeyer <Martin.Sundermeyer@dlr.de>
-VERSION = 0.0.37
+VERSION = 0.9.0
 DOCUMENTATION = https://rmc-github.robotic.dlr.de/sund-ma/auto_pose
 LICENSE = Apache v2.0
 
