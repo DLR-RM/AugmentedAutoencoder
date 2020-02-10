@@ -20,6 +20,6 @@ setup(
 	"m3vision.models": [
                             "auto_pose = auto_pose.m3_interface.ae_pose_estimator:AePoseEstimator"
                             ]
-    }
-    # include_package_data=True
+    },
+    include_package_data=True
 )
