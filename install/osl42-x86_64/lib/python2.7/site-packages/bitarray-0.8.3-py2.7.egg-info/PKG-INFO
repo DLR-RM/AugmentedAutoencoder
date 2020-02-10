@@ -1,0 +1,28 @@
+Metadata-Version: 1.1
+Name: bitarray
+Version: 0.8.3
+Summary: efficient arrays of booleans -- C extension
+Home-page: https://github.com/ilanschnell/bitarray
+Author: Ilan Schnell
+Author-email: ilanschnell@gmail.com
+License: PSF
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: License :: OSI Approved :: Python Software Foundation License
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: C
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.4
+Classifier: Programming Language :: Python :: 2.5
+Classifier: Programming Language :: Python :: 2.6
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.1
+Classifier: Programming Language :: Python :: 3.2
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Topic :: Utilities
