@@ -11,8 +11,9 @@ DEPENDS = 	sw.common.tensorflow==1,
 			sw.common.vtk==6.3.0,
 			sw.common.python-six==1,
 			sw.moro.m3vision==0.1,
-			sw.common.NumPy==1
-			
+			sw.common.NumPy==1,
+			sw.common.cyglfw3==3
+						
 ARCHS = osl42-x86_64,
 DESCRIPTION = Fast 6D Pose Estimation from RGB, trained from a 3D model (textured or un-textured) 
 
@@ -23,7 +24,7 @@ ADDITIONAL_ENV = M3_ESTIMATOR_PACKAGES=auto_pose:$${M3_ESTIMATOR_PACKAGES}
 
 [subpackage]
 NAME = training
-DEPENDS += sw.moro.meshrenderer==0, 
+DEPENDS += sw.common.assimp/python==3.3, 
 		   sw.common.python-imgaug==0
 
 #[subpackage]
