@@ -1,3 +1,0 @@
-include auto_pose/meshrenderer/shader/*.vs
-include auto_pose/meshrenderer/shader/*.frag
-graft auto_pose
