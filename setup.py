@@ -6,6 +6,7 @@ setup(
     packages=find_packages(exclude=('docs')),
     package_data={'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*', 'meshrenderer/shader/*', 'm3_interface/sample_data/*']},
     # install_requires=['imgaug>=0.2.3'],
+    install_requires=['progressbar', 'bitarray'],
     author='Martin Sundermeyer, Dimitri Henkel',
     author_email='Martin.Sundermeyer@dlr.de, Dimitri.Henkel@dlr.de',
     license='DLR proprietary',
