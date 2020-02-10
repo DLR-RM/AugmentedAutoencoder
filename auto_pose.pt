@@ -12,7 +12,7 @@ DEPENDS = 	sw.common.tensorflow==1,
 			sw.common.python-six==1,
 			sw.moro.m3vision==0.1,
 			sw.common.NumPy==1,
-			sw.common.cyglfw3==3
+			bruc_ma.cyglfw3==3
 						
 ARCHS = osl42-x86_64,
 DESCRIPTION = Fast 6D Pose Estimation from RGB, trained from a 3D model (textured or un-textured) 
