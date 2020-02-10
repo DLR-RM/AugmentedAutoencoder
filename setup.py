@@ -3,8 +3,8 @@ from setuptools import setup, find_packages
 setup(
     name='auto_pose',
     version='0.0.28',
-    package_data={'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*', 'm3_interface/sample_data/*', 'meshrenderer/shader/*']},
     packages=find_packages(exclude=('docs')),
+    package_data={'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*', 'meshrenderer/shader/*.vs', 'meshrenderer/shader/*.frag', 'm3_interface/sample_data/*']},
     # install_requires=['imgaug>=0.2.3'],
     install_requires=['progressbar', 'bitarray'],
     author='Martin Sundermeyer, Dimitri Henkel',
