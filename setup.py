@@ -21,5 +21,5 @@ setup(
                             ]
     },
     package_data={'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*', 'm3_interface/sample_data/*', 'meshrenderer/shader/*']},
-    # include_package_data=True
+    include_package_data=True
 )
