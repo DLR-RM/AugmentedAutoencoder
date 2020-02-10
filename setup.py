@@ -4,7 +4,7 @@ setup(
     name='auto_pose',
     version='0.0.32',
     packages=find_packages(exclude=('docs')) + ['auto_pose.meshrenderer.shader'],
-    package_data={'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*', 'meshrenderer/gl_utils/*', 'meshrenderer/shader/*', 'meshrenderer/pysixd/*', 'm3_interface/sample_data/*']},
+    package_data={'',: ['*.vs','*.frag'], 'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*', 'meshrenderer/gl_utils/*', 'meshrenderer/shader/*', 'meshrenderer/pysixd/*', 'm3_interface/sample_data/*']},
     # install_requires=['imgaug>=0.2.3'],
     author='Martin Sundermeyer, Dimitri Henkel',
     author_email='Martin.Sundermeyer@dlr.de, Dimitri.Henkel@dlr.de',
