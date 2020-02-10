@@ -8,3 +8,4 @@ ae.sublime-workspace
 *.bak
 .vscode
 auto_pose.egg-info
+**/__pycache__
