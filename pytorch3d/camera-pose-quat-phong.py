@@ -65,7 +65,7 @@ class Model(nn.Module):
         
         # Create an optimizable parameter for the camera as a quaternion. 
         self.camera_position = nn.Parameter(
-            torch.from_numpy(np.array([-1.0, 1.2, -3.0], dtype=np.float32)).to(meshes.device))
+            torch.from_numpy(np.array([-1.0, 1.4, -3.0], dtype=np.float32)).to(meshes.device))
 
     def forward(self):
         
@@ -76,10 +76,10 @@ class Model(nn.Module):
         image = self.renderer(meshes_world=self.meshes.clone(), R=R, T=T)
         
         # Calculate the silhouette loss
-        #loss = torch.sum((image - self.image_ref) ** 2)
-        diff = torch.abs(image - self.image_ref)
-        topk, indices = torch.topk(diff.flatten(), 10000)
-        loss = torch.sum(topk)
+        loss = torch.sum((image - self.image_ref) ** 2)
+        #diff = torch.abs(image - self.image_ref)
+        #topk, indices = torch.topk(diff.flatten(), 10000)
+        #loss = torch.sum(topk)
         #loss = torch.mean(diff.flatten())
         return loss, image
 
@@ -111,35 +111,15 @@ cameras = OpenGLPerspectiveCameras(device=device)
 # edges. Refer to blending.py for more details. 
 blend_params = BlendParams(sigma=1e-4, gamma=1e-4)
 
-# Define the settings for rasterization and shading. Here we set the output image to be of size
-# 256x256. To form the blended image we use 100 faces for each pixel. Refer to rasterize_meshes.py
-# for an explanation of this parameter. 
-raster_settings = RasterizationSettings(
-    image_size=256, 
-    blur_radius=np.log(1. / 1e-4 - 1.) * blend_params.sigma, 
-    faces_per_pixel=100, 
-    bin_size=0
-)
-
-# Create a silhouette mesh renderer by composing a rasterizer and a shader. 
-silhouette_renderer = MeshRenderer(
-    rasterizer=MeshRasterizer(
-        cameras=cameras, 
-        raster_settings=raster_settings
-    ),
-    shader=SilhouetteShader(blend_params=blend_params)
-)
-
-
 # We will also create a phong renderer. This is simpler and only needs to render one face per pixel.
 raster_settings = RasterizationSettings(
-    image_size=256, 
-    blur_radius=0.0, 
+    image_size=512, 
+    blur_radius=0, 
     faces_per_pixel=1, 
     bin_size=0
 )
 # We can add a point light in front of the object. 
-lights = PointLights(device=device, location=((2.0, 2.0, -2.0),))
+lights = PointLights(device=device, location=((1.5, 1.5, -0.4),))
 phong_renderer = MeshRenderer(
     rasterizer=MeshRasterizer(
         cameras=cameras, 
@@ -191,6 +171,9 @@ for i in np.arange(1000):
     
     #if last_loss is not None and (abs(last_loss-loss.data)<0.00001):
     #    break
+
+    if(loss.data < 100):
+        break
 
     # Update last loss
     last_loss = loss.data
