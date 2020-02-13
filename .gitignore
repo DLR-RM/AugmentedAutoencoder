@@ -6,3 +6,8 @@ install
 /data
 /AAE_workspace
 *~
+*.png
+*.p
+*.pickle
+*.obj
+*#
