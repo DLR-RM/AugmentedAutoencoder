@@ -11,3 +11,4 @@ install
 *.pickle
 *.obj
 *#
+*.gif
