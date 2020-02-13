@@ -26,30 +26,7 @@ from pytorch3d.renderer import (
     SilhouetteShader, PhongShader, PointLights
 )
 
-# Convert quaternion to rotation matrix
-# from: https://github.com/ClementPinard/SfmLearner-Pytorch/blob/master/inverse_warp.py
-def quat2mat(quat):
-    """Convert quaternion coefficients to rotation matrix.
-    Args:
-        quat: first three coeff of quaternion of rotation. fourht is then computed to have a norm of 1 -- size = [B, 3]
-    Returns:
-        Rotation matrix corresponding to the quaternion -- size = [B, 3, 3]
-    """
-    norm_quat = torch.cat([quat[:,:1].detach()*0 + 1, quat], dim=1)
-    norm_quat = norm_quat/norm_quat.norm(p=2, dim=1, keepdim=True)
-    w, x, y, z = norm_quat[:,0], norm_quat[:,1], norm_quat[:,2], norm_quat[:,3]
-
-    B = quat.size(0)
-
-    w2, x2, y2, z2 = w.pow(2), x.pow(2), y.pow(2), z.pow(2)
-    wx, wy, wz = w*x, w*y, w*z
-    xy, xz, yz = x*y, x*z, y*z
-
-    rotMat = torch.stack([w2 + x2 - y2 - z2, 2*xy - 2*wz, 2*wy + 2*xz,
-                          2*wz + 2*xy, w2 - x2 + y2 - z2, 2*yz - 2*wx,
-                          2*xz - 2*wy, 2*wx + 2*yz, w2 - x2 - y2 + z2], dim=1).reshape(B, 3, 3)
-    return rotMat
-
+from utils import *
 
 class Model(nn.Module):
     def __init__(self, meshes, renderer, image_ref):
@@ -65,7 +42,7 @@ class Model(nn.Module):
         
         # Create an optimizable parameter for the camera as a quaternion. 
         self.camera_position = nn.Parameter(
-            torch.from_numpy(np.array([-1.0, 1.4, -3.0], dtype=np.float32)).to(meshes.device))
+            torch.from_numpy(np.array([-0.1, 0.14, -0.3], dtype=np.float32)).to(meshes.device))
 
     def forward(self):
         
@@ -129,7 +106,7 @@ phong_renderer = MeshRenderer(
 )
 
 # Render reference image
-R = torch.from_numpy(np.array([0.4, 1.2, -3.0], dtype=np.float32)).to(device).unsqueeze(0)       
+R = torch.from_numpy(np.array([-1.0, 1.4, -3.0], dtype=np.float32)).to(device).unsqueeze(0)       
 R = quat2mat(R)
 T = torch.from_numpy(np.array([0.0,  0.0, 2.0], dtype=np.float32)).to(device).unsqueeze(0)      
 image_ref = phong_renderer(meshes_world=teapot_mesh, R=R, T=T)
