@@ -1,10 +1,10 @@
 #!/usr/bin/python2
-# EASY-INSTALL-ENTRY-SCRIPT: 'auto-pose==0.0.35','console_scripts','ae_test_embedding'
-__requires__ = 'auto-pose==0.0.35'
+# EASY-INSTALL-ENTRY-SCRIPT: 'auto-pose==0.9.2','console_scripts','ae_test_embedding'
+__requires__ = 'auto-pose==0.9.2'
 import sys
 from pkg_resources import load_entry_point
 
 if __name__ == '__main__':
     sys.exit(
-        load_entry_point('auto-pose==0.0.35', 'console_scripts', 'ae_test_embedding')()
+        load_entry_point('auto-pose==0.9.2', 'console_scripts', 'ae_test_embedding')()
     )
