@@ -55,7 +55,10 @@ ENV LANG C.UTF-8
 RUN apt-get update && apt-get -q install -y \
     python3-pip \
     python3 \
-    git
+    git \
+    libsm6 \
+    libxext6 \
+    libxrender-dev
 
 RUN pip3 --no-cache-dir install --upgrade \
     pip
@@ -71,6 +74,9 @@ RUN pip3 --no-cache-dir install \
     imageio \
     matplotlib \
     scikit-image \
+    opencv-python
+
+RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
 
 RUN apt-get -q install -y \
     python3-tk
