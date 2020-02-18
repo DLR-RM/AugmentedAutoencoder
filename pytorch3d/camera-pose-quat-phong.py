@@ -7,9 +7,6 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from skimage import img_as_ubyte
 
-#from transforms3d.axangles import axangle2mat
-import torchgeometry as tgm
-
 # io utils
 from pytorch3d.io import load_obj
 

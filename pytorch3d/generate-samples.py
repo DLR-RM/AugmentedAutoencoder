@@ -82,7 +82,7 @@ ts = []
 images = []
 
 start = time.time()
-for i in np.arange(1000):
+for i in np.arange(5000):
     R = torch.from_numpy(random_rotation_matrix()[:3,:3]).to(device).unsqueeze(0)
     T = torch.from_numpy(np.array([0.0,  0.0, 3.5], dtype=np.float32)).to(device).unsqueeze(0)
     
