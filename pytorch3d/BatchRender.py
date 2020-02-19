@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import torch.nn as nn
 
 # io utils
 from pytorch3d.io import load_obj
@@ -17,20 +18,31 @@ from pytorch3d.renderer import (
     SilhouetteShader, PhongShader, PointLights, DirectionalLights
 )
 
+class MeshRendererWithDepth(nn.Module):
+    def __init__(self, rasterizer, shader):
+        super().__init__()
+        self.rasterizer = rasterizer
+        self.shader = shader
+
+    def forward(self, meshes_world, **kwargs) -> torch.Tensor:
+        fragments = self.rasterizer(meshes_world, **kwargs)
+        images = self.shader(fragments, meshes_world, **kwargs)
+        #return images, fragments.zbuf
+        return fragments.zbuf
+
 class BatchRender:
-    def __init__(self, obj_path, device, batch_size=12):
+    def __init__(self, obj_path, device, batch_size=12,
+                 render_method="silhouette", image_size=256):
         self.batch_size = batch_size
         self.batch_indeces = np.arange(self.batch_size)
         self.obj_path = obj_path
         self.device = device
-    
-
 
         # Setup batch of meshes
         self.batch_mesh = self.initMeshes()
 
         # Initialize the renderer
-        self.renderer = self.initRender()
+        self.renderer = self.initRender(image_size=image_size, method=render_method)
 
     def renderBatch(self, Rs, ts):
         if(type(Rs) is list):
@@ -69,7 +81,7 @@ class BatchRender:
         return batch_mesh
 
 
-    def initRender(self, method="silhouette", image_size=128):      
+    def initRender(self, method, image_size):      
         cameras = OpenGLPerspectiveCameras(device=self.device)
 
         if(method=="silhouette"):
@@ -89,6 +101,23 @@ class BatchRender:
                 ),
                 shader=SilhouetteShader(blend_params=blend_params)
             )
+        elif(method=="depth"):
+            blend_params = BlendParams(sigma=5e-5, gamma=5e-5)
+
+            raster_settings = RasterizationSettings(
+                image_size=image_size, 
+                blur_radius=np.log(1. / 5e-5 - 1.) * blend_params.sigma, 
+                faces_per_pixel=5, 
+                bin_size=0
+            )
+            
+            renderer = MeshRendererWithDepth(
+                rasterizer=MeshRasterizer(
+                    cameras=cameras, 
+                    raster_settings=raster_settings
+                ),
+                shader=SilhouetteShader(blend_params=blend_params)
+            )
         elif(method=="phong"):
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
@@ -96,7 +125,6 @@ class BatchRender:
                 faces_per_pixel=1, 
                 bin_size=0
             )
-            # We can add a point light in front of the object. 
             lights = DirectionalLights(device=self.device,
                                        ambient_color=[[0.4, 0.4, 0.4]],
                                        diffuse_color=[[0.8, 0.8, 0.8]],

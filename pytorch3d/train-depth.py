@@ -7,19 +7,6 @@ import matplotlib.pyplot as plt
 # io utils
 from pytorch3d.io import load_obj
 
-# datastructures
-from pytorch3d.structures import Meshes, Textures, list_to_padded
-
-# 3D transformations functions
-from pytorch3d.transforms import Rotate, Translate
-
-# rendering components
-from pytorch3d.renderer import (
-    OpenGLPerspectiveCameras, look_at_view_transform, look_at_rotation, 
-    RasterizationSettings, MeshRenderer, MeshRasterizer, BlendParams,
-    SilhouetteShader, PhongShader, PointLights, DirectionalLights
-)
-
 from utils import *
 from model import Model
 
@@ -45,10 +32,10 @@ def Loss(gt_img, predicted_poses, batch_renderer, method="diff-bootstrap"):
         batch_size = len(Rs)
         img_size = gt_img.shape[1]
         k = (img_size*img_size*batch_size)/bootstrap
-        #print("Batch size: {0}\n Img size: {1}\n Bootstrap ratio: {2}\n K-value: {3}".format(batch_size, img_size, bootstrap, k))
         error = ((gt_img - image_ref) ** 2)
-        topk, indices = torch.topk(error.flatten(), round(k))
-        loss = torch.mean(topk)
+        topk, indices = torch.topk(error.flatten(), round(k), sorted=True)
+        loss = torch.mean(topk)        
+        #loss = torch.mean(topk[batch_size*10:])
     else:
         print("Unknown loss specified")
         return -1, None
@@ -59,7 +46,7 @@ def batch(iterable, n=1):
     for ndx in range(0, l, n):
         yield iterable[ndx:min(ndx + n, l)]
 
-def trainEpoch(e):
+def trainEpoch(e, visualize=False):
     losses = []
     batch_size = br.batch_size
     num_samples = len(data["codes"])
@@ -94,7 +81,7 @@ def trainEpoch(e):
         print("Step: {0}/{1} - loss: {2}".format(i,round(num_samples/batch_size),loss.data))
         losses.append(loss.data.detach().cpu().numpy())
 
-        if(loss < 0.04):  
+        if(visualize):
             fig = plt.figure(figsize=(10, 10))
             plt.subplot(1, 2, 1)
             plt.imshow((gt_img[0]).detach().cpu().numpy()[..., 3])
@@ -105,12 +92,12 @@ def trainEpoch(e):
             plt.title("Predicted")
 
             fig.tight_layout()
-            fig.savefig("output/test{0:.5f}.png".format(loss), dpi=fig.dpi)
+            fig.savefig(output_path + "test{0:.5f}.png".format(loss), dpi=fig.dpi)
             plt.close()
             #plt.show()
 
             
-    torch.save(model.state_dict(), "./output/model-epoch{0}.pt".format(e))    
+    torch.save(model.state_dict(), output_path + "model-epoch{0}.pt".format(e))    
     return np.mean(losses)
         
 
@@ -118,23 +105,27 @@ def trainEpoch(e):
 device = torch.device("cuda:0")
 torch.cuda.set_device(device)
 
-br = BatchRender("./data/ikea_mug_scaled_reduced.obj", device, batch_size=38)
+# Set up batch renderer
+br = BatchRender("./data/cad-models/ikea_mug_scaled_reduced.obj",
+                 device,
+                 batch_size=12,
+                 render_method="depth",
+                 image_size=256)
                    
 
 # Initialize a model using the renderer, mesh and reference image
 model = Model().to(device)
-model.load_state_dict(torch.load("./output/model-epoch13.pt"))
+#model.load_state_dict(torch.load("./output/model-epoch720.pt"))
 
 # Create an optimizer. Here we are using Adam and we pass in the parameters of the model
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
 
-data = pickle.load(open("/shared-folder/AugmentedAutoencoder/pytorch3d/training-data/training-codes-1k.p","rb"), encoding="latin1")
-
+data = pickle.load(open("./data/dataset-1k/training-codes.p","rb"), encoding="latin1")
+output_path = "./output/depth/"
 
 for e in np.arange(2000):
     np.random.seed(seed=42)
-    loss = trainEpoch(e)
+    loss = trainEpoch(e, visualize=True)
     print("-"*20)
     print("Epoch: {0} - loss: {1}".format(e,loss))
     print("-"*20)
-    #torch.save(model.state_dict(), "./output/model-epoch{0}.pt".format(e))
