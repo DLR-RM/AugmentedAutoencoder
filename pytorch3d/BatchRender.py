@@ -27,12 +27,13 @@ class BatchRender:
         self.batch_indeces = np.arange(self.batch_size)
         self.obj_path = obj_path
         self.device = device
+        self.method = render_method
 
         # Setup batch of meshes
         self.batch_mesh = self.initMeshes()
 
         # Initialize the renderer
-        self.renderer = self.initRender(image_size=image_size, method=render_method)
+        self.renderer = self.initRender(image_size=image_size, method=self.method)
 
     def renderBatch(self, Rs, ts):
         if(type(Rs) is list):
@@ -43,13 +44,13 @@ class BatchRender:
             batch_T = torch.tensor(np.stack(ts), device=self.device, dtype=torch.float32) # Bx3
         else:
             batch_T = ts
-
-        # Reshape meshes and ts to fit length of Rs
-        #batch_mesh = self.batch_mesh[:batch_R.shape[0]]
-        #batch_T = batch_T[:batch_R.shape[0]]         
-        #images = self.renderer(meshes_world=batch_mesh, R=batch_R, T=batch_T)
         
         images = self.renderer(meshes_world=self.batch_mesh, R=batch_R, T=batch_T)
+        if(self.method == "silhouette"):
+            images = images[...,3]
+        else:
+            images = images[...,0]
+        
         return images
 
     def initMeshes(self):
