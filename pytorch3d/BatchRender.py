@@ -15,20 +15,10 @@ from pytorch3d.transforms import Rotate, Translate
 from pytorch3d.renderer import (
     OpenGLPerspectiveCameras, look_at_view_transform, look_at_rotation, 
     RasterizationSettings, MeshRenderer, MeshRasterizer, BlendParams,
-    SilhouetteShader, PhongShader, PointLights, DirectionalLights
+    SoftSilhouetteShader, SoftPhongShader, PointLights, DirectionalLights
 )
 
-class MeshRendererWithDepth(nn.Module):
-    def __init__(self, rasterizer, shader):
-        super().__init__()
-        self.rasterizer = rasterizer
-        self.shader = shader
-
-    def forward(self, meshes_world, **kwargs) -> torch.Tensor:
-        fragments = self.rasterizer(meshes_world, **kwargs)
-        images = self.shader(fragments, meshes_world, **kwargs)
-        #return images, fragments.zbuf
-        return fragments.zbuf
+from CustomRenderers import *
 
 class BatchRender:
     def __init__(self, obj_path, device, batch_size=12,
@@ -82,7 +72,7 @@ class BatchRender:
 
 
     def initRender(self, method, image_size):      
-        cameras = OpenGLPerspectiveCameras(device=self.device)
+        cameras = OpenGLPerspectiveCameras(device=self.device, fov=25)
 
         if(method=="silhouette"):
             blend_params = BlendParams(sigma=1e-4, gamma=1e-4)
@@ -99,32 +89,33 @@ class BatchRender:
                     cameras=cameras, 
                     raster_settings=raster_settings
                 ),
-                shader=SilhouetteShader(blend_params=blend_params)
+                shader=SoftSilhouetteShader(blend_params=blend_params)
             )
         elif(method=="depth"):
-            blend_params = BlendParams(sigma=5e-5, gamma=5e-5)
-
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
-                blur_radius=np.log(1. / 5e-5 - 1.) * blend_params.sigma, 
-                faces_per_pixel=5, 
+                blur_radius=0,
+                faces_per_pixel=1, 
                 bin_size=0
             )
             
-            renderer = MeshRendererWithDepth(
+            renderer = MeshRenderer(
                 rasterizer=MeshRasterizer(
                     cameras=cameras, 
                     raster_settings=raster_settings
                 ),
-                shader=SilhouetteShader(blend_params=blend_params)
+                shader=DepthShader()
             )
         elif(method=="phong"):
+            blend_params = BlendParams(sigma=1e-7, gamma=1e-7)
+
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
-                blur_radius=0, 
-                faces_per_pixel=1, 
+                blur_radius=np.log(1. / 1e-7 - 1.) * blend_params.sigma, 
+                faces_per_pixel=100, 
                 bin_size=0
             )
+
             lights = DirectionalLights(device=self.device,
                                        ambient_color=[[0.4, 0.4, 0.4]],
                                        diffuse_color=[[0.8, 0.8, 0.8]],
@@ -135,7 +126,7 @@ class BatchRender:
                     cameras=cameras, 
                     raster_settings=raster_settings
                 ),
-                shader=PhongShader(device=self.device, lights=lights)
+                shader=SoftPhongShader(device=self.device, lights=lights)
             )
         else:
             print("Unknown render method!")

@@ -2,7 +2,12 @@ import torch
 import numpy
 import math
 import cv2
+import csv
 
+def list2file(input_list, file_name):
+    with open(file_name, 'w') as f:
+        wr = csv.writer(f, delimiter='\n')
+        wr.writerow(input_list)
 
 # Convert quaternion to rotation matrix
 # from: https://github.com/ClementPinard/SfmLearner-Pytorch/blob/master/inverse_warp.py
@@ -13,10 +18,13 @@ def quat2mat(quat):
     Returns:
         Rotation matrix corresponding to the quaternion -- size = [B, 3, 3]
     """
-    norm_quat = torch.cat([quat[:,:1].detach()*0 + 1, quat], dim=1)
-    norm_quat = norm_quat/norm_quat.norm(p=2, dim=1, keepdim=True)
-    w, x, y, z = norm_quat[:,0], norm_quat[:,1], norm_quat[:,2], norm_quat[:,3]
+    #norm_quat = torch.cat([quat[:,:1].detach()*0 + 1, quat], dim=1)
+    #norm_quat = norm_quat/norm_quat.norm(p=2, dim=1, keepdim=True)
+    #w, x, y, z = norm_quat[:,0], norm_quat[:,1], norm_quat[:,2], norm_quat[:,3]
 
+    norm_quat = quat/quat.norm(p=2, dim=1, keepdim=True)
+    w, x, y, z = norm_quat[:,0], norm_quat[:,1], norm_quat[:,2], norm_quat[:,3]
+    
     B = quat.size(0)
 
     w2, x2, y2, z2 = w.pow(2), x.pow(2), y.pow(2), z.pow(2)
@@ -87,6 +95,22 @@ def random_quaternion(rand=None):
     return numpy.array([numpy.cos(t2)*r2, numpy.sin(t1)*r1,
                         numpy.cos(t1)*r1, numpy.sin(t2)*r2])
 
+
+
+def q2m(quat):
+    _EPS = numpy.finfo(float).eps * 4.0
+    q = torch.tensor(quat, dtype=numpy.float64, copy=True)
+    n = numpy.dot(q, q)
+    if n < _EPS:
+        return numpy.identity(4)
+    q *= math.sqrt(2.0 / n)
+    q = numpy.outer(q, q)
+    return numpy.array([
+        [1.0-q[2, 2]-q[3, 3],     q[1, 2]-q[3, 0],     q[1, 3]+q[2, 0], 0.0],
+        [    q[1, 2]+q[3, 0], 1.0-q[1, 1]-q[3, 3],     q[2, 3]-q[1, 0], 0.0],
+        [    q[1, 3]-q[2, 0],     q[2, 3]+q[1, 0], 1.0-q[1, 1]-q[2, 2], 0.0],
+        [                0.0,                 0.0,                 0.0, 1.0]]) 
+    
 def quaternion_matrix(quaternion):
     """Return homogeneous rotation matrix from quaternion.
 

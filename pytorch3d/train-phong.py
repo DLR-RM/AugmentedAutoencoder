@@ -12,7 +12,7 @@ from model import Model
 
 from BatchRender import BatchRender
 
-def Loss(gt_img, predicted_poses, batch_renderer, method="diff-bootstrap"):
+def Loss(gt_img, predicted_poses, batch_renderer, method="diff"):
 
     # Render the object using the predicted_poses
     T = np.array([0.0,  0.0, 3.5], dtype=np.float32)
@@ -22,18 +22,19 @@ def Loss(gt_img, predicted_poses, batch_renderer, method="diff-bootstrap"):
     for k in br.batch_indeces:
         ts.append(T.copy())
     
-    image_ref = batch_renderer.renderBatch(Rs, ts)
+    image_ref = batch_renderer.renderBatch(Rs, ts)[...,0]
 
     if(method=="diff"):
         diff = torch.abs(gt_img - image_ref)
         loss = torch.mean(diff)
     elif(method=="diff-bootstrap"):
-        bootstrap = 2
-        batch_size = len(Rs)
-        img_size = gt_img.shape[1]
-        k = (img_size*img_size*batch_size)/bootstrap
-        error = ((gt_img - image_ref) ** 2)
-        topk, indices = torch.topk(error.flatten(), round(k), sorted=True)
+        #bootstrap = 2
+        #batch_size = len(Rs)
+        #img_size = gt_img.shape[1]
+        #k = (img_size*img_size*batch_size)/bootstrap
+        error = torch.abs(gt_img - image_ref).flatten(start_dim=1)
+        k = error.shape[1]/4
+        topk, indices = torch.topk(error, round(k), sorted=True)
         loss = torch.mean(topk)        
         #loss = torch.mean(topk[batch_size*10:])
     else:
@@ -71,7 +72,7 @@ def trainEpoch(e, visualize=False):
             Rs.append(data["Rs"][b])
             ts.append(T.copy())
     
-        gt_img = br.renderBatch(Rs, ts)
+        gt_img = br.renderBatch(Rs, ts)[...,0]
     
         loss, predicted_image = Loss(gt_img, predicted_poses, br)
     
@@ -81,21 +82,27 @@ def trainEpoch(e, visualize=False):
         print("Step: {0}/{1} - loss: {2}".format(i,round(num_samples/batch_size),loss.data))
         losses.append(loss.data.detach().cpu().numpy())
 
+        #plt.hist((gt_img[0].flatten()).detach().cpu().numpy(), bins=20)
+        #plt.show()
+
         if(visualize):
-            gt_img = gt_img/torch.max(gt_img)
-            predicted_image = predicted_image/torch.max(predicted_image)
+            #gt_img = gt_img/torch.max(gt_img)
+            #predicted_image = predicted_image/torch.max(predicted_image)
             
             fig = plt.figure(figsize=(10, 10))
+            fig.suptitle("Loss: {0}".format(loss.data))
             plt.subplot(1, 2, 1)
             plt.imshow((gt_img[0]).detach().cpu().numpy())
             plt.title("GT")
+            #plt.colorbar()
             
             plt.subplot(1, 2, 2)
             plt.imshow((predicted_image[0]).detach().cpu().numpy())
             plt.title("Predicted")
+            #plt.colorbar()
 
             fig.tight_layout()
-            fig.savefig(output_path + "test{0:.5f}.png".format(loss), dpi=fig.dpi)
+            fig.savefig(output_path + "epoch{0}-batch{1}.png".format(e,i), dpi=fig.dpi)
             plt.close()
             #plt.show()
 
@@ -111,7 +118,7 @@ torch.cuda.set_device(device)
 # Set up batch renderer
 br = BatchRender("./data/cad-models/ikea_mug_scaled_reduced.obj",
                  device,
-                 batch_size=12,
+                 batch_size=4,
                  render_method="phong",
                  image_size=256)
                    
@@ -125,10 +132,13 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
 
 data = pickle.load(open("./data/dataset-1k/training-codes.p","rb"), encoding="latin1")
 output_path = "./output/phong/"
+train_loss = []
 
+np.random.seed(seed=42)
 for e in np.arange(2000):
-    np.random.seed(seed=42)
-    loss = trainEpoch(e, visualize=True)
+    loss = trainEpoch(e, visualize=False)
+    train_loss.append(loss)
+    list2file(train_loss, "{0}train-loss.csv".format(output_path))
     print("-"*20)
     print("Epoch: {0} - loss: {1}".format(e,loss))
     print("-"*20)

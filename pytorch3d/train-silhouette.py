@@ -12,7 +12,7 @@ from model import Model
 
 from BatchRender import BatchRender
 
-def Loss(gt_img, predicted_poses, batch_renderer, method="diff-bootstrap"):
+def Loss(gt_img, predicted_poses, batch_renderer, method="diff"):
 
     # Render the object using the predicted_poses
     T = np.array([0.0,  0.0, 3.5], dtype=np.float32)
@@ -22,7 +22,8 @@ def Loss(gt_img, predicted_poses, batch_renderer, method="diff-bootstrap"):
     for k in br.batch_indeces:
         ts.append(T.copy())
     
-    image_ref = batch_renderer.renderBatch(Rs, ts)
+    image_ref = batch_renderer.renderBatch(Rs, ts)[...,3]
+    image_ref = torch.clamp(image_ref, 3.0, 4.0)
 
     if(method=="diff"):
         diff = torch.abs(gt_img - image_ref)
@@ -71,7 +72,8 @@ def trainEpoch(e, visualize=False):
             Rs.append(data["Rs"][b])
             ts.append(T.copy())
     
-        gt_img = br.renderBatch(Rs, ts)
+        gt_img = br.renderBatch(Rs, ts)[...,3]
+        gt_img = torch.clamp(gt_img, 3.0, 4.0)
     
         loss, predicted_image = Loss(gt_img, predicted_poses, br)
     
@@ -81,14 +83,17 @@ def trainEpoch(e, visualize=False):
         print("Step: {0}/{1} - loss: {2}".format(i,round(num_samples/batch_size),loss.data))
         losses.append(loss.data.detach().cpu().numpy())
 
+        #plt.hist((gt_img[0].flatten()).detach().cpu().numpy(), bins=20)
+        #plt.show()
+
         if(visualize):
             fig = plt.figure(figsize=(10, 10))
             plt.subplot(1, 2, 1)
-            plt.imshow((gt_img[0]).detach().cpu().numpy()[..., 3])
+            plt.imshow((gt_img[0]).detach().cpu().numpy())
             plt.title("GT")
             
             plt.subplot(1, 2, 2)
-            plt.imshow((predicted_image[0]).detach().cpu().numpy()[..., 3])
+            plt.imshow((predicted_image[0]).detach().cpu().numpy())
             plt.title("Predicted")
 
             fig.tight_layout()
@@ -123,9 +128,13 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
 data = pickle.load(open("./data/dataset-1k/training-codes.p","rb"), encoding="latin1")
 output_path = "./output/silhouette/"
 
+train_loss = []
+
+np.random.seed(seed=42)
 for e in np.arange(2000):
-    np.random.seed(seed=42)
     loss = trainEpoch(e, visualize=True)
+    train_loss.append(loss)
+    list2file(train_loss, "{0}train-loss.csv".format(output_path))
     print("-"*20)
     print("Epoch: {0} - loss: {1}".format(e,loss))
     print("-"*20)

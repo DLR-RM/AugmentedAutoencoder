@@ -11,7 +11,7 @@ class Model(nn.Module):
 
         self.l1 = nn.Linear(128,128)
         self.l2 = nn.Linear(128,64)
-        self.l3 = nn.Linear(64,3)
+        self.l3 = nn.Linear(64,4)
 
         self.bn1 = nn.BatchNorm1d(128)
         self.bn2 = nn.BatchNorm1d(64)
@@ -22,6 +22,9 @@ class Model(nn.Module):
     # Output: y = pose as quaternion
     def forward(self,x):
         x = F.relu(self.bn1(self.l1(x)))
-        x = F.relu(self.bn2(self.l2(x)))                
+        x = F.relu(self.bn2(self.l2(x)))
+
+        #x = F.relu(self.l1(x))
+        #x = F.relu(self.l2(x))                
         y = self.tanh(self.l3(x))
         return y

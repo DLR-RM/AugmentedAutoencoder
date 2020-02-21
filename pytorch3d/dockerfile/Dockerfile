@@ -80,8 +80,8 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
 RUN apt-get -q install -y \
     python3-tk
 
-#ENV FORCE_CUDA=1
+ENV FORCE_CUDA=1
 
-#RUN pip3 --no-cache-dir install \
-#    'git+https://github.com/facebookresearch/pytorch3d.git'
+RUN pip3 --no-cache-dir install \
+    'git+https://github.com/facebookresearch/pytorch3d.git'
 
