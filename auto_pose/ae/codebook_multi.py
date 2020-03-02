@@ -4,6 +4,7 @@ import numpy as np
 
 import tensorflow as tf
 import progressbar
+import operator
 
 from utils import lazy_property
 import utils as u
@@ -56,13 +57,19 @@ class Codebook(object):
                 self.embed_obj_bbs_values = None
         
             self.cos_similarity[model_name] = tf.matmul(self.normalized_embedding_query, self.embeddings_normalized[model_name], transpose_b=True)
-            
+
         self._image_ph = tf.placeholder(tf.float32, [None,] + list(self._dataset.shape))
         self.image_ph_tofloat = self._image_ph / 255.
     
-    def add_new_codebook_to_graph(self, model_path):
+    def _get_codebook_name(self, model_path):
+        components = model_path.split('/')
+        model_name = components[-3] + '_' + components[-2] + '_' + components[-1].split('.')[0]
+        return model_name
 
-        model_name = os.path.basename(model_path).split('.')[0]
+    def add_new_codebook_to_graph(self, model_path):
+        
+        model_name = self._get_codebook_name(model_path)
+        # model_name = os.path.basename(model_path).split('.')[0]
 
         if model_name in self.existing_embs:
             print(model_name, ' already has codebook')
@@ -86,8 +93,8 @@ class Codebook(object):
                 self.embed_obj_bbs_assign_op[model_name] = tf.assign(self.embed_obj_bbs_var[model_name], self.embed_obj_bbs)
                 self.embed_obj_bbs_values = None
 
-    def refined_nearest_rotation(self, session, model_name, target_view, top_n, R_init=None, t_init=None, budget=10, epochs=3,
-                                 high=6./180*np.pi, obj_id=0, top_n_refine=1, target_bb=None):
+    def refined_nearest_rotation(self, session, target_view, top_n, R_init=None, t_init=None, budget=10, epochs=3,
+                                 high=6./180*np.pi, obj_id=0, top_n_refine=1, target_bb=None, cb_name_for_init=None):
 
         from sixd_toolkit.pysixd import transform,pose_error
         from sklearn.metrics.pairwise import cosine_similarity
@@ -97,33 +104,34 @@ class Codebook(object):
         if target_view.ndim == 3:
             target_view = np.expand_dims(target_view, 0)
 
-        cosine_similar, orig_in_emb = session.run([self.cos_similarity[model_name],self.normalized_embedding_query], {self._encoder.x: target_view})
-        
-        if top_n_refine==1:
-            idcs = np.argmax(cosine_similar, axis=1)
-            # orig_cosine_sim = cosine_similar[0,idcs]
-        else:
-            unsorted_max_idcs = np.argpartition(-cosine_similar.squeeze(), top_n_refine)[:top_n_refine]
-            idcs = unsorted_max_idcs[np.argsort(-cosine_similar.squeeze()[unsorted_max_idcs])]
-            # orig_cosine_sim = cosine_similar[0,idcs[0]]
-        print 'original cosine sim: ', cosine_similar[0,idcs]
+        orig_in_emb = session.run(self.normalized_embedding_query, {self._encoder.x: target_view})
 
-        ### intitializing rotation estimates from existing codebook
-        Rs = self._dataset.viewsphere_for_embedding[idcs].copy()
-        Rs_new = [Rs[0]]
-        for R in Rs:
-            res = [pose_error.re(R_new,R) for R_new in Rs_new] 
-            if np.min(res) > 80:
-                Rs_new.append(R)
-
-        if R_init is None:
-            Rs = Rs_new[:]
-        ######
-        else:
+        Rs = []
+        if R_init is not None:
             Rs = [R_init]
+        elif cb_name_for_init is not None:
 
+            cosine_similar = session.run(self.cos_similarity[model_name], {self._encoder.x: target_view})
+            
+            if top_n_refine==1:
+                idcs = np.argmax(cosine_similar, axis=1)
+                # orig_cosine_sim = cosine_similar[0,idcs]
+            else:
+                unsorted_max_idcs = np.argpartition(-cosine_similar.squeeze(), top_n_refine)[:top_n_refine]
+                idcs = unsorted_max_idcs[np.argsort(-cosine_similar.squeeze()[unsorted_max_idcs])]
+                # orig_cosine_sim = cosine_similar[0,idcs[0]]
+            print 'original cosine sim: ', cosine_similar[0,idcs]
 
-        top_n_new = len(Rs)
+            ### intitializing rotation estimates from existing codebook
+            Rs_init = self._dataset.viewsphere_for_embedding[idcs].copy()
+            Rs = [Rs_init[0]]
+            for R in Rs_init:
+                res = [pose_error.re(R_new,R) for R_new in Rs] 
+                if np.min(res) > 80:
+                    Rs.append(R)
+            
+
+        top_n_new = len(Rs) if Rs else top_n_refine
         max_cosine_sim = 0.0
         K = eval(self._dataset._kw['k'])
         K = np.array(K).reshape(3,3)
@@ -237,9 +245,6 @@ class Codebook(object):
         return np.array(Rs)[0:top_n], bbs[0:top_n]
 
 
-
-
-
     def nearest_rotation(self, session, x, model_name, top_n=1, upright=False, return_idcs=False):
         
         if x.dtype == 'uint8':
@@ -262,15 +267,75 @@ class Codebook(object):
         else:
             return self._dataset.viewsphere_for_embedding[idcs].squeeze()
 
+    def retrieve_nearest_shape(self, session, target_views, top_n=1, dist_matching='backwards_mapping'):
+        
+        if target_views.dtype == 'uint8':
+            target_views = target_views/255.
+        if target_views.ndim == 3:
+            target_views = np.expand_dims(target_views, 0)
+
+        target_embeddings = session.run(self.normalized_embedding_query, {self._encoder.x: target_views})
+
+        if dist_matching == 'svd':
+            _,target_emb_singular_vals,_ = np.linalg.svd(target_embeddings)
 
 
-    def auto_pose6d(self, session, x, predicted_bb, K_test, top_n, train_args, depth_pred=None, upright=False, refine=False):
+        mean_max_cosine_sim = {}
+        mean_max_cosine_sim_back = {}
+        mean_max_cosine_sim_mixed = {}
+
+        for emb in self.existing_embs:
+            
+            cosine_sims = session.run(self.cos_similarity[emb], {self.normalized_embedding_query: target_embeddings})
+            max_cosine_sims = np.max(cosine_sims, axis=1)
+            
+            mean_max_cosine_sim[emb] = np.mean(max_cosine_sims)
+
+            if dist_matching == 'svd':
+                max_view_idx_cosine_sim = np.argmax(max_cosine_sims)
+                embedding = session.run(self.embeddings_normalized[emb])
+                row_i = np.random.choice(embedding.shape[0], 500)
+                _,singular_vals,_ = np.linalg.svd(embedding[row_i, :])
+                print('embedding svd: ',singular_vals[:10])
+                print('target svd: ', target_emb_singular_vals[:10])
+                print('difference: ', np.abs(singular_vals[:10] - target_emb_singular_vals[:10]))
+                # singular values not enough, have to align random sample of embedding and target embedding, 
+                # then measure: mean(random sample of embedding - nearest target code)
+            elif dist_matching == 'backwards_mapping':
+                # random codes in the shape embedding should not be too far from target_view embeddings
+                # is that a one-sided Hausdorff distance for subset?
+                mean_max_cosine_sim_back[emb] = np.mean(np.max(cosine_sims, axis=0))
+                mean_max_cosine_sim_mixed[emb] = mean_max_cosine_sim[emb] + mean_max_cosine_sim_back[emb]
+            elif dist_matching == 'rotation_variance':
+                # simply ask for maximized rotation variance of retreived shape
+                idcs = np.argmax(cosine_sims, axis=1)
+                Rs = self._dataset.viewsphere_for_embedding[idcs].squeeze()              
+                # todo: but be careful of symmetries
+
+
+        # closest = max(mean_max_cosine_sim, key=mean_max_cosine_sim.get)
+        closest = sorted(mean_max_cosine_sim, key=mean_max_cosine_sim.get, reverse=True)
+        closest_back = sorted(mean_max_cosine_sim_back, key=mean_max_cosine_sim_back.get, reverse=True)
+        closest_mixed = sorted(mean_max_cosine_sim_mixed, key=mean_max_cosine_sim_mixed.get, reverse=True)
+
+        retr_dict = {}
+        retr_dict['mean_cosines'] =  mean_max_cosine_sim
+        retr_dict['mean_cosines_back'] = mean_max_cosine_sim_back
+        retr_dict['mean_cosines_mixed'] = mean_max_cosine_sim_mixed
+        retr_dict['nearest_models'] = closest[:top_n]
+        retr_dict['nearest_models_back'] = closest_back[:top_n]
+        retr_dict['nearest_models_mixed'] = closest_mixed[:top_n]
+
+        return retr_dict
+
+
+    def auto_pose6d(self, session, x, predicted_bb, K_test, top_n, train_args, model_name, depth_pred=None, upright=False, refine=False):
         
         if refine:
             Rs_est,rendered_bbs = self.refined_nearest_rotation(session, x, top_n, budget=30, epochs=2, obj_id=0, top_n_refine=2)
             rendered_bb = rendered_bbs[0]
         else:
-            idcs = self.nearest_rotation(session, x, top_n=top_n, upright=upright,return_idcs=True)
+            idcs = self.nearest_rotation(session, x, model_name, top_n=top_n, upright=upright,return_idcs=True)
             Rs_est = self._dataset.viewsphere_for_embedding[idcs]
 
 
@@ -287,7 +352,7 @@ class Codebook(object):
         # mean_K_ratio = np.mean([K00_ratio,K11_ratio])
 
         if self.embed_obj_bbs_values is None:
-            self.embed_obj_bbs_values = session.run(self.embed_obj_bbs_var)
+            self.embed_obj_bbs_values = session.run(self.embed_obj_bbs_var[model_name])
 
         ts_est = np.empty((top_n,3))
 
@@ -347,9 +412,6 @@ class Codebook(object):
             return sess.run(self.normalized_embedding_query, {self._encoder.x: x}).squeeze()
         else:
             return sess.run(self._encoder.z, {self._encoder.x: x}).squeeze()
-        
-
-
 
     # def knearest_rotation(self, session, x, k):
     #     if x.ndim == 3:
@@ -393,12 +455,12 @@ class Codebook(object):
 
     def update_embedding(self, session, batch_size, model_path, loaded_emb=None, loaded_obj_bbs=None):
 
-        model_name = os.path.basename(model_path).split('.')[0]
+        # model_name = os.path.basename(model_path).split('.')[0]
+        model_name = self._get_codebook_name(model_path)
 
         self._dataset._kw['model_path'] = list([str(model_path)])
         self._dataset._kw['model'] = 'cad' if 'cad' in model_path else self._dataset._kw['model']
         self._dataset._kw['model'] = 'reconst' if 'reconst' in model_path else self._dataset._kw['model']
-
 
         if loaded_emb is None:
             embedding_size = self._dataset.embedding_size
