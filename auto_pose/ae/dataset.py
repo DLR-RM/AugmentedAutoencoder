@@ -101,8 +101,7 @@ class Dataset(object):
             np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
         self.noof_obj_pixels = np.count_nonzero(self.mask_x==0,axis=(1,2))
         print 'loaded %s training images' % len(self.train_x)
-
-
+        
 
     def get_sprite_training_images(self, train_args):
         
@@ -386,8 +385,8 @@ class Dataset(object):
                 t=t,
                 near=clip_near,
                 far=clip_far,
-                random_light=False,
-                phong=lighting
+                random_light=False
+                # phong=lighting
             )
             # cv2.imshow('depth',depth_y)
             # cv2.imshow('bgr',bgr_y)

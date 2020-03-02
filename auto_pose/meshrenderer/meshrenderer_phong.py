@@ -39,29 +39,29 @@ class Renderer(object):
 
         # VAO
         attributes = gu.geo.load_meshes_sixd(models_cad_files, vertex_tmp_store_folder, recalculate_normals=False)
-        self.verts = [vn[0] for vn in attributes]
 
-        vertices = []
+        self.verts = []
         indices = []
-        for cad_file, (vertex, normal, color, faces) in zip(models_cad_files, attributes):
-            ycb_scale = 1.
-            if 'YCB' in cad_file:
-                ycb_scale = 1000.
+        for attribute in attributes:
+            if len(attribute) ==4:
+                vertex, normal, color, faces = attribute
+            else:
+                vertex, normal, faces = attribute 
+                color = np.ones_like(vertex)*160.0
             indices.append( faces.flatten() )
-            vertices.append(np.hstack((vertex * vertex_scale*ycb_scale, normal, color / 255.0)).flatten())
-            
+            self.verts.append(np.hstack((vertex * vertex_scale, normal, color/255.0)).flatten())
 
         indices = np.hstack(indices).astype(np.uint32)
-        vertices = np.hstack(vertices).astype(np.float32)
+        self.verts = np.hstack(self.verts).astype(np.float32)
 
-        vao = gu.VAO({(gu.Vertexbuffer(vertices), 0, 9*4):
+        vao = gu.VAO({(gu.Vertexbuffer(self.verts), 0, 9*4):
                         [   (0, 3, GL_FLOAT, GL_FALSE, 0*4),
                             (1, 3, GL_FLOAT, GL_FALSE, 3*4),
                             (2, 3, GL_FLOAT, GL_FALSE, 6*4)]}, gu.EBO(indices))
         vao.bind()
 
         # IBO
-        vertex_count = [np.prod(vert[3].shape) for vert in attributes]
+        vertex_count = [np.prod(vert[-1].shape) for vert in attributes]
         instance_count = np.ones(len(attributes))
         first_index = [sum(vertex_count[:i]) for i in range(len(vertex_count))]
 

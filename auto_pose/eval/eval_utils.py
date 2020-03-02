@@ -4,16 +4,16 @@ import cv2
 from collections import defaultdict
 import hashlib
 import glob
+import configparser
 
 from sixd_toolkit.params import dataset_params
 from sixd_toolkit.pysixd import inout
 
+from auto_pose.ae.pysixd_stuff import view_sampler
 from auto_pose.ae import utils as u
-
 
 def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
     
-
     dataset_name = eval_args.get('DATA','DATASET')
     cam_type = eval_args.get('DATA','CAM_TYPE')
     icp = eval_args.getboolean('EVALUATION','ICP')
@@ -23,12 +23,14 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
     dataset_path = u.get_dataset_path(workspace_path)
 
-    H = train_args.getint('Dataset','H')
+    H_AE = train_args.getint('Dataset','H')
+    W_AE = train_args.getint('Dataset','W')
 
-    cfg_string = str([scene_id] + eval_args.items('DATA') + eval_args.items('BBOXES') + [H])
+    cfg_string = str([scene_id] + eval_args.items('DATA') + eval_args.items('BBOXES') + [H_AE])
     current_config_hash = hashlib.md5(cfg_string).hexdigest()
 
     current_file_name = os.path.join(dataset_path, current_config_hash + '.npz')
+
 
     if os.path.exists(current_file_name):
         data = np.load(current_file_name)
@@ -55,7 +57,7 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
         
 
         test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis = generate_scene_crops(test_imgs, test_imgs_depth, gt, eval_args, 
-                                                                                            train_args, visib_gt=visib_gt,inst_masks=gt_inst_masks)
+                                                                                            (H_AE, W_AE), visib_gt=visib_gt,inst_masks=gt_inst_masks)
 
         np.savez(current_file_name, test_img_crops=test_img_crops, test_img_depth_crops=test_img_depth_crops, bbs = bbs, bb_scores=bb_scores, visib_gt=bb_vis)
         
@@ -72,17 +74,75 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
     return (test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis)
 
 
+def get_moped_gt_crops(dataset, obj_name, (H_AE, W_AE), num_views, pad_factor=1.2, base_path=None):
 
-def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, train_args, visib_gt = None, inst_masks=None):
+    base_dir = '/net/rmc-lx0314/home_local/sund_ma/data/MOPED_Dataset/data/{}/reference/'.format(obj_name)
+    if base_path == None:
+        color_base_path = os.path.join(base_dir, '**/color/*.jpg')
+    import glob2
+    all_image_paths = sorted(glob2.glob(color_base_path))
+    print(color_base_path.format(obj_name))
+    assert len(all_image_paths) > 0
 
+
+    cropped_imgs = []
+    view_idx = 0
+    while view_idx < num_views:
+        rand_idx = np.random.randint(len(all_image_paths))
+        
+        im_path = all_image_paths[rand_idx]
+        mask_path = im_path.replace('color', 'mask').replace('jpg', 'png')
+
+        if not os.path.exists(mask_path):
+            continue
+        
+        view_idx += 1
+
+        img = cv2.imread(im_path)
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+
+        img_masked = np.zeros_like(img)
+        img_masked[mask > 0 ] = img[mask > 0]
+
+        ys, xs = np.nonzero(mask > 0)
+        target_bb = view_sampler.calc_2d_bbox(xs, ys, img.shape[:2])
+        cropped_imgs.append(dataset.extract_square_patch(img_masked, target_bb, pad_factor))
+
+    return cropped_imgs
+
+
+def get_sixd_gt_train_crops(obj_id, hw_ae, pad_factor=1.2, dataset='tless', cam_type='primesense'):
+    
+    data_params = dataset_params.get_dataset_params(dataset, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
+
+    eval_args = configparser.ConfigParser()
+    eval_args.add_section("DATA")
+    eval_args.add_section("BBOXES")
+    eval_args.add_section("EVALUATION")
+
+    eval_args.set('BBOXES', 'ESTIMATE_BBS', "False")
+    eval_args.set('EVALUATION','ICP', "False")
+    eval_args.set('BBOXES','PAD_FACTOR', str(pad_factor))
+    eval_args.set('BBOXES','ESTIMATE_MASKS', "False")
+    eval_args.set('DATA','OBJ_ID', str(obj_id))
+
+    gt = inout.load_gt(data_params['obj_gt_mpath'].format(obj_id))
+    imgs = []
+    for im_id in range(504):
+        imgs.append(cv2.imread(data_params['train_rgb_mpath'].format(obj_id, im_id)))
+
+    test_img_crops, _, _, _, _ = generate_scene_crops(np.array(imgs), None, gt, eval_args, hw_ae)
+
+    return test_img_crops
+
+def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, hw_ae, visib_gt = None, inst_masks=None):
 
     obj_id = eval_args.getint('DATA','OBJ_ID')
     estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
     pad_factor = eval_args.getfloat('BBOXES','PAD_FACTOR')
     icp = eval_args.getboolean('EVALUATION','ICP')
-    estimate_masks = eval_args.getboolean('BBOXES','estimate_masks')
-    W_AE = train_args.getint('Dataset','W')
-    H_AE = train_args.getint('Dataset','H')
+    estimate_masks = eval_args.getboolean('BBOXES','ESTIMATE_MASKS')
+    H_AE, W_AE = hw_ae
 
     test_img_crops, test_img_depth_crops, bb_scores, bb_vis, bbs = {}, {}, {}, {}, {}
 
@@ -102,7 +162,10 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, train_args, 
                     bb = np.array(bbox['obj_bb'])
                     obj_id = bbox['obj_id']
                     bb_score = bbox['score'] if estimate_bbs else 1.0
-                    vis_frac = None if estimate_bbs else visib_gt[view][bbox_idx]['visib_fract']
+                    if estimate_bbs:
+                        vis_frac = visib_gt[view][bbox_idx]['visib_fract']
+                    else:
+                        vis_frac = None
                     x,y,w,h = bb
                     
                     size = int(np.maximum(h,w) * pad_factor)

@@ -21,21 +21,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_name")
     parser.add_argument('--at_step', default=None,  type=int, required=False)
-    parser.add_argument("-joint", action='store_true', default=False)
     parser.add_argument('--model_path', type=str, required=True)
     arguments = parser.parse_args()
     full_name = arguments.experiment_name.split('/')
 
-    
     experiment_name = full_name.pop()
     experiment_group = full_name.pop() if len(full_name) > 0 else ''
     at_step = arguments.at_step
-    joint = arguments.joint
     model_path = arguments.model_path
 
     cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
-
 
     ckpt_dir = u.get_checkpoint_dir(log_dir)
     dataset_path = u.get_dataset_path(workspace_path)
@@ -49,7 +45,10 @@ def main():
     args.read(cfg_file_path)
     iteration = args.getint('Training', 'NUM_ITER') if at_step is None else at_step
     
-    checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir, latest=iteration, joint=joint)
+    checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir, latest=iteration, joint=True)
+    if not tf.train.checkpoint_exists(checkpoint_file_basename):
+        checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir, latest=iteration, joint=False)
+
     checkpoint_single_encoding = u.get_checkpoint_basefilename(log_dir, latest=iteration, model_path=model_path)
     target_checkpoint_file = u.get_checkpoint_basefilename(log_dir, joint=True)
 
@@ -57,8 +56,7 @@ def main():
     print target_checkpoint_file
     print ckpt_dir
     print '#'*20
-
-
+    
     with tf.variable_scope(experiment_name):
         dataset = factory.build_dataset(dataset_path, args)
         queue = factory.build_queue(dataset, args)
@@ -76,7 +74,7 @@ def main():
     batch_size = args.getint('Training', 'BATCH_SIZE')*len(eval(args.get('Paths', 'MODEL_PATH')))
     model = args.get('Dataset', 'MODEL')
 
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.8)
     config = tf.ConfigProto(gpu_options=gpu_options)
 
     with tf.Session(config=config) as sess:
@@ -97,6 +95,7 @@ def main():
         #     print 'No checkpoint found. Expected one in:\n'
         #     print '{}\n'.format(ckpt_dir)
         #     exit(-1)
+
         try:
             loaded_emb = tf.train.load_variable(checkpoint_single_encoding, experiment_name + '/embedding_normalized')
             loaded_obj_bbs = tf.train.load_variable(checkpoint_single_encoding, experiment_name + '/embed_obj_bbs_var')

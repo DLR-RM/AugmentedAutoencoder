@@ -170,7 +170,7 @@ def build_codebook_multi(encoder, dataset, args, checkpoint_file_basename=None):
     codebook = Codebook(encoder, dataset, embed_bb, existing_embs)
     return codebook
 
-def build_codebook_from_name(experiment_name, experiment_group='', return_dataset=False, return_decoder = False):
+def build_codebook_from_name(experiment_name, experiment_group='', return_dataset=False, return_decoder = False, joint=False):
     import os
     import configparser
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
@@ -184,7 +184,6 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
     import tensorflow as tf
 
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
-    checkpoint_file = u.get_checkpoint_basefilename(log_dir)
     cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
     dataset_path = u.get_dataset_path(workspace_path)
 
@@ -195,11 +194,20 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
         print 'ERROR: Config File not found: ', cfg_file_path
         exit()
 
+    if joint:
+        checkpoint_file = u.get_checkpoint_basefilename(log_dir, joint=joint, latest=args.getint('Training', 'NUM_ITER'))
+    else:
+        checkpoint_file = u.get_checkpoint_basefilename(log_dir, joint=joint)
+
     with tf.variable_scope(experiment_name):
         dataset = build_dataset(dataset_path, args)
         x = tf.placeholder(tf.float32, [None,] + list(dataset.shape))
         encoder = build_encoder(x, args)
-        codebook = build_codebook(encoder, dataset, args)
+        if joint:
+            codebook = build_codebook_multi(encoder, dataset, args, checkpoint_file)
+        else:
+            codebook = build_codebook(encoder, dataset, args)
+
         if return_decoder:
             reconst_target = tf.placeholder(tf.float32, [None,] + list(dataset.shape))
             decoder = build_decoder(reconst_target, encoder, args)
