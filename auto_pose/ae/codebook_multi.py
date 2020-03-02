@@ -267,68 +267,6 @@ class Codebook(object):
         else:
             return self._dataset.viewsphere_for_embedding[idcs].squeeze()
 
-    def retrieve_nearest_shape(self, session, target_views, top_n=1, dist_matching='backwards_mapping'):
-        
-        if target_views.dtype == 'uint8':
-            target_views = target_views/255.
-        if target_views.ndim == 3:
-            target_views = np.expand_dims(target_views, 0)
-
-        target_embeddings = session.run(self.normalized_embedding_query, {self._encoder.x: target_views})
-
-        if dist_matching == 'svd':
-            _,target_emb_singular_vals,_ = np.linalg.svd(target_embeddings)
-
-
-        mean_max_cosine_sim = {}
-        mean_max_cosine_sim_back = {}
-        mean_max_cosine_sim_mixed = {}
-
-        for emb in self.existing_embs:
-            
-            cosine_sims = session.run(self.cos_similarity[emb], {self.normalized_embedding_query: target_embeddings})
-            max_cosine_sims = np.max(cosine_sims, axis=1)
-            
-            mean_max_cosine_sim[emb] = np.mean(max_cosine_sims)
-
-            if dist_matching == 'svd':
-                max_view_idx_cosine_sim = np.argmax(max_cosine_sims)
-                embedding = session.run(self.embeddings_normalized[emb])
-                row_i = np.random.choice(embedding.shape[0], 500)
-                _,singular_vals,_ = np.linalg.svd(embedding[row_i, :])
-                print('embedding svd: ',singular_vals[:10])
-                print('target svd: ', target_emb_singular_vals[:10])
-                print('difference: ', np.abs(singular_vals[:10] - target_emb_singular_vals[:10]))
-                # singular values not enough, have to align random sample of embedding and target embedding, 
-                # then measure: mean(random sample of embedding - nearest target code)
-            elif dist_matching == 'backwards_mapping':
-                # random codes in the shape embedding should not be too far from target_view embeddings
-                # is that a one-sided Hausdorff distance for subset?
-                mean_max_cosine_sim_back[emb] = np.mean(np.max(cosine_sims, axis=0))
-                mean_max_cosine_sim_mixed[emb] = mean_max_cosine_sim[emb] + mean_max_cosine_sim_back[emb]
-            elif dist_matching == 'rotation_variance':
-                # simply ask for maximized rotation variance of retreived shape
-                idcs = np.argmax(cosine_sims, axis=1)
-                Rs = self._dataset.viewsphere_for_embedding[idcs].squeeze()              
-                # todo: but be careful of symmetries
-
-
-        # closest = max(mean_max_cosine_sim, key=mean_max_cosine_sim.get)
-        closest = sorted(mean_max_cosine_sim, key=mean_max_cosine_sim.get, reverse=True)
-        closest_back = sorted(mean_max_cosine_sim_back, key=mean_max_cosine_sim_back.get, reverse=True)
-        closest_mixed = sorted(mean_max_cosine_sim_mixed, key=mean_max_cosine_sim_mixed.get, reverse=True)
-
-        retr_dict = {}
-        retr_dict['mean_cosines'] =  mean_max_cosine_sim
-        retr_dict['mean_cosines_back'] = mean_max_cosine_sim_back
-        retr_dict['mean_cosines_mixed'] = mean_max_cosine_sim_mixed
-        retr_dict['nearest_models'] = closest[:top_n]
-        retr_dict['nearest_models_back'] = closest_back[:top_n]
-        retr_dict['nearest_models_mixed'] = closest_mixed[:top_n]
-
-        return retr_dict
-
-
     def auto_pose6d(self, session, x, predicted_bb, K_test, top_n, train_args, model_name, depth_pred=None, upright=False, refine=False):
         
         if refine:

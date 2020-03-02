@@ -109,9 +109,6 @@ def main():
 
     # models_test = sorted(glob.glob('/volume/pekdat/datasets/public/t-less/original/t-less_v2/models_reconst/*.ply'))
 
-    if args_latent.getboolean('Experiment', 'shape_retrieval'):
-        latent_utils.shape_retrieval(sess, args_latent, dataset, codebook)
-
     if split == 'train':
         dataset._kw['model_path'] = models_train[0:num_obj]
     elif split == 'test':
