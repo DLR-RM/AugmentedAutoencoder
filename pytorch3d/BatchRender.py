@@ -93,6 +93,15 @@ class BatchRender:
                 shader=SoftSilhouetteShader(blend_params=blend_params)
             )
         elif(method=="depth"):
+            # Soft Rasterizer - from https://github.com/facebookresearch/pytorch3d/issues/95
+            # blend_params = BlendParams(sigma=1e-5, gamma=1e-5)
+            # raster_settings = RasterizationSettings(
+            #     image_size=image_size, 
+            #     blur_radius=np.log(1. / 1e-5 - 1.) * blend_params.sigma, 
+            #     faces_per_pixel=10, 
+            #     bin_size=0
+            # )
+            
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
                 blur_radius=0,

@@ -2,7 +2,7 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
-csv_name = "./output/depth/train-loss.csv"
+csv_name = "../output/depth/exp-normalized/train-loss.csv"
 
 x = []
 with open(csv_name, 'r') as f:

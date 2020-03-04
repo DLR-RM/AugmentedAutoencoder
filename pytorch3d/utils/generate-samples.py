@@ -24,7 +24,7 @@ from pytorch3d.transforms import Rotate, Translate
 from pytorch3d.renderer import (
     OpenGLPerspectiveCameras, look_at_view_transform, look_at_rotation, 
     RasterizationSettings, MeshRenderer, MeshRasterizer, BlendParams,
-    SilhouetteShader, PhongShader, PointLights, DirectionalLights
+    HardPhongShader, PointLights, DirectionalLights
 )
 
 
@@ -33,7 +33,7 @@ device = torch.device("cuda:0")
 torch.cuda.set_device(device)
 
 # Load the obj and ignore the textures and materials.
-verts, faces_idx, _ = load_obj("./data/ikea_mug_scaled_reduced.obj")
+verts, faces_idx, _ = load_obj("../data/t-less-obj7/obj_07_scaled.obj")
 faces = faces_idx.verts_idx
 
 # Initialize each vertex to be white in color.
@@ -74,7 +74,7 @@ phong_renderer = MeshRenderer(
         cameras=cameras, 
         raster_settings=raster_settings
     ),
-    shader=PhongShader(device=device, lights=lights)
+    shader=HardPhongShader(device=device, lights=lights)
 )
 
 Rs = []
@@ -82,7 +82,7 @@ ts = []
 images = []
 
 start = time.time()
-for i in np.arange(5000):
+for i in np.arange(1000):
     R = torch.from_numpy(random_rotation_matrix()[:3,:3]).to(device).unsqueeze(0)
     T = torch.from_numpy(np.array([0.0,  0.0, 3.5], dtype=np.float32)).to(device).unsqueeze(0)
     
@@ -105,4 +105,4 @@ for i in np.arange(5000):
     #plt.show()
 print("Elapsed: {0}".format(time.time()-start))
 data={"images":images,"Rs":Rs,"ts":ts}
-pickle.dump(data, open("/shared-folder/AugmentedAutoencoder/pytorch3d/training-data/training-images.p", "wb"), protocol=0)
+pickle.dump(data, open("./training-images.p", "wb"), protocol=0)

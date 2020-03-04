@@ -22,9 +22,6 @@ class Model(nn.Module):
     # Output: y = pose as quaternion
     def forward(self,x):
         x = F.relu(self.bn1(self.l1(x)))
-        x = F.relu(self.bn2(self.l2(x)))
-
-        #x = F.relu(self.l1(x))
-        #x = F.relu(self.l2(x))                
-        y = self.tanh(self.l3(x))
+        x = F.relu(self.bn2(self.l2(x)))              
+        y = self.l3(x)
         return y

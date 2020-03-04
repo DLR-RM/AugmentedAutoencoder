@@ -62,7 +62,7 @@ def main():
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
     config = tf.ConfigProto(gpu_options=gpu_options)
 
-    data = pickle.load(open("/shared-folder/AugmentedAutoencoder/pytorch3d/training-data/training-images.p","rb"))
+    data = pickle.load(open("/shared-folder/AugmentedAutoencoder/pytorch3d/data/t-less-obj7/dataset-1k/training-images.p","rb"))
     codes = []
 
     with tf.Session(config=config) as sess:
@@ -78,7 +78,7 @@ def main():
             print(i)
 
         coded_data = {"images": data["images"], "Rs": data["Rs"], "ts": data["ts"], "codes": codes}
-        pickle.dump(coded_data, open("/shared-folder/AugmentedAutoencoder/pytorch3d/training-data/training-codes.p", "wb")) 
+        pickle.dump(coded_data, open("/shared-folder/AugmentedAutoencoder/pytorch3d/data/t-less-obj7/dataset-1k/training-codes.p", "wb")) 
             
 if __name__ == '__main__':
     main()

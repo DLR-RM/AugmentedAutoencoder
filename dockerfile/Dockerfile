@@ -118,6 +118,7 @@ RUN pip --no-cache-dir install \
 
 RUN pip --no-cache-dir install \
     cyglfw3 \
+    imageio==2.6.0 \
     pyassimp==3.3 \
     imgaug \
     progressbar \

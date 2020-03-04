@@ -3,11 +3,27 @@ import numpy
 import math
 import cv2
 import csv
+import matplotlib.pyplot as plt
 
 def list2file(input_list, file_name):
     with open(file_name, 'w') as f:
         wr = csv.writer(f, delimiter='\n')
         wr.writerow(input_list)
+
+def prepareDir(dir_path):
+    if not os.path.isdir(dir_path):
+        os.makedirs(dir_path)
+
+def plotLoss(loss, file_name):
+    fig = plt.figure(figsize=(8, 5))
+    plt.grid(True)
+    plt.plot(loss)
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    fig.tight_layout()
+    fig.savefig(file_name, dpi=fig.dpi)
+    plt.close()
+    
 
 # Convert quaternion to rotation matrix
 # from: https://github.com/ClementPinard/SfmLearner-Pytorch/blob/master/inverse_warp.py

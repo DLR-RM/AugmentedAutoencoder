@@ -17,7 +17,7 @@ class DepthShader(nn.Module):
 
         for i in range(12):
             mask = image[i] == -1.0
-            image[i][mask] = 4.0 #float(torch.max(max_val).cpu().detach().numpy()) #max_val[i]
+            image[i][mask] = 6.0 #float(torch.max(max_val).cpu().detach().numpy()) #max_val[i]
             #print(max_val[i])
 
         #image[mask] = float(torch.max(max_val).cpu().detach().numpy())

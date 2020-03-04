@@ -63,7 +63,7 @@ def main():
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
     config = tf.ConfigProto(gpu_options=gpu_options)
 
-    data = pickle.load(open("/shared-folder/AugmentedAutoencoder/pytorch3d/training-data/training-codes.p","rb"))
+    data = pickle.load(open("/shared-folder/AugmentedAutoencoder/pytorch3d/data/t-less-obj7/dataset-1k/training-codes.p","rb"))
 
     with tf.Session(config=config) as sess:
 
