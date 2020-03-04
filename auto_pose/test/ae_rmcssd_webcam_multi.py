@@ -190,7 +190,7 @@ while videoStream.isActive():
 
 
 
-        for i in xrange(len(rscores)):
+        for i in range(len(rscores)):
 
             if not rclasses[i] in class_i_mapping:
                 continue

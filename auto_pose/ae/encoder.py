@@ -14,7 +14,7 @@ class Encoder(object):
         
 
         self._input = input #tf.concat([inp[0] for inp in input],0)
-        print self._input.shape
+        print(self._input.shape)
         self._latent_space_size = latent_space_size
         self._num_filters = num_filters
         self._kernel_size = kernel_size
@@ -147,7 +147,7 @@ class Encoder(object):
 
         z_norm = tf.nn.l2_normalize(self.z, 1)
         z_reconst_norm = tf.nn.l2_normalize(self._z_reconst, 1)
-        print z_norm.shape, z_reconst_norm.shape
+        print(z_norm.shape, z_reconst_norm.shape)
         # loss = tf.reduce_mean(1-tf.reduce_sum(tf.multiply(a,b),axis=1)) -> same
         loss = tf.losses.cosine_distance(z_norm, z_reconst_norm, axis=1)
 
@@ -161,13 +161,13 @@ class Encoder(object):
 
     def load_ckpt_varlist(self, exclude = ['/logits','/global_step','/dense','/aspp']):
         var_scope = tf.get_variable_scope()
-        print var_scope.name
+        print(var_scope.name)
         if self._resnet50: 
             model = '/resnet_v2_50'
         elif self._resnet101:
             model = '/resnet_v2_101'
         else:
-            print 'must load either resnet50 or resnet101'
+            print('must load either resnet50 or resnet101')
             exit()
         var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=var_scope.name + model)
         fil_var_list = {}

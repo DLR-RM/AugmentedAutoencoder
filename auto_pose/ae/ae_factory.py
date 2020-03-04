@@ -121,7 +121,7 @@ def build_train_op(ae, args):
     if LEARNING_RATE_SCHEDULE=='poly':
         FINAL_LEARNING_RATE = args.getfloat('Training','FINAL_LEARNING_RATE')
         NUM_ITER = args.getfloat('Training','NUM_ITER')
-        print 'using poly learning rate schedule'
+        print('using poly learning rate schedule')
         LEARNING_RATE = tf.train.polynomial_decay(LEARNING_RATE, ae._encoder.global_step,
                                                 NUM_ITER, FINAL_LEARNING_RATE, power=0.9)
     
@@ -151,7 +151,7 @@ def build_train_op(ae, args):
 
 def build_codebook(encoder, dataset, args):
     embed_bb = args.getboolean('Embedding', 'EMBED_BB')
-    from codebook import Codebook
+    from .codebook import Codebook
     codebook = Codebook(encoder, dataset, embed_bb)
     return codebook
 

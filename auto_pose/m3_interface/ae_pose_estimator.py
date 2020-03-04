@@ -54,7 +54,7 @@ class AePoseEstimator(PoseEstInterface):
 
         self.sess = tf.Session(config=config)
 
-        for clas_name,experiment in self.class_2_encoder.items():
+        for clas_name,experiment in list(self.class_2_encoder.items()):
             full_name = experiment.split('/')
             experiment_name = full_name.pop()
             experiment_group = full_name.pop() if len(full_name) > 0 else ''
@@ -148,7 +148,7 @@ class AePoseEstimator(PoseEstInterface):
 
             if not pred_clas in self.class_2_encoder:
 
-                print(('%s not contained in config class_names %s' % (pred_clas, self.class_2_encoder.keys())))
+                print(('%s not contained in config class_names %s' % (pred_clas, list(self.class_2_encoder.keys()))))
                 continue
 
             box_xywh = [box.xmin * W, box.ymin * H, (box.xmax - box.xmin) * W, (box.ymax - box.ymin) * H]

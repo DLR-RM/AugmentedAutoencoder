@@ -11,7 +11,7 @@ class VAO(object):
         self.__id = np.empty(1, dtype=np.uint32)
         glCreateVertexArrays(len(self.__id), self.__id)
         i = 0
-        for vbo_offset_stride, attribs in vbo_attrib.items():
+        for vbo_offset_stride, attribs in list(vbo_attrib.items()):
             vbo = vbo_offset_stride[0]
             offset = vbo_offset_stride[1]
             stride = vbo_offset_stride[2]

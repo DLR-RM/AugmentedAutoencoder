@@ -83,7 +83,7 @@ def main():
         checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path, latest=train_args.getint('Training', 'NUM_ITER'))
     else:
         checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path, latest=at_step)
-    print checkpoint_file
+    print(checkpoint_file)
     eval_dir = u.get_eval_dir(log_dir, evaluation_name, data)
 
     if not os.path.exists(eval_dir):
@@ -138,7 +138,7 @@ def main():
             else:
                 if estimate_masks:
                     bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'), '{:02d}/mask_rcnn_predict.yml'.format(scene_id)))
-                    print bb_preds[0][0].keys()
+                    print(list(bb_preds[0][0].keys()))
                     mask_paths = glob.glob(os.path.join(eval_args.get('BBOXES','EXTERNAL'), '{:02d}/masks/*.npy'.format(scene_id)))
                     maskrcnn_scene_masks = [np.load(mp) for mp in mask_paths] 
                 else:
@@ -154,7 +154,7 @@ def main():
             exit()
 
         info = inout.load_info(data_params['scene_info_mpath'].format(scene_id))
-        Ks_test = [np.array(v['cam_K']).reshape(3,3) for v in info.values()]
+        Ks_test = [np.array(v['cam_K']).reshape(3,3) for v in list(info.values())]
 
         ######remove
         gts = inout.load_gt(data_params['scene_gt_mpath'].format(scene_id))

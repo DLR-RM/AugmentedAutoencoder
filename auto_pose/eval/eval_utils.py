@@ -79,14 +79,15 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
     return (test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis)
 
 
-def get_moped_gt_crops(dataset, obj_name, (H_AE, W_AE), num_views, pad_factor=1.2, base_path=None):
+def get_moped_gt_crops(dataset, obj_name, xxx_todo_changeme, num_views, pad_factor=1.2, base_path=None):
 
+    (H_AE, W_AE) = xxx_todo_changeme
     base_dir = '/net/rmc-lx0314/home_local/sund_ma/data/MOPED_Dataset/data/{}/reference/'.format(obj_name)
     if base_path == None:
         color_base_path = os.path.join(base_dir, '**/color/*.jpg')
     import glob2
     all_image_paths = sorted(glob2.glob(color_base_path))
-    print(color_base_path.format(obj_name))
+    print((color_base_path.format(obj_name)))
     assert len(all_image_paths) > 0
 
 
@@ -164,7 +165,7 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, hw_ae, visib
         if len(gt[view]) > 0:
             for bbox_idx,bbox in enumerate(gt[view]):
                 if bbox['obj_id'] == obj_id:
-                    if bbox.has_key('score'):
+                    if 'score' in bbox:
                         if bbox['score']==-1:
                             continue
                     bb = np.array(bbox['obj_bb'])

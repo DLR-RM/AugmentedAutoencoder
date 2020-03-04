@@ -5,7 +5,7 @@ name_to_class = {
         }
 
 def get_available_estimators():
-    return name_to_class.keys()
+    return list(name_to_class.keys())
 
 def get_estimator(name, config=None):
 

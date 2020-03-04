@@ -1,5 +1,5 @@
-from __future__ import print_function
-from __future__ import division
+
+
 
 from math import pi
 
@@ -24,7 +24,7 @@ def map_decorator(name):
 					else:
 						new_argv += (arg,)
 					i += 1
-			for key, item in kwargs.items():
+			for key, item in list(kwargs.items()):
 				#print(key)
 				if key == 'in_tensor':
 					values = item

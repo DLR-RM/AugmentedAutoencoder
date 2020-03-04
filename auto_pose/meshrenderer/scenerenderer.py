@@ -5,7 +5,7 @@ import glob
 import math
 import numpy as np
 
-from write_xml import *
+from .write_xml import *
 
 import auto_pose.meshrenderer.meshrenderer as mr
 import auto_pose.meshrenderer.meshrenderer_phong as mr_phong

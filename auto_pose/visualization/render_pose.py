@@ -11,7 +11,7 @@ class PoseVisualizer:
     def __init__(self, ae_pose_est, downsample=1):
 
         self.downsample = downsample
-        self.classes = ae_pose_est.class_2_encoder.keys()
+        self.classes = list(ae_pose_est.class_2_encoder.keys())
         self.vertex_scale = list(set([ae_pose_est.all_train_args[c].getint('Dataset','VERTEX_SCALE') for c in self.classes]))
         self.ply_model_paths = [str(ae_pose_est.all_train_args[c].get('Paths','MODEL_PATH')) for c in self.classes]
         print(('renderer', 'Model paths: ', self.ply_model_paths))
@@ -72,7 +72,7 @@ class PoseVisualizer:
                 # box = box.astype(np.int32) / self.downsample
                 # xmin, ymin, xmax, ymax = box[0], box[1], box[0] + box[2], box[1] + box[3]
                 xmin, ymin, xmax, ymax = int(det.xmin * W_d), int(det.ymin * H_d), int(det.xmax * W_d), int(det.ymax * H_d)
-                label, score = det.classes.items()[0]
+                label, score = list(det.classes.items())[0]
                 try:
                     cv2.putText(image_show, '%s : %1.3f' % (label,score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,0,255), 2)
                     cv2.rectangle(image_show,(xmin,ymin),(xmax,ymax),(255,0,0),2)

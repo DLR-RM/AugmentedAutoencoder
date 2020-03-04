@@ -13,7 +13,7 @@ results = []
 # result_paths = glob.glob('pose_errors*.npy')                                                                                                                                                                
 result_paths = glob.glob(path)                                                                                                                                                                
 for r in result_paths:         
-    print r                                                                                     
+    print(r)                                                                                     
     s = np.load(r, allow_pickle=True)                                                                                                  
     s = s.item()
     # print len(s['preds'][0]['t_3'])                                                                                                 
@@ -28,4 +28,4 @@ data_paper = data[['class', '<5deg_<5cm_init', '<5deg_<5cm', 'mean_add_recall_in
 data_paper.loc[:,'<5deg_<5cm_init':] =  data_paper.loc[:,'<5deg_<5cm_init':] *100
 
 l = data_paper.to_latex(index=False, float_format='%.1f')
-print l
+print(l)

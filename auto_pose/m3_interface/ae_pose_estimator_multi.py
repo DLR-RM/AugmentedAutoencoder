@@ -20,8 +20,8 @@ class AePoseEstimator(PoseEstInterface):
         workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
         if workspace_path == None:
-            print 'Please define a workspace path:\n'
-            print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+            print('Please define a workspace path:\n')
+            print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
             exit(-1)
 
         self._process_requirements = ['color_img', 'camK', 'bboxes']
@@ -31,7 +31,7 @@ class AePoseEstimator(PoseEstInterface):
         self._upright = test_args.getboolean('auto_pose','upright')
         self._topk = test_args.getint('auto_pose','topk')
         if self._topk > 1:
-            print 'ERROR: topk > 1 not implemented yet'
+            print('ERROR: topk > 1 not implemented yet')
             exit()
 
         self._image_format = {'color_format':test_args.get('auto_pose','color_format'), 
@@ -54,7 +54,7 @@ class AePoseEstimator(PoseEstInterface):
 
         self.sess = tf.Session(config=config)
 
-        for clas_name,experiment in self.class_2_encoder.items():
+        for clas_name,experiment in list(self.class_2_encoder.items()):
             full_name = experiment.split('/')
             experiment_name = full_name.pop()
             experiment_group = full_name.pop() if len(full_name) > 0 else ''
@@ -63,7 +63,7 @@ class AePoseEstimator(PoseEstInterface):
             # ckpt_dir = utils.get_checkpoint_dir(log_dir)
 
             train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
-            print train_cfg_file_path
+            print(train_cfg_file_path)
             # train_cfg_file_path = utils.get_config_file_path(workspace_path, experiment_name, experiment_group)
             train_args = configparser.ConfigParser(inline_comment_prefixes="#")
             train_args.read(train_cfg_file_path)
@@ -120,7 +120,7 @@ class AePoseEstimator(PoseEstInterface):
             pred_clas = max(box.classes)
 
             if not pred_clas in self.class_2_encoder:
-                print('%s not contained in config class_names %s', (pred_clas, self.class_2_encoder))
+                print(('%s not contained in config class_names %s', (pred_clas, self.class_2_encoder)))
                 continue
 
 
@@ -146,7 +146,7 @@ class AePoseEstimator(PoseEstInterface):
            
             H_est[:3,:3] = R_est
             H_est[:3,3] = t_est
-            print 'translation from camera: ',  H_est[:3,3]
+            print('translation from camera: ',  H_est[:3,3])
 
             if self._camPose:
                 H_est = np.dot(camPose, H_est)           

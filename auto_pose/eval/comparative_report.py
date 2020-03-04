@@ -181,7 +181,7 @@ def main():
 
 			data_paper_vsd_1_18 = {}
 			data_paper_vsd_19_30 = {}
-			for (key, value) in data_paper_vsd.items():
+			for (key, value) in list(data_paper_vsd.items()):
 				if key<=18:
 					data_paper_vsd_1_18[key] = value
 				else:
@@ -205,7 +205,7 @@ def main():
 			data_proj.append({'exp_name':exp_name, 'eval_name':eval_name, 'error_type':error_type, 'thres':error_thres,
 				'top': topn, 'sixd_recall': sixd_recall, 'EST_BBS': estimate_bbs, 'eval_data': str(data[:2]+ [occl]),
 				'eval_scenes': str(data[2]),'eval_obj': str(data[3])})
-			if not data_paper_proj.has_key(int(data[3])):
+			if int(data[3]) not in data_paper_proj:
 				data_paper_proj[int(data[3])] = {}
 				data_paper_proj[int(data[3])]['eval_obj'] = int(data[3])
 			if 'obj' in eval_name:

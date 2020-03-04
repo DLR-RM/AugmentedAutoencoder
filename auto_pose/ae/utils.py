@@ -108,7 +108,7 @@ def create_summaries(multi_queue, decoders, ae):
     for j,d in enumerate(decoders):
         tf.summary.scalar('reconst_loss_%s' % j, d.reconstr_loss)
     rand_idcs = tf.random_shuffle(tf.range(multi_queue._batch_size * multi_queue._num_objects), seed=0)
-    print len(decoders), rand_idcs.shape[0], rand_idcs
+    print(len(decoders), rand_idcs.shape[0], rand_idcs)
     tf.summary.image('input', tf.gather(tf.concat([el[0] for el in multi_queue.next_element],0),rand_idcs), max_outputs=4)
     tf.summary.image('reconstruction_target', tf.gather(tf.concat([el[2] for el in multi_queue.next_element],0),rand_idcs), max_outputs=4)
     tf.summary.image('reconstruction', tf.gather(tf.concat([decoder.x for decoder in decoders], axis=0), rand_idcs), max_outputs=4)

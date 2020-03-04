@@ -52,21 +52,21 @@ camK = np.array([2754.411920, 0, 987.463486, 0, 2753.228305, 600.587903, 0, 0, 1
 m3_config_path = '/home_local/sund_ma/m3_ws/new/multi_m3.cfg'
 ae_pose_est = AePoseEstimator(m3_config_path)
 pose_ests = ae_pose_est.process([bb2],img,camK, depth_img=depth_img)
-print(len(ae_pose_est.all_train_args))
+print((len(ae_pose_est.all_train_args)))
 
 try:
-    print pose_ests[0].trafo
+    print(pose_ests[0].trafo)
 except:
-    print 'nothing detected'
+    print('nothing detected')
 if args.vis:
     
     # ply_model_paths = [str(train_args.get('Paths', 'MODEL_PATH')) for train_args in ae_pose_est.all_train_args]
     ply_model_paths = [ae_pose_est.model_path]
-    print ply_model_paths
+    print(ply_model_paths)
     
     # cad_reconst = [str(train_args.get('Dataset','MODEL')) for train_args in ae_pose_est.all_train_args]
     cad_reconst = ['cad' if 'cad' in ae_pose_est.model_path else 'reconst']
-    print cad_reconst
+    print(cad_reconst)
 
     from meshrenderer import meshrenderer, meshrenderer_phong
     if all([model == 'cad' for model in cad_reconst]):   

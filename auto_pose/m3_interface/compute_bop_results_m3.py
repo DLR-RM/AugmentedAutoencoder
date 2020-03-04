@@ -28,7 +28,7 @@ from auto_pose.ae.utils import get_dataset_path
 
 def load_depth(path, mul=1., shift=(-4, -1)):
     r = png.Reader(filename=path)
-    im = np.vstack(map(np.uint16, r.asDirect()[2]))
+    im = np.vstack(list(map(np.uint16, r.asDirect()[2])))
     im = (im * mul).astype(np.float32)
     im = np.roll(im, shift, (0, 1))
     return im
@@ -105,7 +105,7 @@ if pose_est_method:
         pose_refiner = m3vision.get_pose_refiner(pose_refiner_method, m3_config_path)
 
         if dataset_name == 'ycbv':
-            for m in pose_refiner.models.values():
+            for m in list(pose_refiner.models.values()):
                 for mp in m['pts']:
                     mp[0] *= 1000
                     mp[1] *= 1000

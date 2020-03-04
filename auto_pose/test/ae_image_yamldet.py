@@ -109,7 +109,7 @@ for y in yaml_files:
     with open(y) as file:
         bb_dicts[os.path.basename(y).split('yaml')[0]] = yaml.load(file)
 
-print bb_dicts
+print(bb_dicts)
 # [[2730.3754266211604,0.0,960.0],[0.0,2730.3754266211604,600.0],[0.0,0.0,1.0]]
 K_test = np.array([[2730.3754266211604,0.0,960.0],[0.0,2730.3754266211604,600.0],[0.0,0.0,1.0]])
 
@@ -119,7 +119,7 @@ K_test = np.array([[2730.3754266211604,0.0,960.0],[0.0,2730.3754266211604,600.0]
 for file in files:
     orig_im = cv2.imread(file)
     
-    if bb_dicts.has_key(os.path.basename(file).split('png')[0]):
+    if os.path.basename(file).split('png')[0] in bb_dicts:
         bb_dict = bb_dicts[os.path.basename(file).split('png')[0]]
 
         Rs = []
@@ -179,7 +179,7 @@ for file in files:
             )
             rendered_pose_ests[k] = rendered_pose_est
         
-        for (key,rendered_pose_est),pixel_bb in zip(rendered_pose_ests.items(),pixel_bbs):
+        for (key,rendered_pose_est),pixel_bb in zip(list(rendered_pose_ests.items()),pixel_bbs):
             x,y,w,h = pixel_bb
             cv2.rectangle(im_show, (x,y),(x+w,y+h),(255,0,0), 3)
             g_y = np.zeros_like(rendered_pose_est)

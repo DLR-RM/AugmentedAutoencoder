@@ -81,7 +81,7 @@ map = Basemap(projection='ortho', lat_0=-45, lon_0=10)
 map.drawmeridians(np.arange(0, 360, 30))
 map.drawparallels(np.arange(-90, 90, 30))
 # compute native map projection coordinates of lat/lon grid.
-x, y = map(lon, lat)
+x, y = list(map(lon, lat))
 # contour data over the map.
 cs = map.contourf(x, y, Ti, 15)
 cbar = map.colorbar(cs,location='bottom',pad="5%")

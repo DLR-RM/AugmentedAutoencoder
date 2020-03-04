@@ -274,7 +274,7 @@ class Dataset(object):
         pad_factor = float(kw['pad_factor'])
         max_rel_offset = float(kw['max_rel_offset'])
         t = np.array([0, 0, float(kw['radius'])])
-        lighting = eval(kw['lighting']) if kw.has_key('lighting') else None
+        lighting = eval(kw['lighting']) if 'lighting' in kw else None
 
         widgets = ['Rendering Training Data: ', progressbar.Percentage(),
 
@@ -372,7 +372,7 @@ class Dataset(object):
                 bgr_x = cv2.cvtColor(np.uint8(bgr_x), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
                 bgr_y = cv2.cvtColor(np.uint8(bgr_y), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
 
-            if kw.has_key('target_bg_color'):
+            if 'target_bg_color' in kw:
                 depth_y = self.extract_square_patch(depth_y, obj_bb, pad_factor, resize=(W, H), interpolation=cv2.INTER_NEAREST)
                 mask_y = depth_y == 0.
                 bgr_y[mask_y] = eval(kw['target_bg_color'])
@@ -396,7 +396,7 @@ class Dataset(object):
         render_dims = eval(kw['render_dims'])
         K = eval(kw['k'])
         K = np.array(K).reshape(3,3)
-        lighting = eval(kw['lighting']) if kw.has_key('lighting') else None
+        lighting = eval(kw['lighting']) if 'lighting' in kw else None
 
         clip_near = float(kw['clip_near'])
         clip_far = float(kw['clip_far'])
@@ -536,8 +536,8 @@ class Dataset(object):
     def preprocess_aae(self, batch_x, masks_x, batch_y):
         rand_idcs_bg = np.random.choice(self.noof_bg_imgs, len(batch_x), replace=False)
         rand_vocs = self.bg_imgs[rand_idcs_bg]
-	print rand_vocs.shape
-	print masks_x.shape
+	print(rand_vocs.shape)
+	print(masks_x.shape)
         batch_x[masks_x] = rand_vocs[masks_x]
         batch_x = self._aug.augment_images(batch_x)
 

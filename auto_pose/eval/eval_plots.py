@@ -271,7 +271,7 @@ def plot_scene_with_estimate(test_img,renderer,K_test, R_est_old, t_est_old,R_es
 
 
 def compute_pca_plot_embedding(eval_dir, z_train, lon_lat=None, z_test=None, save=True, inter_factor = 1):
-    print inter_factor
+    print(inter_factor)
     sklearn_pca = PCA(n_components=3)
     full_z_pca = sklearn_pca.fit_transform(z_train)
     if z_test is not None:
@@ -515,7 +515,7 @@ def plot_t_err_hist_vis(eval_args, eval_dir, scene_ids, bins=20):
                 if gt['obj_id'] == obj_id:
                     if visib_gt['visib_fract'] > 0.1:
                         for te_e in res:
-                            t_errs += [te_e['errors'].values()[0]]
+                            t_errs += [list(te_e['errors'].values())[0]]
 
     if len(t_errs) == 0:
         return
@@ -590,7 +590,7 @@ def plot_R_err_hist_vis(eval_args, eval_dir, scene_ids, bins=20):
                 if gt['obj_id'] == obj_id:
                     if visib_gt['visib_fract'] > 0.1:
                         for re_e in res:
-                            angle_errs += [re_e['errors'].values()[0]]
+                            angle_errs += [list(re_e['errors'].values())[0]]
 
     if len(angle_errs) == 0:
         return
@@ -633,7 +633,7 @@ def plot_R_err_recall(eval_args, eval_dir, scene_ids):
                 if gt['obj_id'] == obj_id:
                     if visib_gt['visib_fract'] > 0.1:
                         for re_e in res:
-                            angle_errs += [re_e['errors'].values()[0]]
+                            angle_errs += [list(re_e['errors'].values())[0]]
 
     if len(angle_errs) == 0:
         return
@@ -745,7 +745,7 @@ def plot_vsd_err_hist(eval_args, eval_dir, scene_ids):
                 if gt['obj_id'] == obj_id:
                     if visib_gt['visib_fract'] > 0.1:
                         for vsd_e in vsds:
-                            vsd_errs += [vsd_e['errors'].values()[0]]
+                            vsd_errs += [list(vsd_e['errors'].values())[0]]
 
 
     if len(vsd_errs) == 0:
@@ -807,7 +807,7 @@ def plot_vsd_occlusion(eval_args, eval_dir, scene_ids, all_test_visibs, bins = 1
             continue
 
         vsd_dict = inout.load_yaml(error_file_path)
-        all_vsd_errs += [vsd_e['errors'].values()[0] for vsd_e in vsd_dict]
+        all_vsd_errs += [list(vsd_e['errors'].values())[0] for vsd_e in vsd_dict]
 
     if len(all_vsd_errs) == 0:
         return
@@ -869,7 +869,7 @@ def plot_re_rect_occlusion(eval_args, eval_dir, scene_ids, all_test_visibs, bins
             continue
 
         angle_errs_dict = inout.load_yaml(os.path.join(eval_dir,'error=re_ntop=%s' % top_n,'errors_{:02d}.yml'.format(scene_id)))
-        all_angle_errs += [angle_e['errors'].values()[0] for angle_e in angle_errs_dict]
+        all_angle_errs += [list(angle_e['errors'].values())[0] for angle_e in angle_errs_dict]
 
     if len(all_angle_errs) == 0:
         return

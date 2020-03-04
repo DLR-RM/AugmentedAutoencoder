@@ -40,7 +40,7 @@ def main():
 
     if not os.path.exists(cfg_file_path):
         print('Could not find config file:\n')
-        print('{}\n'.format(cfg_file_path))
+        print(('{}\n'.format(cfg_file_path)))
         exit(-1)
 
     args = configparser.ConfigParser(inline_comment_prefixes="#")

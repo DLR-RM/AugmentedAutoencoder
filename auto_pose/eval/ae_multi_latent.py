@@ -27,8 +27,8 @@ def main():
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
     if workspace_path == None:
-        print 'Please define a workspace path:\n'
-        print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+        print('Please define a workspace path:\n')
+        print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
         exit(-1)
 
     gentle_stop = np.array((1,), dtype=np.bool)
@@ -65,8 +65,8 @@ def main():
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
 
     if not os.path.exists(cfg_file_path):
-        print 'Could not find config file:\n'
-        print '{}\n'.format(cfg_file_path)
+        print('Could not find config file:\n')
+        print('{}\n'.format(cfg_file_path))
         exit(-1)
 
     args = configparser.ConfigParser(inline_comment_prefixes="#")
@@ -112,11 +112,11 @@ def main():
         if os.path.exists(os.path.dirname(models_test[0])):
             dataset._kw['model_path'] = models_test[0:num_obj]
         else:
-            print(models_test[0], ' does not exist')
+            print((models_test[0], ' does not exist'))
     else:
         print('split must be train or test')
         exit()
-    print dataset._kw['model_path']
+    print(dataset._kw['model_path'])
 
     if args_latent.getboolean('Experiment', 'emb_invariance'):
         latent_utils.compute_plot_emb_invariance(args_latent, codebook)

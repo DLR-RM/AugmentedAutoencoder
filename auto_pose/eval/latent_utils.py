@@ -27,7 +27,7 @@ def compute_plot_emb_invariance(args_latent, codebook):
     for R in Rs:
         syn_crops.append(dataset.render_rot(R, obj_id=1)/255.)
     for a, e in u.batch_iteration_indices(len(Rs), 200):
-        print a
+        print(a)
         z_train[a:e] = sess.run(encoder.z, feed_dict={
                                 encoder._input: syn_crops[a:e]})
 
@@ -35,8 +35,8 @@ def compute_plot_emb_invariance(args_latent, codebook):
 
     batch = []
     orig_img = (syn_crops[100]*255).astype(np.uint8)  # H, W, C,  C H W
-    for i in xrange(200):
-        print i
+    for i in range(200):
+        print(i)
         img = aug.augment_image(orig_img.copy()).astype(np.float32) / 255.
         #img = img.transpose( (1, 2, 0) ) #C H, W 1, 2,
         batch.append(img)
@@ -69,7 +69,7 @@ def plot_latent_revolutions(num_obj, codebook):
 
             syn_crops.append(dataset.render_rot(R, obj_id=i)/255.)
         for a, e in u.batch_iteration_indices(len(Rs), 200):
-            print e
+            print(e)
             z_train[a:e] = sess.run(encoder.z, feed_dict={
                                     encoder._input: syn_crops[a:e]})
         all_ztrain.append(z_train)
@@ -84,7 +84,7 @@ def plot_latent_revolutions(num_obj, codebook):
     # plt.title('Embedding Principal Components')
     imgs = []
     axes = []
-    for o in xrange(0, num_obj*4):
+    for o in range(0, num_obj*4):
         syn_crops = []
         for R in Rs:
             if o >= 2*num_obj and o < 3*num_obj:
@@ -102,7 +102,7 @@ def plot_latent_revolutions(num_obj, codebook):
         # cv2.waitKey(1)
 
         for a, e in u.batch_iteration_indices(len(Rs), 200):
-            print e
+            print(e)
             z_train[a:e] = sess.run(encoder.z, feed_dict={
                                     encoder._input: syn_crops[a:e]})
         # eval_plots.compute_pca_plot_embedding('',z_train,lon_lat=lon_lat,save=False)
@@ -179,7 +179,7 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
     for model_pts in all_model_pts:
         # model_pts_01 = model_pts * 0.1
         vec = model_pts.max(0) - model_pts.min(0)
-        print vec
+        print(vec)
         diameters.append(np.linalg.norm(vec))
     res_dict = {'test_class': test_class, 'preds': {}}
 
@@ -221,8 +221,8 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
                 random_t_pert = np.array([0,0,t_z]) + np.array([np.random.normal(0,10),np.random.normal(0,10),np.random.normal(0,50)])
 
 
-                print angle_off * 180 / np.pi
-                print random_t_pert
+                print(angle_off * 180 / np.pi)
+                print(random_t_pert)
             
             full_perturbed_view, _ = dataset.renderer.render(obj_id=i,
                                                     W=render_dims[0],
@@ -262,9 +262,9 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
             refine_t_1 = time.time() - start_time
 
 
-            print x_target, y_target, real_scale
-            print t_refined
-            print 'error t: ', t_refined - np.array([0,0,t_z])
+            print(x_target, y_target, real_scale)
+            print(t_refined)
+            print('error t: ', t_refined - np.array([0,0,t_z]))
             
 
 
@@ -330,8 +330,8 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
 
 
 
-            print 'add_recall: ', add_recall_diameter(R_refined_refined_refined[0], t_refined_refined_refined, random_R, np.array([
-                                                   0, 0, t_z]), {'pts': all_model_pts[i]}, diameters[i])
+            print('add_recall: ', add_recall_diameter(R_refined_refined_refined[0], t_refined_refined_refined, random_R, np.array([
+                                                   0, 0, t_z]), {'pts': all_model_pts[i]}, diameters[i]))
             # proj_err = pose_error.arp_2d(R_refined_refined_refined[0], t_refined_refined, random_R, np.array([0, 0, t_z]), {'pts': all_model_pts[i]}, K)
             # print 'add: ', add_err
             # print 'proj: ', proj_err
@@ -339,14 +339,14 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
             # proj_errs.append(proj_err)
             # # pose_errs[-1] = np.minimum(pose_errs[-1],np.abs(pose_errs[-1]-180))
             
-            print 'timings:'
-            print refine_R_1
-            print refine_t_1
-            print refine_R_2
-            print refine_t_2
-            print refine_R_3
-            print refine_t_3
-            print 'object: ', i
+            print('timings:')
+            print(refine_R_1)
+            print(refine_t_1)
+            print(refine_R_2)
+            print(refine_t_2)
+            print(refine_R_3)
+            print(refine_t_3)
+            print('object: ', i)
             if args_latent.getboolean('Visualization', 'verbose'):
                 Rs = [R_refined, R_refined, R_refined_refined, R_refined_refined, R_refined_refined_refined]
                 ts = [random_t_pert, t_refined, t_refined, t_refined_refined, t_refined_refined]
@@ -453,9 +453,9 @@ def compute_pose_errors(res_dict, args_latent, dataset):
     for model_pts in all_model_pts:
         # model_pts_01 = model_pts * 0.1
         vec = model_pts.max(0) - model_pts.min(0)
-        print vec
+        print(vec)
         diameters.append(np.linalg.norm(vec))
-    print diameters
+    print(diameters)
     
 
     for i in range(0, num_obj):
@@ -524,19 +524,19 @@ def compute_pose_errors(res_dict, args_latent, dataset):
     res['<5deg_<5cm'] = len(R_3_errs[(R_3_errs <= 5) & (t_3_errs <= 50)])/1.0/len(R_3_errs)
     res['mean_rot_err'] = np.mean(R_3_errs)
     res['median_rot_err'] = np.median(R_3_errs)
-    print res
+    print(res)
 
-    print ('pose_errs_init: median: ' + str(np.median(R_init_errs)) 
+    print(('pose_errs_init: median: ' + str(np.median(R_init_errs)) 
     + ', mean: ' + str(np.mean(R_init_errs)) + ', <5deg & <5cm: ' 
     + str(len(R_init_errs[(R_init_errs <= 5) & (t_init_errs <= 50)])/1.0/len(R_init_errs))
     + ', <5deg: ' + str(len(R_init_errs[(R_init_errs <= 5)])/1.0/len(R_init_errs))
-    + ', <5cm: ' + str(len(t_init_errs[t_init_errs <= 50])/1.0/len(t_init_errs)))
+    + ', <5cm: ' + str(len(t_init_errs[t_init_errs <= 50])/1.0/len(t_init_errs))))
 
-    print ('pose_errs_final: median: ' + str(np.median(R_3_errs)) 
+    print(('pose_errs_final: median: ' + str(np.median(R_3_errs)) 
     + ', mean: ' + str(np.mean(R_3_errs)) + ', <5deg & <5cm: ' 
     + str(len(R_3_errs[(R_3_errs <= 5) & (t_3_errs <= 50)])/1.0/len(R_3_errs))
     + ', <5deg: ' + str(len(R_3_errs[(R_3_errs <= 5)])/1.0/len(R_3_errs))
-    + ', <5cm: ' + str(len(t_3_errs[t_3_errs <= 50])/1.0/len(t_3_errs)))
+    + ', <5cm: ' + str(len(t_3_errs[t_3_errs <= 50])/1.0/len(t_3_errs))))
 
 
     if args_latent.getboolean('Visualization', 'rot_err_histogram'):
@@ -578,7 +578,7 @@ def multi_scale_template_matching(im1, im2, args_latent, last=False):
         num_scales = 21
 
     #im2 is target and template
-    print im1.dtype, np.min(im1), np.max(im1), im1.shape
+    print(im1.dtype, np.min(im1), np.max(im1), im1.shape)
     im1_gray = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
     im1_gray_pad = np.zeros((im1_gray.shape[0]*3//2, im1_gray.shape[1]*3//2),dtype=np.uint8)
     im1_gray_pad[im1_gray.shape[0]//4:im1_gray.shape[0]//4*5,
@@ -608,7 +608,7 @@ def multi_scale_template_matching(im1, im2, args_latent, last=False):
             cv2.imshow("Visualize", clone)
             cv2.imshow("result", result/np.max(result))
             cv2.imshow("template", clone_temp)
-            print maxVal
+            print(maxVal)
             cv2.waitKey(0)
         # if we have found a new maximum correlation value, then update
         # the bookkeeping variable
@@ -636,7 +636,7 @@ def multi_scale_template_matching(im1, im2, args_latent, last=False):
 
 def align_images(im1, im2, random_t_pert, warp_mode=cv2.MOTION_AFFINE, termination_eps=1e-7, number_of_iterations=5000):
 
-    print im1.dtype, np.min(im1), np.max(im1), im1.shape
+    print(im1.dtype, np.min(im1), np.max(im1), im1.shape)
     im1_gray = cv2.cvtColor(im1.astype(np.float32), cv2.COLOR_BGR2GRAY)
     im2_gray = cv2.cvtColor(im2.astype(np.float32), cv2.COLOR_BGR2GRAY)
     # Find size of image1
@@ -663,8 +663,8 @@ def align_images(im1, im2, random_t_pert, warp_mode=cv2.MOTION_AFFINE, terminati
     warp_matrix_normalized[:, 0] /= np.linalg.norm(warp_matrix[:, 0])
     warp_matrix_normalized[:, 1] /= np.linalg.norm(warp_matrix[:, 1])
     warp_matrix[:2, :2] = np.dot(warp_matrix_normalized.T, warp_matrix[:2,:2])
-    print np.linalg.norm(warp_matrix[:,0])
-    print np.linalg.norm(warp_matrix[:,1])
+    print(np.linalg.norm(warp_matrix[:,0]))
+    print(np.linalg.norm(warp_matrix[:,1]))
 
     print('##########')
 

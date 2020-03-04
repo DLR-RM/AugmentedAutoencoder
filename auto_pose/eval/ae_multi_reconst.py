@@ -20,8 +20,8 @@ def main():
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
     if workspace_path == None:
-        print 'Please define a workspace path:\n'
-        print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+        print('Please define a workspace path:\n')
+        print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
         exit(-1)
 
     gentle_stop = np.array((1,), dtype=np.bool)
@@ -57,8 +57,8 @@ def main():
     dataset_path = u.get_dataset_path(workspace_path)
     
     if not os.path.exists(cfg_file_path):
-        print 'Could not find config file:\n'
-        print '{}\n'.format(cfg_file_path)
+        print('Could not find config file:\n')
+        print('{}\n'.format(cfg_file_path))
         exit(-1)
         
 
@@ -81,14 +81,14 @@ def main():
 
         bs = multi_queue._batch_size
         encoding_splits = []
-        for dev in xrange(num_gpus):
+        for dev in range(num_gpus):
             with tf.device('/device:GPU:%s' % dev):   
                 encoder = factory.build_encoder(all_object_views[dev_splits[dev][0]*bs:(dev_splits[dev][-1]+1)*bs], args, is_training=False)
                 encoding_splits.append(tf.split(encoder.z, len(dev_splits[dev]),0))
 
     with tf.variable_scope(experiment_name):
         decoders = []
-        for dev in xrange(num_gpus):     
+        for dev in range(num_gpus):     
             with tf.device('/device:GPU:%s' % dev):  
                 for j,i in enumerate(dev_splits[dev]):
                     decoders.append(factory.build_decoder(multi_queue.next_element[i], encoding_splits[dev][j], args, is_training=False, idx=i))
@@ -124,7 +124,7 @@ def main():
                 # checkpoint_file_basename = chkpt.model_checkpoint_path
             else:
                 checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=at_step)
-            print 'loading ', checkpoint_file_basename
+            print('loading ', checkpoint_file_basename)
             saver.restore(sess, checkpoint_file_basename)
             # except:
             #     print 'loading ', chkpt.model_checkpoint_path
@@ -133,14 +133,14 @@ def main():
             if encoder._pre_trained_model != 'False':
                 encoder.saver.restore(sess, encoder._pre_trained_model)
                 all_vars = set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
-                var_list = all_vars.symmetric_difference([v[1] for v in encoder.fil_var_list.items()])
+                var_list = all_vars.symmetric_difference([v[1] for v in list(encoder.fil_var_list.items())])
                 sess.run(tf.variables_initializer(var_list))
-                print sess.run(tf.report_uninitialized_variables())
+                print(sess.run(tf.report_uninitialized_variables()))
             else:
                 sess.run(tf.global_variables_initializer())
 
         if not debug_mode:
-            print 'Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))
+            print('Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH')))
             bar.start()
 
 
@@ -177,12 +177,12 @@ def main():
 
             this_x = np.concatenate([el[0] for el in this])
             this_y = np.concatenate([el[2] for el in this])
-            print this_x.shape
+            print(this_x.shape)
             reconstr_train = np.concatenate(reconstr_train)
             # for imgs in [this_x,this_y,reconstr_train]:
             #     np.random.seed(0)
             #     np.random.shuffle(imgs)
-            print this_x.shape
+            print(this_x.shape)
             cv2.imshow('sample batch', np.hstack(( u.tiles(this_x, 4, 6), u.tiles(reconstr_train, 4,6),u.tiles(this_y, 4, 6))) )
             k = cv2.waitKey(0)
 
@@ -192,7 +192,7 @@ def main():
             reconstr_train = sess.run([decoder.x for decoder in decoders],feed_dict={encoder._input:this_y})
             # this_x = np.concatenate([el[0] for el in reconstr_train])
             reconstr_train = np.array(reconstr_train)
-            print reconstr_train.shape
+            print(reconstr_train.shape)
             reconstr_train = reconstr_train.squeeze()
             cv2.imshow('sample batch 2', np.hstack((u.tiles(this_y, 4, 6), u.tiles(reconstr_train, 4, 6))))
             k = cv2.waitKey(0)
@@ -204,8 +204,8 @@ def main():
         if not debug_mode:
             bar.finish()
         if not gentle_stop[0] and not debug_mode:
-            print 'To create the embedding run:\n'
-            print 'ae_embed {}\n'.format(full_name)
+            print('To create the embedding run:\n')
+            print('ae_embed {}\n'.format(full_name))
 
 if __name__ == '__main__':
     main()

@@ -88,31 +88,31 @@ def main():
             if generate_data:
                 # dataset.load_bg_images(dataset_path)
                 multi_queue.create_tfrecord_training_images(dataset_path, args)
-                print 'finished generating training images'
+                print('finished generating training images')
                 exit()
 
             dev_splits = np.array_split(np.arange(multi_queue._num_objects), num_gpus)
 
             iterator = multi_queue.create_iterator(dataset_path, args)
 
-            all_x, all_y = zip(*[(inp[0], inp[2]) for inp in multi_queue.next_element])
+            all_x, all_y = list(zip(*[(inp[0], inp[2]) for inp in multi_queue.next_element]))
             all_x, all_y = tf.concat(all_x, axis=0), tf.concat(all_y, axis=0)
-            print all_x.shape
+            print(all_x.shape)
             encoding_splits = []
-            for dev in xrange(num_gpus):
+            for dev in range(num_gpus):
                 with tf.device('/device:GPU:%s' % dev):   
                     sta = dev_splits[dev][0] * multi_queue._batch_size
                     end = (dev_splits[dev][-1]+1) * multi_queue._batch_size
-                    print sta, end
+                    print(sta, end)
                     encoder = factory.build_encoder(all_x[sta:end], args, target=all_y[sta:end], is_training=True)
                     encoding_splits.append(tf.split(encoder.z, len(dev_splits[dev]),0))
 
         with tf.variable_scope(experiment_name):
             decoders = []
-            for dev in xrange(num_gpus):     
+            for dev in range(num_gpus):     
                 with tf.device('/device:GPU:%s' % dev):  
                     for j,i in enumerate(dev_splits[dev]):
-                        print len(encoding_splits)
+                        print(len(encoding_splits))
                         decoders.append(factory.build_decoder(multi_queue.next_element[i], encoding_splits[dev][j], args, is_training=True, idx=i))
             
             ae = factory.build_ae(encoder, decoders, args)
@@ -156,7 +156,7 @@ def main():
                 checkpoint_file_basename = chkpt.model_checkpoint_path
             else:
                 checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=at_step)
-            print('loading ', checkpoint_file_basename)
+            print(('loading ', checkpoint_file_basename))
             saver.restore(sess, checkpoint_file_basename)
             # except:
             #     print 'loading ', chkpt.model_checkpoint_path
@@ -165,9 +165,9 @@ def main():
             if encoder._pre_trained_model != 'False':
                 encoder.saver.restore(sess, encoder._pre_trained_model)
                 all_vars = set([var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)])
-                var_list = all_vars.symmetric_difference([v[1] for v in encoder.fil_var_list.items()])
+                var_list = all_vars.symmetric_difference([v[1] for v in list(encoder.fil_var_list.items())])
                 sess.run(tf.variables_initializer(var_list))
-                print sess.run(tf.report_uninitialized_variables())
+                print(sess.run(tf.report_uninitialized_variables()))
             else:
                 sess.run(tf.global_variables_initializer())
 
@@ -208,12 +208,12 @@ def main():
 
                 this_x = np.concatenate([el[0] for el in this])
                 this_y = np.concatenate([el[2] for el in this])
-                print this_x.shape, reconstr_train[0].shape, len(reconstr_train)
+                print(this_x.shape, reconstr_train[0].shape, len(reconstr_train))
                 reconstr_train = np.concatenate(reconstr_train,axis=0)
                 for imgs in [this_x,this_y,reconstr_train]:
                     np.random.seed(0)
                     np.random.shuffle(imgs)
-                print this_x.shape
+                print(this_x.shape)
                 cv2.imshow('sample batch', np.hstack(( u.tiles(this_x, 4, 6), u.tiles(reconstr_train, 4,6),u.tiles(this_y, 4, 6))) )
                 k = cv2.waitKey(0)
                 if k == 27:

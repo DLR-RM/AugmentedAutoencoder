@@ -6,8 +6,8 @@ import tensorflow as tf
 import progressbar
 import operator
 
-from utils import lazy_property
-import utils as u
+from .utils import lazy_property
+from . import utils as u
 import os
 
 import time
@@ -72,7 +72,7 @@ class Codebook(object):
         # model_name = os.path.basename(model_path).split('.')[0]
 
         if model_name in self.existing_embs:
-            print(model_name, ' already has codebook')
+            print((model_name, ' already has codebook'))
             exit()
         else:
             self.embeddings_normalized[model_name] = tf.Variable(
@@ -120,7 +120,7 @@ class Codebook(object):
                 unsorted_max_idcs = np.argpartition(-cosine_similar.squeeze(), top_n_refine)[:top_n_refine]
                 idcs = unsorted_max_idcs[np.argsort(-cosine_similar.squeeze()[unsorted_max_idcs])]
                 # orig_cosine_sim = cosine_similar[0,idcs[0]]
-            print 'original cosine sim: ', cosine_similar[0,idcs]
+            print('original cosine sim: ', cosine_similar[0,idcs])
 
             ### intitializing rotation estimates from existing codebook
             Rs_init = self._dataset.viewsphere_for_embedding[idcs].copy()
@@ -146,10 +146,10 @@ class Codebook(object):
 
         for j in range(epochs):
             noof_perts = budget * top_n_new
-            for i in xrange(noof_perts):
+            for i in range(noof_perts):
                 if j>0 and i==0:
                     R_perts = Rs
-                    print noof_perts
+                    print(noof_perts)
                     # fine_views = list(view_best) if not isinstance(view_best, list) else view_best
                     # bbs = list(bb_best) if not isinstance(bbs, list) else bbs
                     continue
@@ -231,15 +231,15 @@ class Codebook(object):
 
                 top_n_new = len(view_best_new)
 
-                print 'refined'
+                print('refined')
                 # cv2.imshow('chosen', fine_views[idx])
                 # cv2.waitKey(0)
                 
                 
                 # Rs_best = list(Rs)
             else:
-                print 'not refined'
-        print 'final cosine sim: ', max_cosine_sim
+                print('not refined')
+        print('final cosine sim: ', max_cosine_sim)
         # idx = np.argmax(cosine_sim)
 
         return np.array(Rs)[0:top_n], bbs[0:top_n]
@@ -372,7 +372,7 @@ class Codebook(object):
         J = self._encoder.latent_space_size
         embedding_z = np.empty( (embedding_size, J) )
 
-        print 'Creating embedding ..'
+        print('Creating embedding ..')
 
         self._dataset.get_sprite_training_images(train_args)
 
