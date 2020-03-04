@@ -28,10 +28,10 @@ def main():
     ckpt_dir = u.get_checkpoint_dir(log_dir)
 
     train_cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
-    train_args = configparser.ConfigParser()
+    train_args = configparser.ConfigParser(inline_comment_prefixes="#")
     train_args.read(train_cfg_file_path)
 
-    print train_args.items('Dataset')
+    print((train_args.items('Dataset')))
 
     codebook, dataset, decoder = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True, return_decoder = True)
 
@@ -47,13 +47,13 @@ def main():
     idcs_random = []
     idcs_random_scale = np.arange(1024*40+512+16,1024*80,1024)
     idcs_orig = np.arange(1024*200+512+16,1024*240,1024)
-    for i in xrange(200,240):
+    for i in range(200,240):
         idcs_random_trans.append(np.random.randint(i*1024,(i+1)*1024))
-    for i in xrange(40):
+    for i in range(40):
         s = np.random.randint(0,6)
         idcs_random.append(np.random.randint((s*40+i)*1024,(s*40+i+1)*1024))
 
-    print idcs_orig
+    print(idcs_orig)
 
     # im = u.tiles(dataset.train_x[np.array(idcs_random_trans)[::3]],2,7,3,3)
     # im2 = u.tiles(dataset.train_x[np.array(idcs_random_scale)[::3]],2,7,3,3)
@@ -81,7 +81,7 @@ def main():
             test_codes=sess.run(codebook._encoder.z, {codebook._encoder.x: dataset.train_y[:256]/255.})
             test_codes_normed=sess.run(codebook.embedding_normalized, {codebook._encoder.x: dataset.train_y[:256]/255.})
         # train_embedding = sess.run(codebook.embedding_normalized)
-        print test_codes.shape, test_codes_trans.shape
+        print((test_codes.shape, test_codes_trans.shape))
 
     # plt.figure()
     norm = np.linalg.norm(y_codes,axis=1)

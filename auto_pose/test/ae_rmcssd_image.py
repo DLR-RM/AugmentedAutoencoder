@@ -39,15 +39,15 @@ saver = tf.train.Saver(ae_var_list)
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
 if workspace_path == None:
-    print 'Please define a workspace path:\n'
-    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    print('Please define a workspace path:\n')
+    print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
     exit(-1)
 
 log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
 ckpt_dir = utils.get_checkpoint_dir(log_dir)
     
 train_cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
-train_args = configparser.ConfigParser()
+train_args = configparser.ConfigParser(inline_comment_prefixes="#")
 train_args.read(train_cfg_file_path)  
   
 factory.restore_checkpoint(ssd.isess, saver, ckpt_dir)
@@ -57,7 +57,7 @@ factory.restore_checkpoint(ssd.isess, saver, ckpt_dir)
 result_dict = {}
 
 files = glob.glob(os.path.join(str(folder_str),'*.png'))+glob.glob(os.path.join(str(folder_str),'*.jpeg'))
-print files
+print(files)
 width = 640
 height = 480
 
@@ -73,7 +73,7 @@ for file in files:
 
     rclasses, rscores, rbboxes = ssd.process(img,select_threshold=0.5)
 
-    ssd_boxes = [ (int(rbboxes[i][0]*H), int(rbboxes[i][1]*W), int(rbboxes[i][2]*H), int(rbboxes[i][3]*W)) for i in xrange(len(rbboxes)) if rclasses[i] == 1 ]
+    ssd_boxes = [ (int(rbboxes[i][0]*H), int(rbboxes[i][1]*W), int(rbboxes[i][2]*H), int(rbboxes[i][3]*W)) for i in range(len(rbboxes)) if rclasses[i] == 1 ]
     ssd_imgs = np.empty((len(rbboxes),) + dataset.shape)
 
     vis_img = 0.3 * np.ones((np.max([len(rbboxes),3])*dataset.shape[0],2*dataset.shape[1],dataset.shape[2]))
@@ -108,7 +108,7 @@ for file in files:
             ts.append(t.squeeze())
         # Rs = codebook.nearest_rotation(ssd.isess, ssd_imgs)
         ssd_rot_imgs = 0.3*np.ones_like(ssd_imgs)
-        print ts
+        print(ts)
 
         # idcs = np.argsort(rscores)
 
@@ -128,12 +128,12 @@ for file in files:
 
         Rs_flat = np.zeros((len(Rs),9))
         ts_flat = np.zeros((len(Rs),3))
-        for i in xrange(len(Rs)):
+        for i in range(len(Rs)):
             Rs_flat[i]=Rs[i].flatten()
             ts_flat[i]=ts[i].flatten()
 
         z_sort = np.argsort(ts_flat[:,2])
-        print z_sort
+        print(z_sort)
         for t,R in zip(ts_flat[z_sort[::-1]],Rs_flat[z_sort[::-1]]):
             bgr_y, depth_y  = dataset.renderer.render( 
                 obj_id=0,
@@ -151,7 +151,7 @@ for file in files:
             g_y[:,:,1]= bgr_y[:,:,1]
             img_show[bgr_y > 0] = g_y[bgr_y > 0]*2./3. + img_show[bgr_y > 0]*1./3.
             # cv2.imshow('render6D',img_show)
-        for i in xrange(len(rscores)):
+        for i in range(len(rscores)):
             score = rscores[i]
             ymin = int(rbboxes[i, 0] * H)
             xmin = int(rbboxes[i, 1] * W)

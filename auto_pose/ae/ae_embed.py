@@ -7,15 +7,16 @@ import signal
 import progressbar
 import tensorflow as tf
 
-import ae_factory as factory
-import utils as u
+from . import ae_factory as factory
+from . import utils as u
+
 
 def main():
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
     if workspace_path == None:
-        print 'Please define a workspace path:\n'
-        print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+        print('Please define a workspace path:\n')
+        print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
         exit(-1)
 
     parser = argparse.ArgumentParser()
@@ -38,12 +39,18 @@ def main():
     dataset_path = u.get_dataset_path(workspace_path)
 
     if not os.path.exists(cfg_file_path):
-        print 'Could not find config file:\n'
-        print '{}\n'.format(cfg_file_path)
+        print('Could not find config file:\n')
+        print('{}\n'.format(cfg_file_path))
         exit(-1)
 
-    args = configparser.ConfigParser()
+    args = configparser.ConfigParser(inline_comment_prefixes="#")
     args.read(cfg_file_path)
+
+    batch_size = args.getint('Training', 'BATCH_SIZE')
+    model = args.get('Dataset', 'MODEL')
+
+    gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction=0.7)
+    config = tf.ConfigProto(gpu_options=gpu_options)
 
     with tf.variable_scope(experiment_name):
         dataset = factory.build_dataset(dataset_path, args)
@@ -63,10 +70,6 @@ def main():
         checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=at_step)
 
     target_checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path)
-    print checkpoint_file_basename
-    print target_checkpoint_file
-    print ckpt_dir
-    print '#'*20
 
     batch_size = args.getint('Training', 'BATCH_SIZE')*len(eval(args.get('Paths', 'MODEL_PATH')))
     model = args.get('Dataset', 'MODEL')
@@ -75,15 +78,11 @@ def main():
     config = tf.ConfigProto(gpu_options=gpu_options)
 
     with tf.Session(config=config) as sess:
-        print ckpt_dir
-        # print sess.run(encoder.global_step)
-        print '#'*20
 
         # factory.restore_checkpoint(sess, saver, ckpt_dir, at_step=at_step)
         sess.run(tf.global_variables_initializer())
         restore_saver.restore(sess, checkpoint_file_basename)
 
-        print '#'*20
         # chkpt = tf.train.get_checkpoint_state(ckpt_dir)
         # if chkpt and chkpt.model_checkpoint_path:
         #     print chkpt.model_checkpoint_path
@@ -98,11 +97,9 @@ def main():
         else:
             codebook.update_embedding(sess, batch_size, model_path)
 
-        print 'Saving new checkoint ..',
-        
+        print('Saving new checkoint ..')
         saver.save(sess, target_checkpoint_file, global_step=args.getint('Training', 'NUM_ITER') if at_step is None else at_step)
-
-        print 'done',
+        print('done')
 
 if __name__ == '__main__':
     main()

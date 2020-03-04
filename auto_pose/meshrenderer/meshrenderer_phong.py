@@ -41,6 +41,7 @@ class Renderer(object):
         attributes = gu.geo.load_meshes_sixd(models_cad_files, vertex_tmp_store_folder, recalculate_normals=False)
 
         self.verts = []
+
         indices = []
         for attribute in attributes:
             if len(attribute) ==4:

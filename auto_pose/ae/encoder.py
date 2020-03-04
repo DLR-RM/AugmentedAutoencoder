@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 import os
 
-from utils import lazy_property
+from .utils import lazy_property
 
 class Encoder(object):
 

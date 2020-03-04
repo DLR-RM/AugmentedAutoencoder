@@ -2,7 +2,8 @@
 
 import tensorflow as tf
 
-from utils import lazy_property
+
+from .utils import lazy_property
 from image_augmentation_functions import *
 import time
 import hashlib
@@ -16,7 +17,7 @@ class MultiQueue(object):
         self._dataset = dataset
         self._batch_size = batch_size
         self._noof_training_imgs = noof_training_imgs
-        
+
         self._model_paths = model_paths
         self._shape = shape
 
@@ -34,14 +35,14 @@ class MultiQueue(object):
         self._random_bg = eval(aug_args['random_bg'])
         self.occl = eval(aug_args['transparent_shape_occlusion'])
 
-        print self.zoom_range
-        print self.g_noise 
-        print self.contrast_norm_range
-        print self.mult_brightness
-        print self.max_off_brightness
-        print self.gaussian_blur
-        print self.invert
-        print self.occl
+        print((self.zoom_range))
+        print((self.g_noise)) 
+        print((self.contrast_norm_range))
+        print((self.mult_brightness))
+        print((self.max_off_brightness))
+        print((self.gaussian_blur))
+        print((self.invert))
+        print((self.occl))
     
         self.bg_img_init = None
         self.next_bg_element = None
@@ -55,7 +56,8 @@ class MultiQueue(object):
         feature = {}
         feature['train_x'] = tf.train.Feature(bytes_list=tf.train.BytesList(value=[train_x_bytes]))
         feature['train_y'] = tf.train.Feature(bytes_list=tf.train.BytesList(value=[train_y_bytes]))
-        feature['mask'] =  tf.train.Feature(bytes_list=tf.train.BytesList(value=[mask_x_bytes]))
+        feature['mask'] = tf.train.Feature(bytes_list=tf.train.BytesList(value=[mask_x_bytes]))
+
 
         example = tf.train.Example(features=tf.train.Features(feature=feature))
         serialized = example.SerializeToString()
@@ -74,40 +76,32 @@ class MultiQueue(object):
         return (train_x, mask_x, train_y)
 
     def create_tfrecord_training_images(self, dataset_path, args):
-        dataset_args = str(args.items('Dataset'))
-        for m,model in enumerate(self._model_paths):
-            if 'cad' in model:
-                dataset_args = dataset_args.replace('reconst','cad')
-            elif 'reconst' in model:
-                dataset_args = dataset_args.replace('cad','reconst')
-            else:
-                dataset_args = str(args.items('Dataset'))
 
-            current_config_hash = hashlib.md5(dataset_args + model).hexdigest()
+        for m,model in enumerate(self._model_paths):
+            md5_string = str(str(args.items('Dataset')) + model)
+            md5_string = md5_string.encode('utf-8')
+            current_config_hash = hashlib.md5(md5_string).hexdigest()
+
             current_file_name = os.path.join(dataset_path, current_config_hash + '.tfrecord')
             
             if not os.path.exists(current_file_name):
                 writer = tf.python_io.TFRecordWriter(current_file_name)
                 self._dataset.render_training_images(serialize_func = self.serialize_tfrecord, obj_id = m, tfrec_writer = writer)
                 writer.close()
-                print 'generated tfrecord for training images', model
+                print(('generated tfrecord for training images', model))
             else:
-                print 'tfrecord exists for', model
-
-            
+                print(('tfrecord exists for', model))
 
     def _tf_augmentations(self, train_x, mask_x, train_y, bg):
         # train_x = add_black_patches(train_x)
         train_x = zoom_image_object(train_x,np.linspace(self.zoom_range[0], self.zoom_range[1], 50).astype(np.float32))
         train_x = add_black_patches(train_x, max_area_cov = self.occl) if self.occl > 0 else train_x
-
         train_x = add_background(train_x, bg) if self._random_bg else train_x
         train_x = gaussian_noise(train_x) if self.g_noise else train_x
         # train_x = gaussian_blur(train_x) if self.gaussian_blur else train_x
         train_x = random_brightness(train_x, self.max_off_brightness)
         train_x = invert_color(train_x) if self.invert else train_x
         train_x = invert_color_all(train_x) if self.invert_whole else train_x
-        # train_x = multiply_brightness(train_x, self.mult_brightness)
         train_x = multiply_brightness(train_x, self.mult_brightness)
         train_x = contrast_normalization(train_x, self.contrast_norm_range)
         # train_x = gaussian_blur(train_x)
@@ -117,6 +111,7 @@ class MultiQueue(object):
 
         return tf.image.resize_images(tf.image.convert_image_dtype(tf.image.decode_jpeg(tf.read_file(in_path)),tf.float32),
                     [self._shape[0],self._shape[1]])
+
 
 
     def create_background_image_iterator(self, bg_paths):
@@ -133,13 +128,14 @@ class MultiQueue(object):
         self.next_bg_element = self.bg_img_init.get_next()
 
     def _float_cast(self, train_x, mask_x, train_y):
-        print 'here', 100*'g'
+
+        print(('here', 100*'g'))
         train_x = tf.image.convert_image_dtype(train_x,tf.float32)
         train_y = tf.image.convert_image_dtype(train_y,tf.float32)
         return (train_x, mask_x, train_y)
 
     def _recover_shapes(self, train_x, mask_x, train_y):
-        print 'here'
+        print('here')
         train_x.set_shape((None,) + self._shape)
         train_y.set_shape((None,) + self._shape)
         mask_x.set_shape((None,) + self._shape[:2])
@@ -160,29 +156,16 @@ class MultiQueue(object):
         return dataset
 
     def create_iterator(self, dataset_path, args):
-
         background_img_paths = glob.glob(args.get('Paths','BACKGROUND_IMAGES_GLOB'))
-
-        #background_img_paths = self._dataset.filter_voc_paths(background_img_paths)
 
         self.create_background_image_iterator(background_img_paths)
         dsets = []
-
-        dataset_args = str(args.items('Dataset'))
         for m,model in enumerate(self._model_paths):
-
-            if 'cad' in model:
-                dataset_args = dataset_args.replace('reconst','cad')
-            elif 'reconst' in model:
-                dataset_args = dataset_args.replace('cad','reconst')
-            else:
-                dataset_args = str(args.items('Dataset'))
-
-            current_config_hash = hashlib.md5(dataset_args + model).hexdigest()
+            current_config_hash = hashlib.md5(str(args.items('Dataset')) + model).hexdigest()
             current_file_name = os.path.join(dataset_path, current_config_hash + '.tfrecord')
             tfrecord_dataset = tf.data.TFRecordDataset(current_file_name)
             dsets.append(self.preprocess_pipeline(tfrecord_dataset))
-            print(model)
+
         joint_dataset = tf.data.Dataset.zip(tuple(dsets))
         iterator = joint_dataset.make_initializable_iterator()
         self.next_element = iterator.get_next()

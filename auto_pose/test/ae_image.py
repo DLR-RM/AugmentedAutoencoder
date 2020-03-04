@@ -31,8 +31,8 @@ ckpt_dir = u.get_checkpoint_dir(log_dir)
 
 train_cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
 eval_cfg_file_path = u.get_eval_config_file_path(workspace_path)
-train_args = configparser.ConfigParser()
-eval_args = configparser.ConfigParser()
+train_args = configparser.ConfigParser(inline_comment_prefixes="#")
+eval_args = configparser.ConfigParser(inline_comment_prefixes="#")
 train_args.read(train_cfg_file_path)
 eval_args.read(eval_cfg_file_path)
 
@@ -44,25 +44,37 @@ with tf.Session() as sess:
     factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir)
 
     if os.path.isdir(file_str):
-        files = glob.glob(os.path.join(str(file_str),'*.png'))+glob.glob(os.path.join(str(file_str),'*.jpg'))
+        files = glob.glob(os.path.join(str(file_str),'*.png'))+glob.glob(os.path.join(str(file_str),'*.jpg'))+glob.glob(os.path.join(str(file_str),'*.pgm'))
     else:
         files = [file_str]
-
+    print(files)
     for file in files*10:
 
         im = cv2.imread(file)
+        
+        im = cv2.copyMakeBorder(im,50,50,50,50,cv2.BORDER_CONSTANT,value=[0,0,0])
+        h,w = im.shape[:2]
+        size = int(np.minimum(h, w)*1.2)
+        
+        left = np.maximum(w/2-size/2, 0)
+        right = np.minimum(w/2+size/2,w)
+        top = np.maximum(h/2-size/2, 0)
+        bottom = np.minimum(h/2+size/2,h)
+
+        im = im[top:bottom, left:right, :]
         im = cv2.resize(im,(128,128))
+
         if train_args.getint('Dataset','C')==1:
-            im=cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)[:,:,None]
+            im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)[:,:,None]
         st = time.time()
         R = codebook.nearest_rotation(sess, im)
-        print time.time()-st
+        print((time.time()-st))
         pred_view = dataset.render_rot( R ,downSample = 1)
         
         
         cv2.imshow('resized img', cv2.resize(im/255.,(256,256)))
         cv2.imshow('pred_view', cv2.resize(pred_view,(256,256)))
-        print R
+        print(R)
         cv2.waitKey(0)
 
 

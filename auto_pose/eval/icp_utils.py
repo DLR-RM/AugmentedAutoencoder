@@ -246,7 +246,7 @@ class SynRenderer(object):
 
 def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_dims, depth_only=False,no_depth=False,max_mean_dist_factor=2.0):
     synthetic_pts = icp_renderer.generate_synthetic_depth(K_test, R_est,t_est,test_render_dims)
-    print synthetic_pts
+    print(synthetic_pts)
     centroid_synthetic_pts = np.mean(synthetic_pts, axis=0)
     max_mean_dist = np.max(np.linalg.norm(synthetic_pts - centroid_synthetic_pts,axis=1))
     # print 'max_mean_dist', max_mean_dist
@@ -258,10 +258,11 @@ def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_d
 
     real_synmean_dist = np.linalg.norm(real_depth_pts-centroid_synthetic_pts,axis=1)
     real_depth_pts = real_depth_pts[real_synmean_dist < max_mean_dist_factor*max_mean_dist]
-    print depth_crop.max()
-    print len(real_depth_pts), len(synthetic_pts)
-    if len(real_depth_pts) < len(synthetic_pts)/50.:
-        print 'not enough visible points'
+
+    print((depth_crop.max()))
+    print((len(real_depth_pts), len(synthetic_pts)))
+    if len(real_depth_pts) < len(synthetic_pts)/8.:
+        print('not enough visible points')
         R_refined = R_est
         t_refined = t_est
     else:
@@ -270,7 +271,7 @@ def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_d
         a=time.time()
         T, distances, iterations = icp(synthetic_pts[sub_idcs_syn], real_depth_pts[sub_idcs_real], 
                                         tolerance=0.000001, verbose=verbose, depth_only=depth_only, no_depth=no_depth)
-        print 'icp_time', time.time()-a
+        print(('icp_time', time.time()-a))
 
         # t_est_hom = np.ones((4,1))
         # t_est_hom[:3] = t_est.reshape(3,1)

@@ -7,7 +7,6 @@ import shutil
 import os
 import sys
 import time
-import glob
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -26,8 +25,7 @@ def main():
     parser.add_argument('experiment_name')
     parser.add_argument('evaluation_name')
     parser.add_argument('--eval_cfg', default='eval.cfg', required=False)
-    parser.add_argument('--at_step', default=None, type=str, required=False)
-    parser.add_argument('--model_path', default=None, required=True)
+    parser.add_argument('--at_step', default=None, required=False)
     arguments = parser.parse_args()
     full_name = arguments.experiment_name.split('/')
     experiment_name = full_name.pop()
@@ -35,7 +33,6 @@ def main():
     evaluation_name = arguments.evaluation_name
     eval_cfg = arguments.eval_cfg
     at_step = arguments.at_step
-    model_path = arguments.model_path
 
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
     train_cfg_file_path = u.get_config_file_path(workspace_path, experiment_name, experiment_group)
@@ -54,66 +51,55 @@ def main():
     data_params = dataset_params.get_dataset_params(dataset_name, model_type='', train_type='', test_type=cam_type, cam_type=cam_type)
     #[BBOXES]
     estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
-    gt_masks = eval_args.getboolean('BBOXES','gt_masks')
-    estimate_masks = eval_args.getboolean('BBOXES','estimate_masks')
-
+    gt_masks = eval_args.getboolean('BBOXES', 'gt_masks')
     #[METRIC]
     top_nn = eval_args.getint('METRIC','TOP_N')
     #[EVALUATION]
     icp = eval_args.getboolean('EVALUATION','ICP')
     gt_trans = eval_args.getboolean('EVALUATION','gt_trans')
-    iterative_code_refinement = eval_args.getboolean('EVALUATION','iterative_code_refinement')
     
 
     evaluation_name = evaluation_name + '_icp' if icp else evaluation_name
     evaluation_name = evaluation_name + '_bbest' if estimate_bbs else evaluation_name
-    evaluation_name = evaluation_name + '_maskest' if estimate_masks else evaluation_name
     evaluation_name = evaluation_name + '_gttrans' if gt_trans else evaluation_name
-    evaluation_name = evaluation_name + '_gtmasks' if gt_masks else evaluation_name
-    evaluation_name = evaluation_name + '_refined' if iterative_code_refinement else evaluation_name
-
+    evaluation_name = evaluation_name + '_gtmask' if gt_masks else evaluation_name
 
     data = dataset_name + '_' + cam_type if len(cam_type) > 0 else dataset_name
 
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
-
-    if at_step is None:
-        checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path, latest=train_args.getint('Training', 'NUM_ITER'))
-    else:
-        checkpoint_file = u.get_checkpoint_basefilename(log_dir, model_path, latest=at_step)
-    print checkpoint_file
+    ckpt_dir = u.get_checkpoint_dir(log_dir)
     eval_dir = u.get_eval_dir(log_dir, evaluation_name, data)
 
     if not os.path.exists(eval_dir):
         os.makedirs(eval_dir)
     shutil.copy2(eval_cfg_file_path, eval_dir)
 
-    codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True)
-    dataset._kw['model_path'] = [model_path] #'/net/rmc-lx0314/home_local/sund_ma/data/t-less/models_reconst/obj_11.ply'
-    dataset._kw['model'] = 'cad' if 'cad' in model_path else 'reconst'
-    dataset._kw['model'] = 'reconst' if 'reconst' in model_path else 'cad'
 
+    print(eval_args)
+
+    codebook, dataset, decoder = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset = True, return_decoder = True)
+    # dataset.renderer
     gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction = 0.5)
     config = tf.ConfigProto(gpu_options=gpu_options)
 
     sess = tf.Session(config=config)
-    saver = tf.train.Saver()
-    saver.restore(sess, checkpoint_file)
-    # factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir, at_step=at_step)
+    factory.restore_checkpoint(sess, tf.train.Saver(), ckpt_dir, at_step=at_step)
     
 
-    # if estimate_bbs:
-    #     #Object Detection, seperate from main
-    #     # sys.path.append('/net/rmc-lx0050/home_local/sund_ma/src/SSD_Tensorflow')
-    #     # from ssd_detector import SSD_detector
-    #     # #TODO: set num_classes, network etc.
-    #     # ssd = SSD_detector(sess, num_classes=31, net_shape=(300,300))
-    #     from rmcssd.bin import detector
-    #     ssd = detector.Detector(eval_args.get('BBOXES','CKPT'))
+    if estimate_bbs:
+        #Object Detection, seperate from main
+        # sys.path.append('/net/rmc-lx0050/home_local/sund_ma/src/SSD_Tensorflow')
+        # from ssd_detector import SSD_detector
+        # #TODO: set num_classes, network etc.
+        # ssd = SSD_detector(sess, num_classes=31, net_shape=(300,300))
+        from rmcssd.bin import detector
+        ssd = detector.Detector(eval_args.get('BBOXES','CKPT'))
+
     
     t_errors = []
     R_errors = []
     all_test_visibs = []
+
     # if eval_args.getboolean('EVALUATION','EVALUATE_ERRORS'):    
     #     eval_loc.match_and_eval_performance_scores(eval_args, eval_dir)
     #     exit()
@@ -136,7 +122,7 @@ def main():
             else:
                 if estimate_masks:
                     bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'), '{:02d}/mask_rcnn_predict.yml'.format(scene_id)))
-                    print bb_preds[0][0].keys()
+                    print((bb_preds[0][0].keys()))
                     mask_paths = glob.glob(os.path.join(eval_args.get('BBOXES','EXTERNAL'), '{:02d}/masks/*.npy'.format(scene_id)))
                     maskrcnn_scene_masks = [np.load(mp) for mp in mask_paths] 
                 else:
@@ -146,7 +132,7 @@ def main():
             test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.generate_scene_crops(test_imgs, test_imgs_depth, bb_preds, eval_args, train_args, inst_masks = maskrcnn_scene_masks)
         else:
             test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks = gt_masks)
-
+        
         if len(test_img_crops) == 0:
             print(('ERROR: object %s not in scene %s' % (obj_id,scene_id)))
             exit()
@@ -158,9 +144,12 @@ def main():
         gts = inout.load_gt(data_params['scene_gt_mpath'].format(scene_id))
         visib_gts = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, 15))
         #######
+
         W_test, H_test = data_params['test_im_size']
 
-        icp_renderer = icp_utils.SynRenderer(train_args, dataset._kw['model_path'][0]) if icp else None
+        icp_renderer = icp_utils.SynRenderer(train_args) if icp else None
+
+
         noof_scene_views = eval_utils.noof_scene_views(scene_id, eval_args)
 
         test_embeddings.append([])
@@ -194,21 +183,11 @@ def main():
                 if train_args.getint('Dataset','C') == 1:
                     test_crop = cv2.cvtColor(test_crop,cv2.COLOR_BGR2GRAY)[:,:,None]
                 Rs_est, ts_est,_ = codebook.auto_pose6d(sess, 
-                                                        test_crop, 
-                                                        test_bb, 
-                                                        Ks_test[view].copy(), 
-                                                        top_nn, 
-                                                        train_args,
-                                                        refine=iterative_code_refinement)
-                #TODO: 
-                Rs_est_old, ts_est_old = Rs_est.copy(), ts_est.copy()
-                # Rs_est_old, ts_est_old,_ = codebook.auto_pose6d(sess, 
-                #                                     test_crop, 
-                #                                     test_bb, 
-                #                                     Ks_test[view].copy(), 
-                #                                     top_nn, 
-                #                                     train_args,
-                #                                     refine=False)
+                                                                    test_crop, 
+                                                                    test_bb, 
+                                                                    Ks_test[view].copy(), 
+                                                                    top_nn, 
+                                                                    train_args)
                 ae_time = time.time() - start
 
                 if eval_args.getboolean('PLOT','EMBEDDING_PCA'):
@@ -231,12 +210,16 @@ def main():
                                     
                 # print ts_est
                 # print Rs_est.shape
-                try:
-                    run_time = ae_time + bb_preds[view][0]['det_time'] if estimate_bbs else ae_time
-                except:
-                    run_time = ae_time
-                # icp = False if view<350 else True
 
+                run_time = ae_time
+                if estimate_bbs:
+                    try:
+                        run_time += bb_preds[view][0]['det_time'] 
+                    except:
+                        pass
+                # icp = False if view<350 else True
+                #TODO: 
+                Rs_est_old, ts_est_old = Rs_est.copy(), ts_est.copy()
                 for p in range(top_nn):
                     if icp:
                         start = time.time()
@@ -247,7 +230,7 @@ def main():
                         print(t_est_refined)
 
                         # x,y update,does not change tz:
-                        _, ts_est_refined, _ = codebook.auto_pose6d(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args,depth_pred=t_est_refined[2], refine=iterative_code_refinement)
+                        _, ts_est_refined, _ = codebook.auto_pose6d(sess, test_crop, test_bb, Ks_test[view].copy(), top_nn, train_args,depth_pred=t_est_refined[2])
                         t_est_refined = ts_est_refined[p]
 
                         # rotation icp, only accepted if below 20 deg change
@@ -267,9 +250,8 @@ def main():
                 t_errors_crop.append(min_t_err)
                 R_errors_crop.append(min_R_err)
                                        
-                # if eval_args.getboolean('PLOT','RECONSTRUCTION'):
-                #     eval_plots.plot_reconstruction_test(sess, codebook._encoder, decoder, test_crop)
-
+                if eval_args.getboolean('PLOT','RECONSTRUCTION'):
+                    eval_plots.plot_reconstruction_test(sess, codebook._encoder, decoder, test_crop)
                     # eval_plots.plot_reconstruction_train(sess, decoder, nearest_train_codes[0])
                 if eval_args.getboolean('PLOT','NEAREST_NEIGHBORS') and not icp:
                     for R_est, t_est in zip(Rs_est,ts_est):
@@ -315,24 +297,15 @@ def main():
         eval_plots.plot_R_err_recall(eval_args, eval_dir, scenes)
         eval_plots.plot_R_err_hist2(np.array(R_errors), eval_dir)
     if eval_args.getboolean('PLOT','CUM_VSD_ERROR_HIST'):
-        try:
-            eval_plots.plot_vsd_err_hist(eval_args, eval_dir, scenes)
-        except:
-            pass
+        eval_plots.plot_vsd_err_hist(eval_args, eval_dir, scenes)
     if eval_args.getboolean('PLOT','VSD_OCCLUSION'):
-        try:    
-            eval_plots.plot_vsd_occlusion(eval_args, eval_dir, scenes, np.array(all_test_visibs))
-        except:
-            pass
+        eval_plots.plot_vsd_occlusion(eval_args, eval_dir, scenes, np.array(all_test_visibs))
     if eval_args.getboolean('PLOT','R_ERROR_OCCLUSION'):
-        try:  
-            eval_plots.plot_re_rect_occlusion(eval_args, eval_dir, scenes, np.array(all_test_visibs))
-        except:
-            pass
+        eval_plots.plot_re_rect_occlusion(eval_args, eval_dir, scenes, np.array(all_test_visibs))
     if eval_args.getboolean('PLOT','ANIMATE_EMBEDDING_PCA'):
         eval_plots.animate_embedding_path(test_embeddings[0])
-    # if eval_args.getboolean('PLOT','RECONSTRUCTION_TEST_BATCH'):
-    #     eval_plots.plot_reconstruction_test_batch(sess, codebook, decoder, test_img_crops, noof_scene_views, obj_id, eval_dir=eval_dir)
+    if eval_args.getboolean('PLOT','RECONSTRUCTION_TEST_BATCH'):
+        eval_plots.plot_reconstruction_test_batch(sess, codebook, decoder, test_img_crops, noof_scene_views, obj_id, eval_dir=eval_dir)
         # plt.show()    
 
         # calculate 6D pose errors

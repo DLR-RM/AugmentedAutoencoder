@@ -17,7 +17,9 @@ _WEIGHT_DECAY = 5e-4
 
 #https://github.com/rishizek/tensorflow-deeplab-v3/blob/master/deeplab_model.py
 
+
 def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_training, depth=256,atrous_rates=[6, 12, 18]):
+
   """Atrous Spatial Pyramid Pooling.
 
   Args:
@@ -36,6 +38,7 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_t
     if output_stride not in [8, 16]:
       raise ValueError('output_stride must be either 8 or 16.')
 
+
     if output_stride == 8:
       atrous_rates = [2*rate for rate in atrous_rates]
 
@@ -48,6 +51,7 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_t
         conv_3x3_1 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, scope='conv_3x3_1')
         conv_3x3_2 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, scope='conv_3x3_2')
         conv_3x3_3 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, scope='conv_3x3_3')
+
 
         # (b) the image-level features
         with tf.variable_scope("image_level_features"):
@@ -65,6 +69,7 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_t
 
 
 def deeplab_v3_encoder(inputs, params, is_training = False, depth=512, atrous_rates=[6, 12, 18]):
+
   """Generator for DeepLab v3 plus models.
 
   Args:
@@ -102,6 +107,7 @@ def deeplab_v3_encoder(inputs, params, is_training = False, depth=512, atrous_ra
                                     is_training=is_training,
                                     global_pool=False,
                                     output_stride=output_stride)
+
     # blocks = [
     #     resnet_v2.resnet_v2_block('block1', base_depth=64, num_units=3, stride=2),
     #     resnet_v2.resnet_v2_block('block2', base_depth=128, num_units=4, stride=2),
@@ -125,5 +131,6 @@ def deeplab_v3_encoder(inputs, params, is_training = False, depth=512, atrous_ra
     encoder_output = atrous_spatial_pyramid_pooling(net, output_stride, batch_norm_decay, is_training, depth=depth, atrous_rates=atrous_rates)
   else:
     encoder_output = net
+
 
   return encoder_output
