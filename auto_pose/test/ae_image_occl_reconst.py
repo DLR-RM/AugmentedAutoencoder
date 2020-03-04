@@ -91,8 +91,8 @@ for i,experiment_name in enumerate(arguments.experiment_names):
     ckpt_dir = u.get_checkpoint_dir(log_dir)
     train_cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
     eval_cfg_file_path = u.get_eval_config_file_path(workspace_path)
-    train_args = configparser.ConfigParser()
-    eval_args = configparser.ConfigParser()
+    train_args = configparser.ConfigParser(inline_comment_prefixes="#")
+    eval_args = configparser.ConfigParser(inline_comment_prefixes="#")
     train_args.read(train_cfg_file_path)
     eval_args.read(eval_cfg_file_path)
     model_paths.append(train_args.get('Paths','MODEL_PATH'))
@@ -141,7 +141,7 @@ for file in files*10:
         cv2.imshow('resized img', cv2.resize(im/255.,(256,256)))
         cv2.imshow('pred_view', cv2.resize(pred_view/255.,(256,256)))
         cv2.imshow('reconst', cv2.resize(reconst[0],(256,256)))
-        print R
+        print(R)
         cv2.waitKey(0)
 
 

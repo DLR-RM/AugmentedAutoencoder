@@ -100,8 +100,7 @@ def main():
     test_class = args_latent.get('Data', 'test_class')
 
     # for test_class in test_classes:
-    models_train = sorted(glob.glob(os.path.join(base_path, test_class, 'train', '*_normalized.off')))
-    models_test = sorted(glob.glob(os.path.join(base_path, test_class, 'test', '*_normalized.off')))
+    models_test = sorted(glob.glob(os.path.join(base_path, test_class, split, '*_normalized.off')))
     # models_test = [m for m in models_test if not '_normalized' in m]
     # models_train = [m for m in models_train if not '_normalized' in m]
     # print models_train
@@ -109,10 +108,11 @@ def main():
 
     # models_test = sorted(glob.glob('/volume/pekdat/datasets/public/t-less/original/t-less_v2/models_reconst/*.ply'))
 
-    if split == 'train':
-        dataset._kw['model_path'] = models_train[0:num_obj]
-    elif split == 'test':
-        dataset._kw['model_path'] = models_test[0:num_obj]
+    if split == 'test' or split=='train':
+        if os.path.exists(os.path.dirname(models_test[0])):
+            dataset._kw['model_path'] = models_test[0:num_obj]
+        else:
+            print(models_test[0], ' does not exist')
     else:
         print('split must be train or test')
         exit()

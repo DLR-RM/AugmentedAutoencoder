@@ -12,6 +12,8 @@ from sixd_toolkit.pysixd import inout
 from auto_pose.ae.pysixd_stuff import view_sampler
 from auto_pose.ae import utils as u
 
+import glob
+
 def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
     
     dataset_name = eval_args.get('DATA','DATASET')
@@ -27,6 +29,7 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
     W_AE = train_args.getint('Dataset','W')
 
     cfg_string = str([scene_id] + eval_args.items('DATA') + eval_args.items('BBOXES') + [H_AE])
+    cfg_string = cfg_string.encode('utf-8')
     current_config_hash = hashlib.md5(cfg_string).hexdigest()
 
     current_file_name = os.path.join(dataset_path, current_config_hash + '.npz')
@@ -39,6 +42,7 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
         bb_scores = data['bb_scores'].item()
         bb_vis = data['visib_gt'].item()
         bbs = data['bbs'].item()
+        
     if not os.path.exists(current_file_name) or len(test_img_crops) == 0 or len(test_img_depth_crops) == 0:
         test_imgs = load_scenes(scene_id, eval_args)
         test_imgs_depth = load_scenes(scene_id, eval_args, depth=True) if icp else None
@@ -59,15 +63,16 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
         test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis = generate_scene_crops(test_imgs, test_imgs_depth, gt, eval_args, 
                                                                                             (H_AE, W_AE), visib_gt=visib_gt,inst_masks=gt_inst_masks)
 
+
         np.savez(current_file_name, test_img_crops=test_img_crops, test_img_depth_crops=test_img_depth_crops, bbs = bbs, bb_scores=bb_scores, visib_gt=bb_vis)
         
         current_cfg_file_name = os.path.join(dataset_path, current_config_hash + '.cfg')
         with open(current_cfg_file_name, 'w') as f:
             f.write(cfg_string)
-        print 'created new ground truth crops!'
+        print('created new ground truth crops!')
     else:
-        print 'loaded previously generated ground truth crops!'
-        print len(test_img_crops), len(test_img_depth_crops)
+        print('loaded previously generated ground truth crops!')
+        print((len(test_img_crops), len(test_img_depth_crops)))
 
 
 
@@ -141,8 +146,11 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, hw_ae, visib
     estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
     pad_factor = eval_args.getfloat('BBOXES','PAD_FACTOR')
     icp = eval_args.getboolean('EVALUATION','ICP')
+
     estimate_masks = eval_args.getboolean('BBOXES','ESTIMATE_MASKS')
+    print(hw_ae)
     H_AE, W_AE = hw_ae
+
 
     test_img_crops, test_img_depth_crops, bb_scores, bb_vis, bbs = {}, {}, {}, {}, {}
 
@@ -162,10 +170,11 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, hw_ae, visib
                     bb = np.array(bbox['obj_bb'])
                     obj_id = bbox['obj_id']
                     bb_score = bbox['score'] if estimate_bbs else 1.0
-                    if estimate_bbs:
+                    if estimate_bbs and visib_gt is not None:
                         vis_frac = visib_gt[view][bbox_idx]['visib_fract']
                     else:
                         vis_frac = None
+
                     x,y,w,h = bb
                     
                     size = int(np.maximum(h,w) * pad_factor)
@@ -173,8 +182,8 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, hw_ae, visib
                     right = int(np.min([x+w/2+size/2, W]))
                     top = int(np.max([y+h/2-size/2, 0]))
                     bottom = int(np.min([y+h/2+size/2, H]))
-
                     if inst_masks is None:
+
                         crop = img[top:bottom, left:right].copy()
                         if icp:
                             depth_crop = depth[top:bottom, left:right]
@@ -215,6 +224,7 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, hw_ae, visib
                     ##
 
 
+
                     resized_crop = cv2.resize(crop, (H_AE,W_AE))
                     if icp:
                         test_img_depth_crops[view].setdefault(obj_id,[]).append(depth_crop)
@@ -248,23 +258,23 @@ def load_scenes(scene_id, eval_args, depth=False):
     noof_imgs = noof_scene_views(scene_id, eval_args)
     if depth:
         imgs = np.empty((noof_imgs,) + p['test_im_size'][::-1], dtype=np.float32)
-        for view_id in xrange(noof_imgs):
+        for view_id in range(noof_imgs):
             depth_path = p['test_depth_mpath'].format(scene_id, view_id)
             try:
                 imgs[view_id,...] = inout.load_depth2(depth_path) * cam_p['depth_scale']
             except:
-                print depth_path,' not found'
+                print((depth_path,' not found'))
     
     else:    
-        print (noof_imgs,) + p['test_im_size'][::-1] + (3,)
+        print(((noof_imgs,) + p['test_im_size'][::-1] + (3,)))
         imgs = np.empty((noof_imgs,) + p['test_im_size'][::-1] + (3,), dtype=np.uint8)
-        print noof_imgs
-        for view_id in xrange(noof_imgs):
+        print(noof_imgs)
+        for view_id in range(noof_imgs):
             img_path = p['test_rgb_mpath'].format(scene_id, view_id)
             try:
                 imgs[view_id,...] = cv2.imread(img_path)
             except:
-                print img_path,' not found'
+                print((img_path,' not found'))
 
     return imgs
 
@@ -308,11 +318,13 @@ def get_all_scenes_for_obj(eval_args):
         
         obj_scene_dict = {}
         scene_gts = []
-        for scene_id in xrange(1,p['scene_count']+1):
-            # print scene_id
+
+        for scene_id in range(1,p['scene_count']+1):
+            print(scene_id)
+
             scene_gts.append(inout.load_yaml(p['scene_gt_mpath'].format(scene_id)))
 
-        for obj in xrange(1,p['obj_count']+1):
+        for obj in range(1,p['obj_count']+1):
             eval_scenes = set()
             for scene_i,scene_gt in enumerate(scene_gts):
                 for view_gt in scene_gt[0]:
@@ -320,7 +332,6 @@ def get_all_scenes_for_obj(eval_args):
                         eval_scenes.add(scene_i+1)
             obj_scene_dict[obj] = list(eval_scenes)
         np.save(current_file_name,obj_scene_dict)
-    # print obj_scene_dict
 
     eval_scenes = obj_scene_dict[obj_id]
 

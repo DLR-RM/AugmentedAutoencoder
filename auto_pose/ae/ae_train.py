@@ -11,16 +11,22 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import progressbar
 import tensorflow as tf
 
-import ae_factory as factory
-import utils as u
+from auto_pose.ae import ae_factory as factory
+from auto_pose.ae import utils as u
+
+try:
+    range = xrange
+except NameError:
+    # when running on Python3
+    pass
 
 
 def main():
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
-    if workspace_path == None:
-        print 'Please define a workspace path:\n'
-        print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    if workspace_path is None:
+        print('Please define a workspace path:\n')
+        print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
         exit(-1)
 
     gentle_stop = np.array((1,), dtype=np.bool)
@@ -54,8 +60,8 @@ def main():
     dataset_path = u.get_dataset_path(workspace_path)
     
     if not os.path.exists(cfg_file_path):
-        print 'Could not find config file:\n'
-        print '{}\n'.format(cfg_file_path)
+        print('Could not find config file:\n')
+        print(('{}\n'.format(cfg_file_path)))
         exit(-1)
         
     if not os.path.exists(ckpt_dir):
@@ -65,7 +71,7 @@ def main():
     if not os.path.exists(dataset_path):
         os.makedirs(dataset_path)
 
-    args = configparser.ConfigParser()
+    args = configparser.ConfigParser(inline_comment_prefixes="#")
     args.read(cfg_file_path)
 
     shutil.copy2(cfg_file_path, log_dir)
@@ -119,8 +125,8 @@ def main():
     multi_queue.create_tfrecord_training_images(dataset_path, args)
 
     if generate_data:
-        print 'finished generating synthetic training data for ' + experiment_name
-        print 'exiting...'
+        print(('finished generating synthetic training data for ' + experiment_name))
+        print('exiting...')
         exit()
 
 
@@ -150,7 +156,7 @@ def main():
                 checkpoint_file_basename = chkpt.model_checkpoint_path
             else:
                 checkpoint_file_basename = u.get_checkpoint_basefilename(log_dir,latest=at_step)
-            print 'loading ', checkpoint_file_basename
+            print('loading ', checkpoint_file_basename)
             saver.restore(sess, checkpoint_file_basename)
             # except:
             #     print 'loading ', chkpt.model_checkpoint_path
@@ -166,13 +172,10 @@ def main():
                 sess.run(tf.global_variables_initializer())
 
         if not debug_mode:
-            print 'Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))
+            print(('Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH'))))
             bar.start()
-        
-        # print 'before starting queue'
-        # queue.start(sess)
-        # print 'after starting queue'
-        for i in xrange(encoder.global_step.eval(), num_iter):
+
+        for i in range(encoder.global_step.eval(), num_iter):
             if not debug_mode:
                 # print 'before optimize'
                 sess.run([train_op,multi_queue.next_bg_element])
@@ -182,6 +185,7 @@ def main():
                     summary_writer.add_summary(merged_summaries, i)
 
                 bar.update(i)
+
                 if (i+1) % save_interval == 0:
                     saver.save(sess, checkpoint_file, global_step=encoder.global_step)
 
@@ -221,8 +225,8 @@ def main():
         if not debug_mode:
             bar.finish()
         if not gentle_stop[0] and not debug_mode:
-            print 'To create the embedding run:\n'
-            print 'ae_embed {}\n'.format(full_name)
+            print('To create the embedding run:\n')
+            print(('ae_embed {}\n'.format(full_name)))
 
 if __name__ == '__main__':
     main()

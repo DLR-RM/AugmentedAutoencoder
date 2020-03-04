@@ -4,7 +4,7 @@ import numpy as np
 
 import tensorflow as tf
 
-from utils import lazy_property
+from .utils import lazy_property
 
 class Decoder(object):
 
@@ -36,9 +36,9 @@ class Decoder(object):
         z = self._latent_code
 
         h, w, c = self._reconstruction_target.get_shape().as_list()[1:]
-        print h,w,c
-        layer_dimensions = [ [h/np.prod(self._strides[i:]), w/np.prod(self._strides[i:])]  for i in xrange(len(self._strides))]
-        print layer_dimensions
+        print((h,w,c))
+        layer_dimensions = [ [h//np.prod(self._strides[i:]), w//np.prod(self._strides[i:])]  for i in range(len(self._strides))]
+        print(layer_dimensions)
         x = tf.layers.dense(
             inputs=self._latent_code,
             units= layer_dimensions[0][0]*layer_dimensions[0][1]*self._num_filters[0],
@@ -90,8 +90,8 @@ class Decoder(object):
 
     @lazy_property
     def reconstr_loss(self):
-        print self.x.shape
-        print self._reconstruction_target.shape
+        print((self.x.shape))
+        print((self._reconstruction_target.shape))
         if self._loss == 'L2':
             if self._bootstrap_ratio > 1:
 
@@ -102,7 +102,7 @@ class Decoder(object):
                     x_flat,
                     reduction=tf.losses.Reduction.NONE
                 )
-                l2_val,_ = tf.nn.top_k(l2,k=l2.shape[1]/self._bootstrap_ratio)
+                l2_val,_ = tf.nn.top_k(l2,k=l2.shape[1]//self._bootstrap_ratio)
                 loss = tf.reduce_mean(l2_val)
             else:
                 loss = tf.losses.mean_squared_error (
@@ -120,7 +120,7 @@ class Decoder(object):
                     x_flat,
                     reduction=tf.losses.Reduction.NONE
                 )
-                print l1.shape
+                print((l1.shape))
                 l1_val,_ = tf.nn.top_k(l1,k=l1.shape[1]/self._bootstrap_ratio)
                 loss = tf.reduce_mean(l1_val)
             else:
@@ -132,7 +132,7 @@ class Decoder(object):
                     reduction=tf.losses.Reduction.MEAN
                 )
         else:
-            print 'ERROR: UNKNOWN LOSS ', self._loss
+            print(('ERROR: UNKNOWN LOSS ', self._loss))
             exit()
         
         #tf.summary.scalar('reconst_loss', loss)

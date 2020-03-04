@@ -9,9 +9,9 @@
 
 # Usage
 ### Preparatory Steps
-*1.1 rmpm environment (right now only inference)*
+*1.1 rmpm environment*
 ```bash
-eval `rmpm_do env --env-format embed_sh auto_pose`
+eval `rmpm_do env --env-format embed_sh auto_pose/training`
 ```
 or \
 *1.2 Local pip installation*

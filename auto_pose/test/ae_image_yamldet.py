@@ -11,6 +11,7 @@ from auto_pose.ae import factory,utils
 from auto_pose.meshrenderer import meshrenderer
 
 
+
 def extract_square_patch(scene_img, bb_xywh, pad_factor,resize=(128,128),interpolation=cv2.INTER_NEAREST):
 
     x, y, w, h = np.array(bb_xywh).astype(np.int32)
@@ -45,8 +46,8 @@ else:
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 
 if workspace_path == None:
-    print 'Please define a workspace path:\n'
-    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    print('Please define a workspace path:\n')
+    print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
     exit(-1)
 
 
@@ -67,15 +68,16 @@ for i,exp_name in enumerate(arguments.experiment_names):
     ckpt_dir = utils.get_checkpoint_dir(log_dir)
     
     train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
-    train_args = configparser.ConfigParser()
+
+    train_args = configparser.ConfigParser(inline_comment_prefixes="#")
     train_args.read(train_cfg_file_path)  
-    h_train, w_train, c = train_args.getint('Dataset','H'),train_args.getint('Dataset','W'), train_args.getint('Dataset','C')
+    # h_train, w_train, c = train_args.getint('Dataset','H'),train_args.getint('Dataset','W'), train_args.getint('Dataset','C')
+
     model_paths.append(train_args.get('Paths','MODEL_PATH'))
 
     all_train_args.append(train_args)
     cb,dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
     all_codebooks.append(cb)
-
 
     factory.restore_checkpoint(sess, tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=experiment_name)), ckpt_dir)
 
@@ -88,12 +90,11 @@ renderer = meshrenderer.Renderer(
 
 
 
-
 # log_dir = utils.get_log_dir(workspace_path,experiment_name,experiment_group)
 # ckpt_dir = utils.get_checkpoint_dir(log_dir)
    
 # train_cfg_file_path = utils.get_train_config_exp_file_path(log_dir, experiment_name)
-# train_args = configparser.ConfigParser()
+
 # train_args.read(train_cfg_file_path)  
 
 # codebook, dataset = factory.build_codebook_from_name(experiment_name, experiment_group, return_dataset=True)
@@ -107,6 +108,7 @@ bb_dicts = {}
 for y in yaml_files:
     with open(y) as file:
         bb_dicts[os.path.basename(y).split('yaml')[0]] = yaml.load(file)
+
 print bb_dicts
 # [[2730.3754266211604,0.0,960.0],[0.0,2730.3754266211604,600.0],[0.0,0.0,1.0]]
 K_test = np.array([[2730.3754266211604,0.0,960.0],[0.0,2730.3754266211604,600.0],[0.0,0.0,1.0]])
@@ -134,7 +136,7 @@ for file in files:
             # if bb['class'] == 10 or bb['class'] == 9:
                 
             im_show =orig_im.copy()
-            print orig_im.shape
+
             H,W = orig_im.shape[:2]
             x = int(W * bb['bbox']['minx'])
             y = int(H * bb['bbox']['miny'])
@@ -157,6 +159,7 @@ for file in files:
             # R,t,_ = codebook.auto_pose6d(sess, img_crop, pixel_bb,K_test,1,train_args)
             # print R,t
 
+
             # R = R.squeeze()
             # t = t.squeeze()
 
@@ -176,12 +179,11 @@ for file in files:
             )
             rendered_pose_ests[k] = rendered_pose_est
         
-
         for (key,rendered_pose_est),pixel_bb in zip(rendered_pose_ests.items(),pixel_bbs):
             x,y,w,h = pixel_bb
             cv2.rectangle(im_show, (x,y),(x+w,y+h),(255,0,0), 3)
             g_y = np.zeros_like(rendered_pose_est)
-            g_y[:,:,key+1]= rendered_pose_est[:,:,key+1]
+            g_y[:,:,key%3]= rendered_pose_est[:,:,key%3]
             im_show[rendered_pose_est > 0] = g_y[rendered_pose_est > 0]*2./3. + orig_im[rendered_pose_est > 0]*1./3.
             # im_show[rendered_pose_est > 0] = rendered_pose_est[rendered_pose_est > 0]
             
@@ -190,11 +192,11 @@ for file in files:
         cv2.imshow('orig img', im_show)
 
 
+
         if arguments.out is not None:
             if not os.path.exists(arguments.out):
                 os.makedirs(arguments.out)
             cv2.imwrite(os.path.join(arguments.out, os.path.basename(file)),im_show)
-
 
 
         cv2.waitKey(0)
@@ -206,20 +208,9 @@ for file in files:
 
 
         # if key == ord('a'):
-        # 	t[0]-=10
-        # if key == ord('d'):
-        # 	t[0]+=10
-        # if key == ord('s'):
-        # 	t[1]-=10
-        # if key == ord('w'):
-        # 	t[1]+=10
+
         # if key == ord('e'):
         #     t[2]-=10
         # if key == ord('r'):
         #     t[2]+=10
-        	
-        
-        # if cv2.waitKey(0) == ord('k'):
-        # 	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/img_crop_%s.jpg' % os.path.basename(file).split('png')[0],cv2.resize(img_crop,(512,512)))
-        # 	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/pred_pose_%s.jpg' % os.path.basename(file).split('png')[0],orig_im)
-        # 	cv2.imwrite('/home_local/sund_ma/autoencoder_ws/bosch/scene1_pressure_pump_pose_ests_aae/pred_rot%s.jpg' % os.path.basename(file).split('png')[0],cv2.resize(pred_view,(512,512)))
+

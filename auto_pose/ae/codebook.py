@@ -5,8 +5,8 @@ import numpy as np
 import tensorflow as tf
 import progressbar
 
-from utils import lazy_property
-import utils as u
+from .utils import lazy_property
+from . import utils as u
 
 import time
 
@@ -17,29 +17,31 @@ class Codebook(object):
         self._encoder = encoder
         self._dataset = dataset
         self.embed_bb = embed_bb
-        
+
         latent_dims = encoder.latent_space_size
         embedding_size = self._dataset.embedding_size
 
         self.normalized_embedding_query = tf.nn.l2_normalize(self._encoder.z, 1)
         self.embedding_normalized = tf.Variable(
             np.zeros((embedding_size, latent_dims)),
+
             dtype=tf.float32,
             trainable=False,
             name='embedding_normalized'
         )
+
 
         self.embedding = tf.placeholder(tf.float32, shape=[embedding_size, latent_dims])
         self.embedding_assign_op = tf.assign(self.embedding_normalized, self.embedding)
         
         if embed_bb:
             self.embed_obj_bbs_var = tf.Variable(
-                np.zeros((embedding_size, 4)),
+                np.zeros((self.embedding_size, 4)),
                 dtype=tf.int32,
                 trainable=False,
                 name='embed_obj_bbs_var'
             )
-            self.embed_obj_bbs = tf.placeholder(tf.int32, shape=[embedding_size, 4])
+            self.embed_obj_bbs = tf.placeholder(tf.int32, shape=[self.embedding_size, 4])
             self.embed_obj_bbs_assign_op = tf.assign(self.embed_obj_bbs_var, self.embed_obj_bbs)
             self.embed_obj_bbs_values = None
         
@@ -199,8 +201,6 @@ class Codebook(object):
 
 
 
-
-
     def nearest_rotation(self, session, x, top_n=1, upright=False, return_idcs=False):
         
         if x.dtype == 'uint8':
@@ -264,19 +264,25 @@ class Codebook(object):
                 z = depth_pred
 
             # object center in image plane (bb center =/= object center)
+
+            # center_obj_x = predicted_bb[0] + predicted_bb[2]/2 - K_test[0,2] - (rendered_bb[0] + rendered_bb[2]/2. - K_train[0,2])
+            # center_obj_y = predicted_bb[1] + predicted_bb[3]/2 - K_test[1,2] - (rendered_bb[1] + rendered_bb[3]/2. - K_train[1,2])
+
+            # t = K_test_cam_inv * center_bb * depth_pred
+            # center_mm_tx = center_obj_x * z / K_test[0,0]
+            # center_mm_ty = center_obj_y * z / K_test[1,1]
+
             center_obj_x_train = rendered_bb[0] + rendered_bb[2]/2. - K_train[0,2]
             center_obj_y_train = rendered_bb[1] + rendered_bb[3]/2. - K_train[1,2]
 
             center_obj_x_test = predicted_bb[0] + predicted_bb[2]/2 - K_test[0,2]
             center_obj_y_test = predicted_bb[1] + predicted_bb[3]/2 - K_test[1,2]
-            
-            center_obj_mm_x = center_obj_x_test * z / K_test[0,0] - center_obj_x_train * render_radius / K_train[0,0]  
-            center_obj_mm_y = center_obj_y_test * z / K_test[1,1] - center_obj_y_train * render_radius / K_train[1,1]  
-            
-            # z_updated = np.sqrt(z**2+center_obj_x_test**2+center_obj_y_test**2)
-            z_updated = z
 
-            t_est = np.array([center_obj_mm_x, center_obj_mm_y, z_updated])
+            center_mm_tx = center_obj_x_test * z / K_test[0,0] - center_obj_x_train * render_radius / K_train[0,0]  
+            center_mm_ty = center_obj_y_test * z / K_test[1,1] - center_obj_y_train * render_radius / K_train[1,1]  
+
+            t_est = np.array([center_mm_tx, center_mm_ty, z])
+
             ts_est[i] = t_est
             
             # correcting the rotation matrix 
@@ -293,6 +299,7 @@ class Codebook(object):
                                 [-np.sin(d_alpha_y),0,np.cos(d_alpha_y)]]) 
 
             R_corrected = np.dot(R_corr_y,np.dot(R_corr_x,R_est))
+
             Rs_est[i] = R_corrected
         return (Rs_est, ts_est,None)
         
@@ -333,7 +340,7 @@ class Codebook(object):
         J = self._encoder.latent_space_size
         embedding_z = np.empty( (embedding_size, J) )
 
-        print 'Creating embedding ..'
+        print('Creating embedding ..')
 
         self._dataset.get_sprite_training_images(train_args)
 
@@ -349,8 +356,9 @@ class Codebook(object):
 
         session.run(self.embedding_assign_op, {self.embedding: normalized_embedding})
 
-
-
+    @lazy_property
+    def embedding_size(self):
+        return len(self._dataset.viewsphere_for_embedding)
 
     def update_embedding(self, session, batch_size, model_path):
 
@@ -362,14 +370,13 @@ class Codebook(object):
         J = self._encoder.latent_space_size
         embedding_z = np.empty( (embedding_size, J) )
         obj_bbs = np.empty( (embedding_size, 4) )
-        print 'Creating embedding ..'
-        widgets = ['Training: ', progressbar.Percentage(),
+        widgets = ['Creating Embedding: ', progressbar.Percentage(),
              ' ', progressbar.Bar(),
              ' ', progressbar.Counter(), ' / %s' % embedding_size,
              ' ', progressbar.ETA(), ' ']
         bar = progressbar.ProgressBar(maxval=embedding_size,widgets=widgets)
         bar.start()
-        for a, e in u.batch_iteration_indices(embedding_size, batch_size):
+        for a, e in u.batch_iteration_indices(self.embedding_size, batch_size):
 
             batch, obj_bbs_batch = self._dataset.render_embedding_image_batch(a, e)
             # import cv2

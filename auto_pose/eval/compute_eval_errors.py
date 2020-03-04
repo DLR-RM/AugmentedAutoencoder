@@ -52,8 +52,8 @@ workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 train_cfg_file_path = get_config_file_path(workspace_path, experiment_name, experiment_group)
 eval_cfg_file_path = get_eval_config_file_path(workspace_path, eval_cfg=eval_cfg)
 
-train_args = configparser.ConfigParser()
-eval_args = configparser.ConfigParser()
+train_args = configparser.ConfigParser(inline_comment_prefixes="#")
+eval_args = configparser.ConfigParser(inline_comment_prefixes="#")
 train_args.read(train_cfg_file_path)
 eval_args.read(eval_cfg_file_path)
 

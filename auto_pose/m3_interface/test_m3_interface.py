@@ -21,8 +21,8 @@ args = parser.parse_args()
 
 workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 if workspace_path == None:
-    print 'Please define a workspace path:\n'
-    print 'export AE_WORKSPACE_PATH=/path/to/workspace\n'
+    print('Please define a workspace path:\n')
+    print('export AE_WORKSPACE_PATH=/path/to/workspace\n')
     exit(-1)
 
 
@@ -33,6 +33,7 @@ this_dir = os.path.dirname(os.path.abspath(__file__))
 # img = cv2.imread('/home_local/sund_ma/data/t-less/t-less_v2/test_primesense/01/rgb/0205.png')
 # depth_img = load_depth2('/home_local/sund_ma/data/t-less/t-less_v2/test_primesense/01/depth/0205.png')
 
+
 img = cv2.imread('/volume/USERSTORE/proj_bosch_pose-estimation/boschObject_testScenes/02/rgb/001.png')
 depth_img = load_depth2('/volume/USERSTORE/proj_bosch_pose-estimation/boschObject_testScenes/02/depth/001.png')
 
@@ -42,6 +43,7 @@ depth_img = load_depth2('/volume/USERSTORE/proj_bosch_pose-estimation/boschObjec
 H,W,_ = img.shape
 # replace with a detector
 # bb = BoundingBox(xmin=0.517,xmax=0.918,ymin=0.086,ymax=0.592,classes={'benchviseblue':1.0}) 
+
 bb2 = BoundingBox(xmin=0.32916666666666666,xmax=0.47135416666666663,ymin=0.13166666666666665,ymax=0.3883333333333333,classes={'1':1.0}) 
 # test camera matrix
 # camK = np.array([[1075.65,0,W//2],[0,1073.90,H//2],[0,0,1]]) 
@@ -65,6 +67,7 @@ if args.vis:
     # cad_reconst = [str(train_args.get('Dataset','MODEL')) for train_args in ae_pose_est.all_train_args]
     cad_reconst = ['cad' if 'cad' in ae_pose_est.model_path else 'reconst']
     print cad_reconst
+
     from meshrenderer import meshrenderer, meshrenderer_phong
     if all([model == 'cad' for model in cad_reconst]):   
         renderer = meshrenderer.Renderer(ply_model_paths, 
@@ -92,4 +95,4 @@ if args.vis:
                 phong={'ambient':0.4,'diffuse':0.8, 'specular':0.3})
     cv2.imshow('', bgr)
     cv2.imshow('real', img)
-    cv2.waitKey(0)
+cv2.waitKey(0)

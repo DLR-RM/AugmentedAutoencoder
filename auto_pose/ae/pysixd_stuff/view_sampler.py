@@ -5,7 +5,7 @@
 
 import math
 import numpy as np
-import transform
+from . import transform
 
 def calc_2d_bbox(xs, ys, im_size):
     bbTL = (max(xs.min() - 1, 0),
