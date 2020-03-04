@@ -15,7 +15,7 @@ class Model(nn.Module):
 
         self.bn1 = nn.BatchNorm1d(128)
         self.bn2 = nn.BatchNorm1d(64)
-        self.tanh = nn.Tanh()
+        self.tanh = nn.Hardtanh()
 
 
     # Input: x = lantent code
@@ -23,5 +23,6 @@ class Model(nn.Module):
     def forward(self,x):
         x = F.relu(self.bn1(self.l1(x)))
         x = F.relu(self.bn2(self.l2(x)))              
+        #y = self.tanh(self.l3(x))
         y = self.l3(x)
         return y

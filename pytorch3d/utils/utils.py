@@ -1,9 +1,15 @@
 import torch
-import numpy
+import numpy as np
 import math
 import cv2
 import csv
 import matplotlib.pyplot as plt
+import os
+
+def batch(iterable, n=1):
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx:min(ndx + n, l)]
 
 def list2file(input_list, file_name):
     with open(file_name, 'w') as f:
@@ -23,7 +29,48 @@ def plotLoss(loss, file_name):
     fig.tight_layout()
     fig.savefig(file_name, dpi=fig.dpi)
     plt.close()
+
+def calcMeanVar(br, data, device, t):
+    num_samples = len(data["codes"])
+    data_indeces = np.arange(num_samples)
+    np.random.shuffle(data_indeces)
+    batch_size = br.batch_size
+
+    all_data = []
+    for i,curr_batch in enumerate(batch(data_indeces, batch_size)):
+        # Render the ground truth images
+        T = np.array(t, dtype=np.float32)
+        Rs = []
+        ts = []
+        for b in curr_batch:
+            Rs.append(data["Rs"][b])
+            ts.append(T.copy())
+        gt_images = br.renderBatch(Rs, ts)
+        all_data.append(gt_images)
+        print("Step: {0}/{1}".format(i,round(num_samples/batch_size)))
+    result = torch.cat(all_data)
+    print(torch.mean(result))
+    print(torch.std(result))
+    return torch.mean(result), torch.std(result)
+
+def plotView(viewNum, vmin, vmax, groundtruth, predicted, predicted_pose, loss, batch_size):
+    plt.subplot(3, 4, viewNum+1)
+    plt.imshow(groundtruth[viewNum*batch_size].detach().cpu().numpy(),
+               vmin=vmin, vmax=vmax)
+    plt.title("View {0} - GT".format(viewNum))
     
+    plt.subplot(3, 4, viewNum+5)
+    plt.imshow(predicted[viewNum*batch_size].detach().cpu().numpy(),
+               vmin=vmin, vmax=vmax)
+    if(viewNum == 0):
+        plt.title("Predicted: " + np.array2string((predicted_pose[viewNum*batch_size]).detach().cpu().numpy(),precision=2))
+    else:
+        plt.title("Predicted")
+    
+    loss_contrib = np.abs((groundtruth[viewNum*batch_size]).detach().cpu().numpy() - (predicted[viewNum*batch_size]).detach().cpu().numpy())
+    plt.subplot(3, 4, viewNum+9)
+    plt.imshow(loss_contrib) #, vmin=vmin, vmax=vmax)
+    plt.title("Loss: {0}".format((loss[viewNum*batch_size]).detach().cpu().numpy()))
 
 # Convert quaternion to rotation matrix
 # from: https://github.com/ClementPinard/SfmLearner-Pytorch/blob/master/inverse_warp.py
@@ -100,28 +147,28 @@ def random_quaternion(rand=None):
 
     """
     if rand is None:
-        rand = numpy.random.rand(3)
+        rand = np.random.rand(3)
     else:
         assert len(rand) == 3
-    r1 = numpy.sqrt(1.0 - rand[0])
-    r2 = numpy.sqrt(rand[0])
+    r1 = np.sqrt(1.0 - rand[0])
+    r2 = np.sqrt(rand[0])
     pi2 = math.pi * 2.0
     t1 = pi2 * rand[1]
     t2 = pi2 * rand[2]
-    return numpy.array([numpy.cos(t2)*r2, numpy.sin(t1)*r1,
-                        numpy.cos(t1)*r1, numpy.sin(t2)*r2])
+    return np.array([np.cos(t2)*r2, np.sin(t1)*r1,
+                        np.cos(t1)*r1, np.sin(t2)*r2])
 
 
 
 def q2m(quat):
-    _EPS = numpy.finfo(float).eps * 4.0
-    q = torch.tensor(quat, dtype=numpy.float64, copy=True)
-    n = numpy.dot(q, q)
+    _EPS = np.finfo(float).eps * 4.0
+    q = torch.tensor(quat, dtype=np.float64, copy=True)
+    n = np.dot(q, q)
     if n < _EPS:
-        return numpy.identity(4)
+        return np.identity(4)
     q *= math.sqrt(2.0 / n)
-    q = numpy.outer(q, q)
-    return numpy.array([
+    q = np.outer(q, q)
+    return np.array([
         [1.0-q[2, 2]-q[3, 3],     q[1, 2]-q[3, 0],     q[1, 3]+q[2, 0], 0.0],
         [    q[1, 2]+q[3, 0], 1.0-q[1, 1]-q[3, 3],     q[2, 3]-q[1, 0], 0.0],
         [    q[1, 3]-q[2, 0],     q[2, 3]+q[1, 0], 1.0-q[1, 1]-q[2, 2], 0.0],
@@ -131,24 +178,24 @@ def quaternion_matrix(quaternion):
     """Return homogeneous rotation matrix from quaternion.
 
     >>> M = quaternion_matrix([0.99810947, 0.06146124, 0, 0])
-    >>> numpy.allclose(M, rotation_matrix(0.123, [1, 0, 0]))
+    >>> np.allclose(M, rotation_matrix(0.123, [1, 0, 0]))
     True
     >>> M = quaternion_matrix([1, 0, 0, 0])
-    >>> numpy.allclose(M, numpy.identity(4))
+    >>> np.allclose(M, np.identity(4))
     True
     >>> M = quaternion_matrix([0, 1, 0, 0])
-    >>> numpy.allclose(M, numpy.diag([1, -1, -1, 1]))
+    >>> np.allclose(M, np.diag([1, -1, -1, 1]))
     True
 
     """
-    _EPS = numpy.finfo(float).eps * 4.0
-    q = numpy.array(quaternion, dtype=numpy.float64, copy=True)
-    n = numpy.dot(q, q)
+    _EPS = np.finfo(float).eps * 4.0
+    q = np.array(quaternion, dtype=np.float64, copy=True)
+    n = np.dot(q, q)
     if n < _EPS:
-        return numpy.identity(4)
+        return np.identity(4)
     q *= math.sqrt(2.0 / n)
-    q = numpy.outer(q, q)
-    return numpy.array([
+    q = np.outer(q, q)
+    return np.array([
         [1.0-q[2, 2]-q[3, 3],     q[1, 2]-q[3, 0],     q[1, 3]+q[2, 0], 0.0],
         [    q[1, 2]+q[3, 0], 1.0-q[1, 1]-q[3, 3],     q[2, 3]-q[1, 0], 0.0],
         [    q[1, 3]-q[2, 0],     q[2, 3]+q[1, 0], 1.0-q[1, 1]-q[2, 2], 0.0],
@@ -162,7 +209,7 @@ def random_rotation_matrix(rand=None):
         between 0 and 1 for each returned quaternion.
 
     >>> R = random_rotation_matrix()
-    >>> numpy.allclose(numpy.dot(R.T, R), numpy.identity(4))
+    >>> np.allclose(np.dot(R.T, R), np.identity(4))
     True
 
     """
@@ -180,13 +227,13 @@ def calc_2d_bbox(xs, ys, im_size):
 def extract_square_patch(scene_img, bb_xywh, pad_factor=1.2,resize=(128,128),
                          interpolation=cv2.INTER_NEAREST,black_borders=False):
 
-        x, y, w, h = numpy.array(bb_xywh).astype(numpy.int32)
-        size = int(numpy.maximum(h, w) * pad_factor)
+        x, y, w, h = np.array(bb_xywh).astype(np.int32)
+        size = int(np.maximum(h, w) * pad_factor)
 
-        left = int(numpy.maximum(x+w/2-size/2, 0))
-        right = int(numpy.minimum(x+w/2+size/2, scene_img.shape[1]))
-        top = int(numpy.maximum(y+h/2-size/2, 0))
-        bottom = int(numpy.minimum(y+h/2+size/2, scene_img.shape[0]))
+        left = int(np.maximum(x+w/2-size/2, 0))
+        right = int(np.minimum(x+w/2+size/2, scene_img.shape[1]))
+        top = int(np.maximum(y+h/2-size/2, 0))
+        bottom = int(np.minimum(y+h/2+size/2, scene_img.shape[0]))
 
         scene_crop = scene_img[top:bottom, left:right].copy()
 
