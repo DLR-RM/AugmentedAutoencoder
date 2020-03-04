@@ -148,6 +148,7 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, hw_ae, visib
     icp = eval_args.getboolean('EVALUATION','ICP')
 
     estimate_masks = eval_args.getboolean('BBOXES','ESTIMATE_MASKS')
+    print(hw_ae)
     H_AE, W_AE = hw_ae
 
 
@@ -169,7 +170,7 @@ def generate_scene_crops(test_imgs, test_depth_imgs, gt, eval_args, hw_ae, visib
                     bb = np.array(bbox['obj_bb'])
                     obj_id = bbox['obj_id']
                     bb_score = bbox['score'] if estimate_bbs else 1.0
-                    if estimate_bbs:
+                    if estimate_bbs and visib_gt is not None:
                         vis_frac = visib_gt[view][bbox_idx]['visib_fract']
                     else:
                         vis_frac = None

@@ -36,12 +36,12 @@ class Renderer(object):
 
         # VAO
         vert_norms = gu.geo.load_meshes(models_cad_files, vertex_tmp_store_folder, recalculate_normals=True)
-
-        self.verts = [vn[0] for vn in vert_norms]
+        self.verts = []
 
         vertices = np.empty(0, dtype=np.float32)
         for vert_norm in vert_norms:
             _verts = vert_norm[0] * vertex_scale
+            self.verts.append(_verts)
             vertices = np.hstack((vertices, np.hstack((_verts, vert_norm[1])).reshape(-1)))
 
 

@@ -35,14 +35,15 @@ class MultiQueue(object):
         self._random_bg = eval(aug_args['random_bg'])
         self.occl = eval(aug_args['transparent_shape_occlusion'])
 
-        print((self.zoom_range))
-        print((self.g_noise)) 
-        print((self.contrast_norm_range))
-        print((self.mult_brightness))
-        print((self.max_off_brightness))
-        print((self.gaussian_blur))
-        print((self.invert))
-        print((self.occl))
+
+        print(('zoom_range: ', self.zoom_range))
+        print(('g_noise: ', self.g_noise)) 
+        print(('contrast_norm_range: ', self.contrast_norm_range))
+        print(('mult_brightness: ', self.mult_brightness))
+        print(('max_off_brightness: ', self.max_off_brightness))
+        print(('gaussian_blur: ', self.gaussian_blur))
+        print(('invert: ', self.invert))
+        print(('occl: ', self.occl))
     
         self.bg_img_init = None
         self.next_bg_element = None
@@ -129,13 +130,11 @@ class MultiQueue(object):
 
     def _float_cast(self, train_x, mask_x, train_y):
 
-        print(('here', 100*'g'))
         train_x = tf.image.convert_image_dtype(train_x,tf.float32)
         train_y = tf.image.convert_image_dtype(train_y,tf.float32)
         return (train_x, mask_x, train_y)
 
     def _recover_shapes(self, train_x, mask_x, train_y):
-        print('here')
         train_x.set_shape((None,) + self._shape)
         train_y.set_shape((None,) + self._shape)
         mask_x.set_shape((None,) + self._shape[:2])
@@ -161,6 +160,7 @@ class MultiQueue(object):
         self.create_background_image_iterator(background_img_paths)
         dsets = []
         for m,model in enumerate(self._model_paths):
+            print(model)
             current_config_hash = hashlib.md5(str(args.items('Dataset')) + model).hexdigest()
             current_file_name = os.path.join(dataset_path, current_config_hash + '.tfrecord')
             tfrecord_dataset = tf.data.TFRecordDataset(current_file_name)

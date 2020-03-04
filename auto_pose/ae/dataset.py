@@ -151,6 +151,10 @@ class Dataset(object):
     #         np.savez(current_file_name, train_x = self.train_x, mask_x = self.mask_x, train_y = self.train_y)
     #     print 'loaded %s training images' % len(self.train_x)
 
+    @property
+    def embedding_size(self):
+        return len(self.viewsphere_for_embedding)
+
     def load_bg_images(self, dataset_path):
         md5_string = str(str(self.shape) + str(self.noof_bg_imgs) + str(self._kw['background_images_glob']))
         md5_string = md5_string.encode('utf-8')
@@ -299,6 +303,17 @@ class Dataset(object):
                     far=clip_far,
                     random_light=True,
                 )
+                bgr_y, depth_y = self.renderer.render( 
+                    obj_id=obj_id,
+                    W=render_dims[0], 
+                    H=render_dims[1],
+                    K=K.copy(), 
+                    R=R, 
+                    t=t,
+                    near=clip_near,
+                    far=clip_far,
+                    random_light=False
+                )
             else:
                 bgr_x, depth_x = self.renderer.render( 
                     obj_id=obj_id,
@@ -312,49 +327,36 @@ class Dataset(object):
                     random_light=True,
                     phong = lighting
                 )
+                bgr_y, depth_y = self.renderer.render( 
+                    obj_id=obj_id,
+                    W=render_dims[0], 
+                    H=render_dims[1],
+                    K=K.copy(), 
+                    R=R, 
+                    t=t,
+                    near=clip_near,
+                    far=clip_far,
+                    random_light=False,
+                    phong = lighting
+                )
 
-            bgr_y, depth_y = self.renderer.render( 
-                obj_id=obj_id,
-                W=render_dims[0], 
-                H=render_dims[1],
-                K=K.copy(), 
-                R=R, 
-                t=t,
-                near=clip_near,
-                far=clip_far,
-                random_light=False,
-                phong = lighting
-            )
+
 
 
             # cv2.imshow('bgr_y',bgr_y)
             # cv2.waitKey(0)
             ys, xs = np.nonzero(depth_x > 0)
-<<<<<<< HEAD
-            
-=======
-
->>>>>>> master
             try:
                 obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             except ValueError as e:
                 print('Object in Rendering not visible. Have you scaled the vertices to mm?')
                 break
 
-<<<<<<< HEAD
-
-            x, y, w, h = obj_bb
-
-            rand_trans_x = np.random.uniform(-max_rel_offset, max_rel_offset) * w
-            rand_trans_y = np.random.uniform(-max_rel_offset, max_rel_offset) * h
-            
-=======
             x, y, w, h = obj_bb
 
             rand_trans_x = np.random.uniform(-max_rel_offset, max_rel_offset) * w
             rand_trans_y = np.random.uniform(-max_rel_offset, max_rel_offset) * h
 
->>>>>>> master
             obj_bb_off = obj_bb + np.array([rand_trans_x,rand_trans_y,0,0])
 
             bgr_x = self.extract_square_patch(bgr_x, obj_bb_off, pad_factor,resize=(W,H),interpolation = cv2.INTER_NEAREST)
@@ -370,7 +372,6 @@ class Dataset(object):
                 bgr_x = cv2.cvtColor(np.uint8(bgr_x), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
                 bgr_y = cv2.cvtColor(np.uint8(bgr_y), cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
 
-<<<<<<< HEAD
             if kw.has_key('target_bg_color'):
                 depth_y = self.extract_square_patch(depth_y, obj_bb, pad_factor, resize=(W, H), interpolation=cv2.INTER_NEAREST)
                 mask_y = depth_y == 0.
@@ -381,18 +382,6 @@ class Dataset(object):
             train_y = bgr_y.astype(np.uint8)
 
             serialize_func(train_x, mask_x, train_y, writer=tfrec_writer)
-=======
-
-            if 'target_bg_color' in kw:
-                depth_y = self.extract_square_patch(depth_y, obj_bb, pad_factor, resize=(W, H), interpolation=cv2.INTER_NEAREST)
-                mask_y = depth_y == 0.
-                bgr_y[mask_y] = eval(kw['target_bg_color'])
-
-
-            self.train_x[i] = bgr_x.astype(np.uint8)
-            self.mask_x[i] = mask_x
-            self.train_y[i] = bgr_y.astype(np.uint8)
->>>>>>> master
 
             #print 'rendertime ', render_time, 'processing ', time.time() - start_time
         bar.finish()
@@ -451,12 +440,6 @@ class Dataset(object):
         x, y, w, h = np.array(bb_xywh).astype(np.int32)
         size = int(np.maximum(h, w) * pad_factor)
         
-<<<<<<< HEAD
-        left = np.maximum(x+w/2-size/2, 0)
-        right = np.minimum(x+w/2+size/2,scene_img.shape[1])
-        top = np.maximum(y+h/2-size/2, 0)
-        bottom = np.minimum(y+h/2+size/2,scene_img.shape[0])
-=======
         left = np.maximum(x+w//2-size//2, 0)
         right = x+w//2+size//2
         top = np.maximum(y+h//2-size//2, 0)
@@ -469,7 +452,6 @@ class Dataset(object):
             scene_crop[(y+h-top):,:] = 0
             scene_crop[:,:(x-left)] = 0
             scene_crop[:,(x+w-left):] = 0
->>>>>>> master
 
         scene_crop = cv2.resize(scene_crop, resize, interpolation = interpolation)
         return scene_crop

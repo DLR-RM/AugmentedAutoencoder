@@ -64,6 +64,8 @@ def main():
     gt_trans = eval_args.getboolean('EVALUATION','gt_trans')
     iterative_code_refinement = eval_args.getboolean('EVALUATION','iterative_code_refinement')
     
+    H_AE = train_args.getint('Dataset','H')
+    W_AE = train_args.getint('Dataset','W')
 
     evaluation_name = evaluation_name + '_icp' if icp else evaluation_name
     evaluation_name = evaluation_name + '_bbest' if estimate_bbs else evaluation_name
@@ -143,7 +145,7 @@ def main():
                     maskrcnn_scene_masks = None
                     bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'),'{:02d}.yml'.format(scene_id)))
 
-            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.generate_scene_crops(test_imgs, test_imgs_depth, bb_preds, eval_args, train_args, inst_masks = maskrcnn_scene_masks)
+            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.generate_scene_crops(test_imgs, test_imgs_depth, bb_preds, eval_args, (H_AE, W_AE), inst_masks = maskrcnn_scene_masks)
         else:
             test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks = gt_masks)
 
