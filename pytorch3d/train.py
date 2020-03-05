@@ -3,6 +3,8 @@ import shutil
 import torch
 import numpy as np
 import pickle
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import configparser
 import json
@@ -145,7 +147,7 @@ def trainEpoch(mean, std, e, br, data, model,
 
         print("Step: {0}/{1} - loss: {2}".format(i,round(num_samples/batch_size),loss.data))
         losses.append(loss.data.detach().cpu().numpy())
-        
+
         if(visualize):
             batch_img_dir = os.path.join(output_path, "images/epoch{0}".format(e))
             prepareDir(batch_img_dir)
