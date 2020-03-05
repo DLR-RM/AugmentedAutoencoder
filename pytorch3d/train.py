@@ -17,6 +17,36 @@ from losses import Loss
 learning_rate = -1
 optimizer = None
 
+views = [torch.tensor([[1.0, 0.0, 0.0], # Original view
+                       [0.0, 1.0, 0.0],
+                       [0.0, 0.0, 1.0]]),
+         # 120 degrees around z-axis 
+         torch.tensor([[-0.5000042, -0.8660229, 0.0], 
+                       [0.8660229, -0.5000042, 0.0],
+                       [0.0, 0.0, 1.0]]),
+         # 120 degrees around z-axis, then 120 degrees around x-axis
+         torch.tensor([[-0.5000042,  0.4330151,  0.7499958], 
+                       [0.8660229,  0.2500042,  0.4330151],
+                       [0.0000000,  0.8660229, -0.5000042]]),
+         # 120 degrees around z-axis, # then -120 degrees around x-axis
+         torch.tensor([[-0.5000042,  0.4330151, -0.7499958], 
+                       [0.8660229,  0.2500042, -0.4330151], 
+                       [0.0000000, -0.8660229, -0.5000042]]),
+
+         # 60 degrees around y-axis
+         torch.tensor([[0.5000000,  0.0000000,  0.8660254], 
+                       [0.0000000,  1.0000000,  0.0000000],
+                       [-0.8660254,  0.0000000,  0.5000000]]),
+         # 60 degrees around y-axis, then 60 degrees around x-axis
+         torch.tensor([[0.5000000,  0.7500000,  0.4330127], 
+                       [0.0000000,  0.5000000, -0.8660254],
+                       [-0.8660254,  0.4330127,  0.2500000]]),
+         # 60 degrees around y-axis, then -60 degrees around x-axis
+         torch.tensor([[0.5000000, -0.7500000,  0.4330127], 
+                       [0.0000000,  0.5000000,  0.8660254],
+                       [-0.8660254, -0.4330127,  0.2500000]])
+         ]
+
 def main():
     global learning_rate, optimizer
     # Read configuration file
@@ -108,7 +138,7 @@ def trainEpoch(mean, std, e, br, data, model,
             ts.append(T.copy())
         
         loss, batch_loss, gt_images, predicted_images = Loss(predicted_poses, Rs, br, ts,
-                                                             mean, std, loss_method=loss_method)
+                                                             mean, std, loss_method=loss_method, views=views)
     
         loss.backward()
         optimizer.step()
@@ -125,10 +155,10 @@ def trainEpoch(mean, std, e, br, data, model,
             vmin = min(np.min(gt_img), np.min(predicted_img))
             vmax = max(np.max(gt_img), np.max(predicted_img))
             
-            fig = plt.figure(figsize=(12, 9))
+            fig = plt.figure(figsize=(5+len(views)*2, 9))
 
-            for viewNum in np.arange(4):
-                plotView(viewNum, vmin, vmax, gt_images, predicted_images,
+            for viewNum in np.arange(len(views)):
+                plotView(viewNum, len(views), vmin, vmax, gt_images, predicted_images,
                          predicted_poses, batch_loss, batch_size)            
             fig.tight_layout()
             fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}.png".format(e,i)), dpi=fig.dpi)

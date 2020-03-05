@@ -53,24 +53,24 @@ def calcMeanVar(br, data, device, t):
     print(torch.std(result))
     return torch.mean(result), torch.std(result)
 
-def plotView(viewNum, vmin, vmax, groundtruth, predicted, predicted_pose, loss, batch_size):
-    plt.subplot(3, 4, viewNum+1)
-    plt.imshow(groundtruth[viewNum*batch_size].detach().cpu().numpy(),
+def plotView(currView, numViews, vmin, vmax, groundtruth, predicted, predicted_pose, loss, batch_size):
+    plt.subplot(3, numViews, currView+1)
+    plt.imshow(groundtruth[currView*batch_size].detach().cpu().numpy(),
                vmin=vmin, vmax=vmax)
-    plt.title("View {0} - GT".format(viewNum))
+    plt.title("View {0} - GT".format(currView))
     
-    plt.subplot(3, 4, viewNum+5)
-    plt.imshow(predicted[viewNum*batch_size].detach().cpu().numpy(),
+    plt.subplot(3, numViews, currView+(1+numViews))
+    plt.imshow(predicted[currView*batch_size].detach().cpu().numpy(),
                vmin=vmin, vmax=vmax)
-    if(viewNum == 0):
-        plt.title("Predicted: " + np.array2string((predicted_pose[viewNum*batch_size]).detach().cpu().numpy(),precision=2))
+    if(currView == 0):
+        plt.title("Predicted: " + np.array2string((predicted_pose[currView*batch_size]).detach().cpu().numpy(),precision=2))
     else:
         plt.title("Predicted")
     
-    loss_contrib = np.abs((groundtruth[viewNum*batch_size]).detach().cpu().numpy() - (predicted[viewNum*batch_size]).detach().cpu().numpy())
-    plt.subplot(3, 4, viewNum+9)
+    loss_contrib = np.abs((groundtruth[currView*batch_size]).detach().cpu().numpy() - (predicted[currView*batch_size]).detach().cpu().numpy())
+    plt.subplot(3, numViews, currView+(1+2*numViews))
     plt.imshow(loss_contrib) #, vmin=vmin, vmax=vmax)
-    plt.title("Loss: {0}".format((loss[viewNum*batch_size]).detach().cpu().numpy()))
+    plt.title("Loss: {0}".format((loss[currView*batch_size]).detach().cpu().numpy()))
 
 # Convert quaternion to rotation matrix
 # from: https://github.com/ClementPinard/SfmLearner-Pytorch/blob/master/inverse_warp.py
