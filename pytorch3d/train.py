@@ -46,8 +46,9 @@ views = [torch.tensor([[1.0, 0.0, 0.0], # Original view
          # 60 degrees around y-axis, then -60 degrees around x-axis
          torch.tensor([[0.5000000, -0.7500000,  0.4330127], 
                        [0.0000000,  0.5000000,  0.8660254],
-                       [-0.8660254, -0.4330127,  0.2500000]])
+                       [-0.8660254, -0.4330127,  0.2500000]])         
          ]
+views = views[:1]
 
 def main():
     global learning_rate, optimizer
@@ -89,7 +90,7 @@ def main():
 
     mean = 0
     std = 1
-    mean, std = calcMeanVar(br, data, device, json.loads(args.get('Rendering', 'T')))
+    #mean, std = calcMeanVar(br, data, device, json.loads(args.get('Rendering', 'T')))
 
     np.random.seed(seed=args.getint('Training', 'RANDOM_SEED'))
     for e in np.arange(args.getint('Training', 'NUM_ITER')):

@@ -46,10 +46,14 @@ class BatchRender:
             batch_T = ts
         
         images = self.renderer(meshes_world=self.batch_mesh, R=batch_R, T=batch_T)
-        if(self.method == "silhouette"):
-            images = images[...,3]
+        if(self.method == "soft-silhouette"):
+            print(images.shape)
+            images = images[..., 3]
+            print(images.shape)
+        if(self.method == "soft-phong"):
+            images = images[..., :3]
         else:
-            images = images[...,0]
+            images = images[..., 0]
         
         return images
 
@@ -59,6 +63,7 @@ class BatchRender:
         faces = faces_idx.verts_idx
         
         # Initialize each vertex to be white in color.
+        #verts_rgb = torch.ones_like(verts[0][None,:,:])
         verts_rgb = torch.ones_like(verts)  # (V, 3)
 
         batch_verts_rgb = list_to_padded([verts_rgb for k in self.batch_indeces])  # B, Vmax, 3
@@ -73,15 +78,15 @@ class BatchRender:
 
 
     def initRender(self, method, image_size):      
-        cameras = OpenGLPerspectiveCameras(device=self.device, fov=25)
+        cameras = OpenGLPerspectiveCameras(device=self.device, fov=5)
 
-        if(method=="silhouette"):
+        if(method=="soft-silhouette"):
             blend_params = BlendParams(sigma=1e-4, gamma=1e-4)
 
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
                 blur_radius=np.log(1. / 1e-4 - 1.) * blend_params.sigma, 
-                faces_per_pixel=100, 
+                faces_per_pixel=50, 
                 bin_size=0
             )
             
@@ -92,16 +97,7 @@ class BatchRender:
                 ),
                 shader=SoftSilhouetteShader(blend_params=blend_params)
             )
-        elif(method=="depth"):
-            # Soft Rasterizer - from https://github.com/facebookresearch/pytorch3d/issues/95
-            # blend_params = BlendParams(sigma=1e-5, gamma=1e-5)
-            # raster_settings = RasterizationSettings(
-            #     image_size=image_size, 
-            #     blur_radius=np.log(1. / 1e-5 - 1.) * blend_params.sigma, 
-            #     faces_per_pixel=10, 
-            #     bin_size=0
-            # )
-            
+        elif(method=="depth"):            
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
                 blur_radius=0,
@@ -116,27 +112,54 @@ class BatchRender:
                 ),
                 shader=DepthShader()
             )
-        elif(method=="phong"):
+        elif(method=="soft-depth"):
+            # Soft Rasterizer - from https://github.com/facebookresearch/pytorch3d/issues/95
             blend_params = BlendParams(sigma=1e-7, gamma=1e-7)
-
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
                 blur_radius=np.log(1. / 1e-7 - 1.) * blend_params.sigma, 
-                faces_per_pixel=100, 
+                faces_per_pixel=50, 
+                bin_size=0
+            )
+            
+            renderer = MeshRenderer(
+                rasterizer=MeshRasterizer(
+                    cameras=cameras,
+                    raster_settings=raster_settings
+                ),
+                shader=DepthShader()
+            )            
+        elif(method=="soft-phong"):
+            blend_params = BlendParams(sigma=1e-8, gamma=1e-8)
+
+            raster_settings = RasterizationSettings(
+                image_size=image_size,
+                blur_radius=np.log(1. / 1e-8 - 1.) * blend_params.sigma, 
+                faces_per_pixel=40, 
                 bin_size=0
             )
 
-            lights = DirectionalLights(device=self.device,
-                                       ambient_color=[[0.4, 0.4, 0.4]],
-                                       diffuse_color=[[0.8, 0.8, 0.8]],
-                                       specular_color=[[0.3, 0.3, 0.3]],
-                                       direction=[[-1.0, -1.0, 1.0]])
+            # lights = DirectionalLights(device=self.device,
+            #                            ambient_color=[[0.4, 0.4, 0.4]],
+            #                            diffuse_color=[[0.8, 0.8, 0.8]],
+            #                            specular_color=[[0.3, 0.3, 0.3]],
+            #                            direction=[[-1.0, -1.0, 1.0]]
+            # )
+
+            lights = PointLights(device=self.device,
+                                 ambient_color=[[0.3, 0.3, 0.3]],
+                                 diffuse_color=[[0.4, 0.4, 0.4]],
+                                 specular_color=[[0.3, 0.3, 0.3]],
+                                 location=[[-30.0, -30.0, -30.0]])
+            
             renderer = MeshRenderer(
                 rasterizer=MeshRasterizer(
                     cameras=cameras, 
                     raster_settings=raster_settings
                 ),
-                shader=SoftPhongShader(device=self.device, lights=lights)
+                shader=SoftPhongShader(device=self.device,
+                                       blend_params = blend_params,
+                                       lights=lights)
             )
         else:
             print("Unknown render method!")
