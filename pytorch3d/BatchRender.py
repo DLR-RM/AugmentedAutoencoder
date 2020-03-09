@@ -47,14 +47,11 @@ class BatchRender:
         
         images = self.renderer(meshes_world=self.batch_mesh, R=batch_R, T=batch_T)
         if(self.method == "soft-silhouette"):
-            print(images.shape)
             images = images[..., 3]
-            print(images.shape)
-        if(self.method == "soft-phong"):
+        elif(self.method == "soft-phong"):
             images = images[..., :3]
-        else:
+        elif(self.method == "soft-depth"):
             images = images[..., 0]
-        
         return images
 
     def initMeshes(self):
@@ -81,11 +78,11 @@ class BatchRender:
         cameras = OpenGLPerspectiveCameras(device=self.device, fov=5)
 
         if(method=="soft-silhouette"):
-            blend_params = BlendParams(sigma=1e-4, gamma=1e-4)
+            blend_params = BlendParams(sigma=1e-8, gamma=1e-8)
 
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
-                blur_radius=np.log(1. / 1e-4 - 1.) * blend_params.sigma, 
+                blur_radius=np.log(1. / 1e-8 - 1.) * blend_params.sigma, 
                 faces_per_pixel=50, 
                 bin_size=0
             )
@@ -96,21 +93,6 @@ class BatchRender:
                     raster_settings=raster_settings
                 ),
                 shader=SoftSilhouetteShader(blend_params=blend_params)
-            )
-        elif(method=="depth"):            
-            raster_settings = RasterizationSettings(
-                image_size=image_size, 
-                blur_radius=0,
-                faces_per_pixel=1, 
-                bin_size=0
-            )
-            
-            renderer = MeshRenderer(
-                rasterizer=MeshRasterizer(
-                    cameras=cameras, 
-                    raster_settings=raster_settings
-                ),
-                shader=DepthShader()
             )
         elif(method=="soft-depth"):
             # Soft Rasterizer - from https://github.com/facebookresearch/pytorch3d/issues/95
@@ -135,7 +117,7 @@ class BatchRender:
             raster_settings = RasterizationSettings(
                 image_size=image_size,
                 blur_radius=np.log(1. / 1e-8 - 1.) * blend_params.sigma, 
-                faces_per_pixel=40, 
+                faces_per_pixel=10, 
                 bin_size=0
             )
 

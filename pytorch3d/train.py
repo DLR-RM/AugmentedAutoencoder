@@ -142,7 +142,6 @@ def trainEpoch(mean, std, e, br, data, model,
         
         loss, batch_loss, gt_images, predicted_images = Loss(predicted_poses, Rs, br, ts,
                                                              mean, std, loss_method=loss_method, views=views)
-    
         loss.backward()
         optimizer.step()
 
