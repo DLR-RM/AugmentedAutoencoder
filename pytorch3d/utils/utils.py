@@ -6,6 +6,18 @@ import csv
 import matplotlib.pyplot as plt
 import os
 
+# Create list of rotation matrices
+# from list of euler angles ('xyz')
+# i.e. [[x1, y1, z1],[x2, y2, z2]]
+from scipy.spatial.transform import Rotation as R
+def prepareViews(eulerList):
+    views = []
+    for e in eulerList:
+        rot = R.from_euler('xyz', e, degrees=True)
+        rot_mat = torch.tensor(rot.as_matrix(), dtype=torch.float32)
+        views.append(rot_mat)
+    return views
+
 def batch(iterable, n=1):
     l = len(iterable)
     for ndx in range(0, l, n):

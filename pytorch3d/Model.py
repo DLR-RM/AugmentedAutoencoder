@@ -6,12 +6,12 @@ import torch.nn.functional as F
 # Network structure inspired by:
 # https://arxiv.org/pdf/1708.05628.pdf (see fig. 2)
 class Model(nn.Module):
-    def __init__(self):
+    def __init__(self, output_size=4):
         super(Model, self).__init__()
 
         self.l1 = nn.Linear(128,128)
         self.l2 = nn.Linear(128,64)
-        self.l3 = nn.Linear(64,4)
+        self.l3 = nn.Linear(64,output_size)
 
         self.bn1 = nn.BatchNorm1d(128)
         self.bn2 = nn.BatchNorm1d(64)

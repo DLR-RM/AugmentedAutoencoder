@@ -18,40 +18,42 @@ from losses import Loss
 
 learning_rate = -1
 optimizer = None
+views = []
 
-views = [torch.tensor([[1.0, 0.0, 0.0], # Original view
-                       [0.0, 1.0, 0.0],
-                       [0.0, 0.0, 1.0]]),
-         # 120 degrees around z-axis 
-         torch.tensor([[-0.5000042, -0.8660229, 0.0], 
-                       [0.8660229, -0.5000042, 0.0],
-                       [0.0, 0.0, 1.0]]),
-         # 120 degrees around z-axis, then 120 degrees around x-axis
-         torch.tensor([[-0.5000042,  0.4330151,  0.7499958], 
-                       [0.8660229,  0.2500042,  0.4330151],
-                       [0.0000000,  0.8660229, -0.5000042]]),
-         # 120 degrees around z-axis, # then -120 degrees around x-axis
-         torch.tensor([[-0.5000042,  0.4330151, -0.7499958], 
-                       [0.8660229,  0.2500042, -0.4330151], 
-                       [0.0000000, -0.8660229, -0.5000042]]),
+# views = [torch.tensor([[1.0, 0.0, 0.0], # Original view
+#                        [0.0, 1.0, 0.0],
+#                        [0.0, 0.0, 1.0]]),
+#          # 120 degrees around z-axis 
+#          torch.tensor([[-0.5000042, -0.8660229, 0.0], 
+#                        [0.8660229, -0.5000042, 0.0],
+#                        [0.0, 0.0, 1.0]]),
+#          # 120 degrees around z-axis, then 120 degrees around x-axis
+#          torch.tensor([[-0.5000042,  0.4330151,  0.7499958], 
+#                        [0.8660229,  0.2500042,  0.4330151],
+#                        [0.0000000,  0.8660229, -0.5000042]]),
+#          # 120 degrees around z-axis, # then -120 degrees around x-axis
+#          torch.tensor([[-0.5000042,  0.4330151, -0.7499958], 
+#                        [0.8660229,  0.2500042, -0.4330151], 
+#                        [0.0000000, -0.8660229, -0.5000042]]),
 
-         # 60 degrees around y-axis
-         torch.tensor([[0.5000000,  0.0000000,  0.8660254], 
-                       [0.0000000,  1.0000000,  0.0000000],
-                       [-0.8660254,  0.0000000,  0.5000000]]),
-         # 60 degrees around y-axis, then 60 degrees around x-axis
-         torch.tensor([[0.5000000,  0.7500000,  0.4330127], 
-                       [0.0000000,  0.5000000, -0.8660254],
-                       [-0.8660254,  0.4330127,  0.2500000]]),
-         # 60 degrees around y-axis, then -60 degrees around x-axis
-         torch.tensor([[0.5000000, -0.7500000,  0.4330127], 
-                       [0.0000000,  0.5000000,  0.8660254],
-                       [-0.8660254, -0.4330127,  0.2500000]])         
-         ]
-views = views[:1]
+#          # 60 degrees around y-axis
+#          torch.tensor([[0.5000000,  0.0000000,  0.8660254], 
+#                        [0.0000000,  1.0000000,  0.0000000],
+#                        [-0.8660254,  0.0000000,  0.5000000]]),
+#          # 60 degrees around y-axis, then 60 degrees around x-axis
+#          torch.tensor([[0.5000000,  0.7500000,  0.4330127], 
+#                        [0.0000000,  0.5000000, -0.8660254],
+#                        [-0.8660254,  0.4330127,  0.2500000]]),
+#          # 60 degrees around y-axis, then -60 degrees around x-axis
+#          torch.tensor([[0.5000000, -0.7500000,  0.4330127], 
+#                        [0.0000000,  0.5000000,  0.8660254],
+#                        [-0.8660254, -0.4330127,  0.2500000]])         
+#          ]
+# views = views[:1]
+
 
 def main():
-    global learning_rate, optimizer
+    global learning_rate, optimizer, views
     # Read configuration file
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_name")
@@ -60,6 +62,10 @@ def main():
     cfg_file_path = os.path.join("./experiments", arguments.experiment_name)
     args = configparser.ConfigParser()
     args.read(cfg_file_path)
+
+    # Prepare rotation matrices for multi view loss function
+    eulerViews = json.loads(args.get('Rendering', 'VIEWS'))
+    views = prepareViews(eulerViews)
 
     # Set the cuda device 
     device = torch.device("cuda:0")
@@ -74,7 +80,7 @@ def main():
                    
 
     # Initialize a model using the renderer, mesh and reference image
-    model = Model().to(device)
+    model = Model(output_size=6).to(device)
     #model.load_state_dict(torch.load("./output/model-epoch720.pt"))
 
     # Create an optimizer. Here we are using Adam and we pass in the parameters of the model

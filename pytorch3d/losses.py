@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from utils.utils import *
+from utils.tools import *
 
 def Loss(predicted_poses, gt_poses, renderer, ts, mean, std, loss_method="diff", views=None):   
     if(loss_method=="diff"):
@@ -33,7 +34,8 @@ def Loss(predicted_poses, gt_poses, renderer, ts, mean, std, loss_method="diff",
         predicted_imgs = []
         Rs_gt = torch.tensor(np.stack(gt_poses), device=renderer.device,
                                 dtype=torch.float32).permute(0,2,1) # Bx3x3
-        Rs_predicted = quat2mat(predicted_poses)
+        #Rs_predicted = quat2mat(predicted_poses)
+        Rs_predicted = compute_rotation_matrix_from_ortho6d(predicted_poses)
         for v in views:
             # Render ground truth images
             Rs_new = torch.matmul(Rs_gt, v.to(renderer.device))
