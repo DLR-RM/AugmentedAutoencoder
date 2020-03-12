@@ -51,7 +51,7 @@ class BatchRender:
         elif(self.method == "soft-phong"):
             images = images[..., :3]
         elif(self.method == "soft-depth"):
-            images = images[..., 0]
+            images = images[..., 0] #torch.mean(images, dim=3) 
         return images
 
     def initMeshes(self):
@@ -99,9 +99,8 @@ class BatchRender:
             blend_params = BlendParams(sigma=1e-7, gamma=1e-7)
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
-                blur_radius=np.log(1. / 1e-7 - 1.) * blend_params.sigma, 
-                faces_per_pixel=50, 
-                bin_size=0
+                blur_radius= np.log(1. / 1e-7 - 1.) * blend_params.sigma, 
+                faces_per_pixel=20
             )
             
             renderer = MeshRenderer(
@@ -109,7 +108,7 @@ class BatchRender:
                     cameras=cameras,
                     raster_settings=raster_settings
                 ),
-                shader=DepthShader()
+                shader=DepthShader(blend_params=blend_params)
             )            
         elif(method=="soft-phong"):
             blend_params = BlendParams(sigma=1e-8, gamma=1e-8)

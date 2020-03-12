@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import configparser
 import json
 import argparse
+import glob
 
 from utils.utils import *
 
@@ -19,41 +20,33 @@ from losses import Loss
 learning_rate = -1
 optimizer = None
 views = []
+epoch = 0
 
-# views = [torch.tensor([[1.0, 0.0, 0.0], # Original view
-#                        [0.0, 1.0, 0.0],
-#                        [0.0, 0.0, 1.0]]),
-#          # 120 degrees around z-axis 
-#          torch.tensor([[-0.5000042, -0.8660229, 0.0], 
-#                        [0.8660229, -0.5000042, 0.0],
-#                        [0.0, 0.0, 1.0]]),
-#          # 120 degrees around z-axis, then 120 degrees around x-axis
-#          torch.tensor([[-0.5000042,  0.4330151,  0.7499958], 
-#                        [0.8660229,  0.2500042,  0.4330151],
-#                        [0.0000000,  0.8660229, -0.5000042]]),
-#          # 120 degrees around z-axis, # then -120 degrees around x-axis
-#          torch.tensor([[-0.5000042,  0.4330151, -0.7499958], 
-#                        [0.8660229,  0.2500042, -0.4330151], 
-#                        [0.0000000, -0.8660229, -0.5000042]]),
+def latestCheckpoint(model_dir):
+    checkpoints = glob.glob(os.path.join(model_dir, "*.pt"))
+    checkpoints_sorted = sorted(checkpoints, key=os.path.getmtime)
+    if(len(checkpoints_sorted) > 0):
+        return checkpoints_sorted[-1]
+    return None
 
-#          # 60 degrees around y-axis
-#          torch.tensor([[0.5000000,  0.0000000,  0.8660254], 
-#                        [0.0000000,  1.0000000,  0.0000000],
-#                        [-0.8660254,  0.0000000,  0.5000000]]),
-#          # 60 degrees around y-axis, then 60 degrees around x-axis
-#          torch.tensor([[0.5000000,  0.7500000,  0.4330127], 
-#                        [0.0000000,  0.5000000, -0.8660254],
-#                        [-0.8660254,  0.4330127,  0.2500000]]),
-#          # 60 degrees around y-axis, then -60 degrees around x-axis
-#          torch.tensor([[0.5000000, -0.7500000,  0.4330127], 
-#                        [0.0000000,  0.5000000,  0.8660254],
-#                        [-0.8660254, -0.4330127,  0.2500000]])         
-#          ]
-# views = views[:1]
+def loadCheckpoint(model_path):
+    # Load checkpoint and parameters
+    checkpoint = torch.load(model_path)
+    epoch = checkpoint['epoch'] + 1
+    learning_rate = checkpoint['learning_rate']
 
+    # Load model
+    model = Model(output_size=6)
+    model.load_state_dict(checkpoint['model'])
+
+    # Load optimizer
+    optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate)
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    print("Loaded the checkpoint: \n" + model_path)
+    return model, optimizer, epoch, learning_rate
 
 def main():
-    global learning_rate, optimizer, views
+    global learning_rate, optimizer, views, epoch
     # Read configuration file
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_name")
@@ -87,31 +80,36 @@ def main():
     learning_rate=args.getfloat('Training', 'LEARNING_RATE')
 
     data = pickle.load(open(args.get('Dataset', 'TRAIN_DATA_PATH'),"rb"), encoding="latin1")
-    data["codes"] = data["codes"][:83*12]
+    data["codes"] = data["codes"]
     output_path = args.get('Training', 'OUTPUT_PATH')
     prepareDir(output_path)
     shutil.copy(cfg_file_path, os.path.join(output_path, cfg_file_path.split("/")[-1]))
-
-    train_loss = []
 
     mean = 0
     std = 1
     #mean, std = calcMeanVar(br, data, device, json.loads(args.get('Rendering', 'T')))
 
+    # Load checkpoint for last epoch if it exists
+    model_path = latestCheckpoint(os.path.join(output_path, "models/"))
+    if(model_path is not None):
+        model, optimizer, epoch, learning_rate = loadCheckpoint(model_path)
+        model.to(device)
+
     np.random.seed(seed=args.getint('Training', 'RANDOM_SEED'))
-    for e in np.arange(args.getint('Training', 'NUM_ITER')):
-        loss = trainEpoch(mean, std, e, br, data, model, device, output_path,
+    while(epoch < args.getint('Training', 'NUM_ITER')):
+        loss = trainEpoch(mean, std, br, data, model, device, output_path,
                           loss_method=args.get('Training', 'LOSS'),
                           t=json.loads(args.get('Rendering', 'T')),
                           visualize=args.getboolean('Training', 'SAVE_IMAGES'))
-        train_loss.append(loss)
-        list2file(train_loss, os.path.join(output_path, "train-loss.csv"))
-        plotLoss(train_loss, os.path.join(output_path, "train-loss.png"))
+        append2file([loss], os.path.join(output_path, "train-loss.csv"))
+        plotLoss(os.path.join(output_path, "train-loss.csv"),
+                 os.path.join(output_path, "train-loss.png"))
         print("-"*20)
-        print("Epoch: {0} - loss: {1}".format(e,loss))
+        print("Epoch: {0} - loss: {1}".format(epoch,loss))
         print("-"*20)
+        epoch = epoch+1
     
-def trainEpoch(mean, std, e, br, data, model,
+def trainEpoch(mean, std, br, data, model,
                device, output_path, loss_method, t,
                visualize=False):
     global learning_rate, optimizer
@@ -121,7 +119,7 @@ def trainEpoch(mean, std, e, br, data, model,
     num_samples = len(data["codes"])
     data_indeces = np.arange(num_samples)
 
-    if(e % 2 == 1):
+    if(epoch % 2 == 1):
         learning_rate = learning_rate * 0.9
         print("Current learning rate: {0}".format(learning_rate))
     
@@ -155,7 +153,7 @@ def trainEpoch(mean, std, e, br, data, model,
         losses.append(loss.data.detach().cpu().numpy())
 
         if(visualize):
-            batch_img_dir = os.path.join(output_path, "images/epoch{0}".format(e))
+            batch_img_dir = os.path.join(output_path, "images/epoch{0}".format(epoch))
             prepareDir(batch_img_dir)
             gt_img = (gt_images[0]).detach().cpu().numpy()
             predicted_img = (predicted_images[0]).detach().cpu().numpy()
@@ -169,12 +167,16 @@ def trainEpoch(mean, std, e, br, data, model,
                 plotView(viewNum, len(views), vmin, vmax, gt_images, predicted_images,
                          predicted_poses, batch_loss, batch_size)            
             fig.tight_layout()
-            fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}.png".format(e,i)), dpi=fig.dpi)
+            fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}.png".format(epoch,i)), dpi=fig.dpi)
             plt.close()
 
     model_dir = os.path.join(output_path, "models/")
     prepareDir(model_dir)
-    torch.save(model.state_dict(), os.path.join(model_dir,"model-epoch{0}.pt".format(e)))
+    state = {'model': model.state_dict(),
+             'optimizer': optimizer.state_dict(),
+             'learning_rate': learning_rate,
+             'epoch': epoch}
+    torch.save(state, os.path.join(model_dir,"model-epoch{0}.pt".format(epoch)))
     return np.mean(losses)
 
 if __name__ == '__main__':
