@@ -22,6 +22,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_name")
+    parser.add_argument("pickle_path")
     parser.add_argument('--at_step', default=None, required=False)
     arguments = parser.parse_args()
     full_name = arguments.experiment_name.split('/')
@@ -63,7 +64,7 @@ def main():
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
     config = tf.ConfigProto(gpu_options=gpu_options)
 
-    data = pickle.load(open("/shared-folder/AugmentedAutoencoder/pytorch3d/data/t-less-obj7/dataset-1k/training-codes.p","rb"))
+    data = pickle.load(open(arguments.pickle_path,"rb"))
 
     with tf.Session(config=config) as sess:
 

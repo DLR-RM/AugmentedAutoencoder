@@ -12,7 +12,10 @@ setup(
         'console_scripts': ['ae_init_workspace = auto_pose.ae.ae_init_workspace:main',
                             'ae_train = auto_pose.ae.ae_train:main',
                             'ae_embed = auto_pose.ae.ae_embed:main',
-                            'ae_eval = auto_pose.eval.ae_eval:main']
+                            'ae_eval = auto_pose.eval.ae_eval:main',
+                            'codes2images = auto_pose.ae.codes2images:main',
+                            'images2codes = auto_pose.ae.images2codes:main'
+        ]
     },
     package_data={'auto_pose': ['ae/cfg/*', 'ae/cfg_eval/*', 'ae/cfg_m3vision/*', 'm3_interface/sample_data/*', 'meshrenderer/shader/*']},
     # include_package_data=True

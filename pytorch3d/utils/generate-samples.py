@@ -9,6 +9,7 @@ from skimage import img_as_ubyte
 
 import time
 import pickle
+import random
 from utils import *
 
 # io utils
@@ -33,7 +34,8 @@ device = torch.device("cuda:0")
 torch.cuda.set_device(device)
 
 # Load the obj and ignore the textures and materials.
-verts, faces_idx, _ = load_obj("../data/t-less-obj7/obj_07_scaled.obj")
+verts, faces_idx, _ = load_obj("../data/t-less-obj19/cad/obj_19_scaled.obj")
+#verts, faces_idx, _ = load_obj("../data/ikea-mug/cad/ikea_mug_scaled_reduced_centered.obj")
 faces = faces_idx.verts_idx
 
 # Initialize each vertex to be white in color.
@@ -82,9 +84,12 @@ ts = []
 images = []
 
 start = time.time()
-for i in np.arange(1000):
+for i in np.arange(5000):
     R = torch.from_numpy(random_rotation_matrix()[:3,:3]).to(device).unsqueeze(0)
     T = torch.from_numpy(np.array([0.0,  0.0, 3.5], dtype=np.float32)).to(device).unsqueeze(0)
+
+    random_light = [random.uniform(-1.0,1.0) for i in np.arange(3)]
+    phong_renderer.shader.lights.direction = [random_light]
     
     # Render the teapot providing the values of R and T. 
     image_ref = phong_renderer(meshes_world=object_mesh, R=R, T=T)
