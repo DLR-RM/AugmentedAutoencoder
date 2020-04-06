@@ -34,8 +34,8 @@ device = torch.device("cuda:0")
 torch.cuda.set_device(device)
 
 # Load the obj and ignore the textures and materials.
-verts, faces_idx, _ = load_obj("../data/t-less-obj19/cad/obj_19_scaled.obj")
-#verts, faces_idx, _ = load_obj("../data/ikea-mug/cad/ikea_mug_scaled_reduced_centered.obj")
+#verts, faces_idx, _ = load_obj("../data/t-less-obj19/cad/obj_19_scaled.obj")
+verts, faces_idx, _ = load_obj("../data/ikea-mug/cad/ikea_mug_scaled_reduced_centered.obj")
 faces = faces_idx.verts_idx
 
 # Initialize each vertex to be white in color.
@@ -52,7 +52,7 @@ object_mesh = Meshes(
 
 # Initialize an OpenGL perspective camera.
 cameras = OpenGLPerspectiveCameras(
-    fov=40.0,
+    fov=5.0,
     device=device)
 
 # We will also create a phong renderer. This is simpler and only needs to render one face per pixel.
@@ -82,11 +82,13 @@ phong_renderer = MeshRenderer(
 Rs = []
 ts = []
 images = []
+quats = []
 
 start = time.time()
 for i in np.arange(5000):
-    R = torch.from_numpy(random_rotation_matrix()[:3,:3]).to(device).unsqueeze(0)
-    T = torch.from_numpy(np.array([0.0,  0.0, 3.5], dtype=np.float32)).to(device).unsqueeze(0)
+    quat = random_quaternion(None)       
+    R = torch.from_numpy(quaternion_matrix(quat)[:3,:3]).to(device).unsqueeze(0)
+    T = torch.from_numpy(np.array([0.0,  0.0, 20.0], dtype=np.float32)).to(device).unsqueeze(0)
 
     random_light = [random.uniform(-1.0,1.0) for i in np.arange(3)]
     phong_renderer.shader.lights.direction = [random_light]
@@ -98,6 +100,8 @@ for i in np.arange(5000):
 
     Rs.append(R.cpu().numpy().squeeze())
     ts.append(T.cpu().numpy().squeeze())
+    quats.append(quat)
+    #print(quats[-1])
 
     ys, xs = np.nonzero(image_ref[:,:,0] > 0)
     obj_bb = calc_2d_bbox(xs,ys,[640,640])
@@ -109,5 +113,5 @@ for i in np.arange(5000):
     #plt.imshow(cropped)
     #plt.show()
 print("Elapsed: {0}".format(time.time()-start))
-data={"images":images,"Rs":Rs,"ts":ts}
+data={"images":images,"Rs":Rs,"ts":ts, "quats":quats}
 pickle.dump(data, open("./training-images.p", "wb"), protocol=0)

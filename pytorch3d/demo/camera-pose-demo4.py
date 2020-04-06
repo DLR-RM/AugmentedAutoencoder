@@ -23,10 +23,18 @@ from pytorch3d.transforms import Rotate, Translate
 from pytorch3d.renderer import (
     OpenGLPerspectiveCameras, look_at_view_transform, look_at_rotation, 
     RasterizationSettings, MeshRenderer, MeshRasterizer, BlendParams,
-    SoftSilhouetteShader, HardPhongShader, PointLights
+    SoftSilhouetteShader, SoftPhongShader, HardPhongShader, PointLights
 )
 
 
+class DepthShader(nn.Module):
+    def __init__(self, blend_params=None):
+        super().__init__()
+        
+    def forward(self, fragments, meshes, **kwargs) -> torch.Tensor:
+        image = fragments.zbuf
+        
+        return torch.mean(image[...,0:20], dim=3) #torch.sum(image, dim=3) #image[...,3]
 
 class Model(nn.Module):
     def __init__(self, meshes, renderer, image_ref):
@@ -36,7 +44,8 @@ class Model(nn.Module):
         self.renderer = renderer
         
         # Get the silhouette of the reference RGB image by finding all the non zero values. 
-        image_ref = torch.from_numpy((image_ref[..., :3].max(-1) != 0).astype(np.float32))
+        #image_ref = torch.from_numpy((image_ref[..., :3].max(-1) != 0).astype(np.float32))
+        image_ref = torch.from_numpy((image_ref).astype(np.float32))
         self.register_buffer('image_ref', image_ref)
         
         # Create an optimizable parameter for the x, y, z position of the camera. 
@@ -53,8 +62,10 @@ class Model(nn.Module):
         image = self.renderer(meshes_world=self.meshes.clone(), R=R, T=T)
         
         # Calculate the silhouette loss
-        loss = torch.sum((image[..., 3] - self.image_ref) ** 2)
-        return loss, image
+        #loss = torch.sum((image[..., 3] - self.image_ref) ** 2)
+        diff_img = (image - self.image_ref) ** 2
+        loss = torch.sum(diff_img)
+        return loss, image, diff_img
 
 
 
@@ -86,25 +97,26 @@ cameras = OpenGLPerspectiveCameras(device=device)
 
 # To blend the 100 faces we set a few parameters which control the opacity and the sharpness of 
 # edges. Refer to blending.py for more details. 
-blend_params = BlendParams(sigma=1e-4, gamma=1e-4)
+blend_params = BlendParams(sigma=1e-3, gamma=1e-3)
 
 # Define the settings for rasterization and shading. Here we set the output image to be of size
 # 256x256. To form the blended image we use 100 faces for each pixel. Refer to rasterize_meshes.py
 # for an explanation of this parameter. 
 raster_settings = RasterizationSettings(
     image_size=256, 
-    blur_radius=np.log(1. / 1e-4 - 1.) * blend_params.sigma, 
+    blur_radius=np.log(1. / 1e-3 - 1.) * blend_params.sigma, 
     faces_per_pixel=100, 
     bin_size=0
 )
 
-# Create a silhouette mesh renderer by composing a rasterizer and a shader. 
+# Create a silhouette mesh renderer by composing a rasterizer and a shader.
+lights = PointLights(device=device, location=((2.0, 2.0, -2.0),))
 silhouette_renderer = MeshRenderer(
     rasterizer=MeshRasterizer(
         cameras=cameras, 
         raster_settings=raster_settings
     ),
-    shader=SoftSilhouetteShader(blend_params=blend_params)
+    shader=DepthShader(blend_params=blend_params)
 )
 
 
@@ -127,22 +139,22 @@ phong_renderer = MeshRenderer(
 
 # Select the viewpoint using spherical angles
 #viewpoint = [1.5, 240.0, 10.0] # distance, elevation, azimuth, stuck..
-viewpoint = [1.5, 140.0, 10.0] # distance, elevation, azimuth, ok...
-#viewpoint = [1.5, 160.0, 10.0] # distance, elevation, azimuth, ok...
+#viewpoint = [1.5, 140.0, 10.0] # distance, elevation, azimuth, ok...
+viewpoint = [1.5, 160.0, 10.0] # distance, elevation, azimuth, ok...
 
 # Get the position of the camera based on the spherical angles
 R, T = look_at_view_transform(viewpoint[0], viewpoint[1], viewpoint[2], device=device)
 
 # Render the teapot providing the values of R and T. 
 silhouete = silhouette_renderer(meshes_world=teapot_mesh, R=R, T=T)
-image_ref = phong_renderer(meshes_world=teapot_mesh, R=R, T=T)
+image = phong_renderer(meshes_world=teapot_mesh, R=R, T=T)
+image_ref = silhouette_renderer(meshes_world=teapot_mesh, R=R, T=T)
 
-silhouete = silhouete.cpu().numpy()
-image_ref = image_ref.cpu().numpy()
-
+image = image[0, ..., :3].detach().squeeze().cpu().numpy()
+image = img_as_ubyte(image)
 
 fig = plt.figure(figsize=(6,6))
-plt.imshow(image_ref.squeeze())
+plt.imshow(image[..., :3])
 plt.title("ground truth")
 plt.grid("off")
 plt.axis("off")
@@ -155,6 +167,9 @@ plt.close()
 #filename_output = "./teapot_optimization_demo.gif"
 #writer = imageio.get_writer(filename_output, mode='I', duration=0.03)
 
+silhouete = silhouete.cpu().numpy()
+image_ref = image_ref.cpu().numpy()
+
 # Initialize a model using the renderer, mesh and reference image
 model = Model(meshes=teapot_mesh, renderer=silhouette_renderer, image_ref=image_ref).to(device)
 
@@ -163,7 +178,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
 
 plt.figure(figsize=(10, 10))
 
-_, image_init = model()
+_, image_init, diff_img = model()
 # plt.subplot(1, 2, 1)
 # plt.imshow(image_init.detach().squeeze().cpu().numpy()[..., 3])
 # plt.grid("off")
@@ -177,7 +192,7 @@ _, image_init = model()
 
 for i in np.arange(1000):
     optimizer.zero_grad()
-    loss, _ = model()
+    loss, _, diff_img = model()
     loss.backward()
     optimizer.step()
 
@@ -195,7 +210,7 @@ for i in np.arange(1000):
         
         if(i % 10 == 0):
             fig = plt.figure(figsize=(6,6))
-            plt.imshow(image[..., :3])
+            plt.imshow(diff_img.detach().squeeze().cpu().numpy())
             plt.title("iter: %d, loss: %0.2f" % (i, loss.data))
             plt.grid("off")
             plt.axis("off")
@@ -203,7 +218,7 @@ for i in np.arange(1000):
             fig.savefig("iteration{0}.png".format(i), dpi=fig.dpi)
             plt.close()
 
-    if loss.item() < 350:
-        break
+    #if loss.item() < 350:
+    #    break
     
 #writer.close()

@@ -78,7 +78,7 @@ def main():
             codes.append(np.array(code[0]))
             print(i)
 
-        coded_data = {"images": data["images"], "Rs": data["Rs"], "ts": data["ts"], "codes": codes}
+        coded_data = {"images": data["images"], "Rs": data["Rs"], "ts": data["ts"], "codes": codes, "quats": data["quats"]}
         pickle_path_out = (arguments.pickle_path).replace("-images.p", "-codes.p")
         pickle.dump(coded_data, open(pickle_path_out, "wb")) 
             

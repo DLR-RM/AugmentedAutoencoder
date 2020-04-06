@@ -48,10 +48,16 @@ class BatchRender:
         images = self.renderer(meshes_world=self.batch_mesh, R=batch_R, T=batch_T)
         if(self.method == "soft-silhouette"):
             images = images[..., 3]
+        elif(self.method == "hard-silhouette"):
+            images = images[..., 3]
         elif(self.method == "soft-phong"):
             images = images[..., :3]
         elif(self.method == "soft-depth"):
-            images = images[..., 0] #torch.mean(images, dim=3) 
+            images = images[..., 0] #torch.mean(images, dim=3)
+        elif(self.method == "hard-depth"):
+            images = images[..., 0] #torch.mean(images, dim=3)
+        elif(self.method == "blurry-depth"):
+            images = torch.mean(images, dim=3) 
         return images
 
     def initMeshes(self):
@@ -78,12 +84,29 @@ class BatchRender:
         cameras = OpenGLPerspectiveCameras(device=self.device, fov=5)
 
         if(method=="soft-silhouette"):
-            blend_params = BlendParams(sigma=1e-8, gamma=1e-8)
+            blend_params = BlendParams(sigma=1e-7, gamma=1e-7)
 
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
-                blur_radius=np.log(1. / 1e-8 - 1.) * blend_params.sigma, 
-                faces_per_pixel=50, 
+                blur_radius=np.log(1. / 1e-7 - 1.) * blend_params.sigma, 
+                faces_per_pixel=20, 
+                bin_size=0
+            )
+            
+            renderer = MeshRenderer(
+                rasterizer=MeshRasterizer(
+                    cameras=cameras, 
+                    raster_settings=raster_settings
+                ),
+                shader=SoftSilhouetteShader(blend_params=blend_params)
+            )
+        elif(method=="hard-silhouette"):
+            blend_params = BlendParams(sigma=1e-7, gamma=1e-7)
+
+            raster_settings = RasterizationSettings(
+                image_size=image_size, 
+                blur_radius=np.log(1. / 1e-7 - 1.) * blend_params.sigma, 
+                faces_per_pixel=1, 
                 bin_size=0
             )
             
@@ -100,6 +123,36 @@ class BatchRender:
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
                 blur_radius= np.log(1. / 1e-7 - 1.) * blend_params.sigma, 
+                faces_per_pixel=20
+            )
+            
+            renderer = MeshRenderer(
+                rasterizer=MeshRasterizer(
+                    cameras=cameras,
+                    raster_settings=raster_settings
+                ),
+                shader=DepthShader(blend_params=blend_params)
+            )
+        elif(method=="hard-depth"):
+            raster_settings = RasterizationSettings(
+                image_size=image_size, 
+                blur_radius= 0.001,
+                faces_per_pixel= 20
+            )
+            
+            renderer = MeshRenderer(
+                rasterizer=MeshRasterizer(
+                    cameras=cameras,
+                    raster_settings=raster_settings
+                ),
+                shader=DepthShader()
+            )
+        elif(method=="blurry-depth"):
+            # Soft Rasterizer - from https://github.com/facebookresearch/pytorch3d/issues/95
+            blend_params = BlendParams(sigma=1e-3, gamma=1e-3)
+            raster_settings = RasterizationSettings(
+                image_size=image_size, 
+                blur_radius= np.log(1. / 1e-3 - 1.) * blend_params.sigma, 
                 faces_per_pixel=20
             )
             

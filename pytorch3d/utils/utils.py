@@ -81,7 +81,7 @@ def plotView(currView, numViews, vmin, vmax, groundtruth, predicted, predicted_p
     plt.imshow(predicted[currView*batch_size].detach().cpu().numpy(),
                vmin=vmin, vmax=vmax)
     if(currView == 0):
-        plt.title("Predicted: \n " + np.array2string((predicted_pose[currView*batch_size]).detach().cpu().numpy(),precision=1))
+        plt.title("Predicted: \n " + np.array2string((predicted_pose[currView*batch_size]).detach().cpu().numpy(),precision=2))
     else:
         plt.title("Predicted")
     

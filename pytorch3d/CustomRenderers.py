@@ -5,9 +5,6 @@ from pytorch3d.renderer.blending import softmax_rgb_blend
 class DepthShader(nn.Module):
     def __init__(self, blend_params=None):
         super().__init__()
-        self.blend_params = (
-            blend_params if blend_params is not None else BlendParams()
-        )
         
     def forward(self, fragments, meshes, **kwargs) -> torch.Tensor:
         image = fragments.zbuf

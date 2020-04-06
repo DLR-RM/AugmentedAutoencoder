@@ -13,7 +13,7 @@ import glob
 
 from utils.utils import *
 
-from Model import Model
+from ModelEncoder import ModelEncoder
 from BatchRender import BatchRender 
 from losses import Loss
 
@@ -36,7 +36,7 @@ def loadCheckpoint(model_path):
     learning_rate = checkpoint['learning_rate']
 
     # Load model
-    model = Model(output_size=6)
+    model = ModelEncoder(output_size=6)
     model.load_state_dict(checkpoint['model'])
 
     # Load optimizer
@@ -73,7 +73,7 @@ def main():
                    
 
     # Initialize a model using the renderer, mesh and reference image
-    model = Model(output_size=6).to(device)
+    model = ModelEncoder(output_size=6).to(device)
     #model.load_state_dict(torch.load("./output/model-epoch720.pt"))
 
     # Create an optimizer. Here we are using Adam and we pass in the parameters of the model
@@ -130,12 +130,12 @@ def trainEpoch(mean, std, br, data, model,
         if(len(curr_batch) != batch_size):
             continue
         optimizer.zero_grad()
-        codes = []
+        images = []
         for b in curr_batch:
-            codes.append(data["codes"][b])
-        batch_codes = torch.tensor(np.stack(codes), device=device, dtype=torch.float32) # Bx128
+            images.append(data["images"][b])
+        batch_images = torch.tensor(np.stack(images), device=device, dtype=torch.float32).permute(0,3,1,2) # BxCxWxH
 
-        predicted_poses = model(batch_codes)        
+        predicted_poses = model(batch_images)
 
         # Prepare ground truth poses for the loss function
         T = np.array(t, dtype=np.float32)
