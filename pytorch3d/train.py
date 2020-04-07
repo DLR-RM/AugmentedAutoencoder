@@ -173,6 +173,11 @@ def trainEpoch(mean, std, br, data, model,
             fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}.png".format(epoch,i)), dpi=fig.dpi)
             plt.close()
 
+            # fig = plt.figure(figsize=(4,4))
+            # plt.imshow(data["images"][curr_batch[0]])
+            # fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}-gt.png".format(epoch,i)), dpi=fig.dpi)
+            # plt.close()
+
     model_dir = os.path.join(output_path, "models/")
     prepareDir(model_dir)
     state = {'model': model.state_dict(),

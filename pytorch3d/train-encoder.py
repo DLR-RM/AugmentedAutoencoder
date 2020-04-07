@@ -127,6 +127,7 @@ def trainEpoch(mean, std, br, data, model,
     optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate)
     np.random.shuffle(data_indeces)
     for i,curr_batch in enumerate(batch(data_indeces, batch_size)):
+        
         if(len(curr_batch) != batch_size):
             continue
         optimizer.zero_grad()
@@ -171,6 +172,11 @@ def trainEpoch(mean, std, br, data, model,
             
             #plt.hist(gt_img,bins=20)
             fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}.png".format(epoch,i)), dpi=fig.dpi)
+            plt.close()
+
+            fig = plt.figure(figsize=(4,4))
+            plt.imshow(images[0])
+            fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}-gt.png".format(epoch,i)), dpi=fig.dpi)
             plt.close()
 
     model_dir = os.path.join(output_path, "models/")

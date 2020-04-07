@@ -15,7 +15,7 @@ from pytorch3d.transforms import Rotate, Translate
 from pytorch3d.renderer import (
     OpenGLPerspectiveCameras, look_at_view_transform, look_at_rotation, 
     RasterizationSettings, MeshRenderer, MeshRasterizer, BlendParams,
-    SoftSilhouetteShader, SoftPhongShader, PointLights, DirectionalLights
+    SoftSilhouetteShader, SoftPhongShader, PointLights, DirectionalLights, HardPhongShader
 )
 
 from CustomRenderers import *
@@ -50,6 +50,8 @@ class BatchRender:
             images = images[..., 3]
         elif(self.method == "hard-silhouette"):
             images = images[..., 3]
+        elif(self.method == "hard-phong"):
+            images = images[..., :3]
         elif(self.method == "soft-phong"):
             images = images[..., :3]
         elif(self.method == "soft-depth"):
@@ -195,6 +197,31 @@ class BatchRender:
                                        blend_params = blend_params,
                                        lights=lights)
             )
+
+        elif(method=="hard-phong"):
+            blend_params = BlendParams(sigma=1e-8, gamma=1e-8)
+
+            raster_settings = RasterizationSettings(
+                image_size=image_size,
+                blur_radius=0.0, 
+                faces_per_pixel=1, 
+                bin_size=0
+            )
+
+            lights = DirectionalLights(device=self.device,
+                                       ambient_color=[[0.4, 0.4, 0.4]],
+                                       diffuse_color=[[0.8, 0.8, 0.8]],
+                                       specular_color=[[0.3, 0.3, 0.3]],
+                                       direction=[[-1.0, -1.0, 1.0]])
+            renderer = MeshRenderer(
+                rasterizer=MeshRasterizer(
+                    cameras=cameras, 
+                    raster_settings=raster_settings
+                ),
+                shader=HardPhongShader(device=self.device, lights=lights)
+            )
+
+
         else:
             print("Unknown render method!")
             return None

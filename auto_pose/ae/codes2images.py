@@ -73,13 +73,14 @@ def main():
 
         factory.restore_checkpoint(sess, saver, ckpt_dir, at_step=None)
 
-        for i in np.arange(10):           
+        for i in [242,393]: #np.arange(10)+240:           
             code = data["codes"][i]
             img = sess.run(ae.reconstruction, feed_dict={ae.z: [code]})
             img = np.array(img[0])
             cv2.imshow("input", data["images"][i])
             cv2.imshow("reconst", img)
-            cv2.waitKey(0)
+            if cv2.waitKey(0) == ord('q'):
+                continue
             
 if __name__ == '__main__':
     main()

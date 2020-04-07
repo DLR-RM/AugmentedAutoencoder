@@ -109,9 +109,13 @@ for i in np.arange(5000):
     images.append(cropped)
     print("Sample: {0}".format(i))
 
-    #plt.figure(figsize=(2, 2))
-    #plt.imshow(cropped)
-    #plt.show()
+    plt.figure(figsize=(2, 2))
+    plt.imshow(image_ref)
+
+    plt.figure(figsize=(2, 2))
+    plt.imshow(cropped)
+    
+    plt.show()
 print("Elapsed: {0}".format(time.time()-start))
 data={"images":images,"Rs":Rs,"ts":ts, "quats":quats}
 pickle.dump(data, open("./training-images.p", "wb"), protocol=0)
