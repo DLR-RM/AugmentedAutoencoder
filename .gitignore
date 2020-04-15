@@ -4,7 +4,8 @@ install
 *.vscode
 *.egg-info
 *pytorch3d/data
-*pytorch/experiments
+*pytorch3d/experiments
+*pytorch3d/output
 /AAE_workspace
 *~
 *.png
