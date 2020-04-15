@@ -73,7 +73,7 @@ def main():
 
         factory.restore_checkpoint(sess, saver, ckpt_dir, at_step=None)
 
-        for i in [242,393]: #np.arange(10)+240:           
+        for i in np.arange(20):           
             code = data["codes"][i]
             img = sess.run(ae.reconstruction, feed_dict={ae.z: [code]})
             img = np.array(img[0])

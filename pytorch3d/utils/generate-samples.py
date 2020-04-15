@@ -34,8 +34,8 @@ device = torch.device("cuda:0")
 torch.cuda.set_device(device)
 
 # Load the obj and ignore the textures and materials.
-#verts, faces_idx, _ = load_obj("../data/t-less-obj19/cad/obj_19_scaled.obj")
-verts, faces_idx, _ = load_obj("../data/ikea-mug/cad/ikea_mug_scaled_reduced_centered.obj")
+verts, faces_idx, _ = load_obj("../data/t-less-obj28/cad/obj_28_scaled.obj")
+#verts, faces_idx, _ = load_obj("../data/ikea-mug/cad/ikea_mug_scaled_reduced_centered.obj")
 faces = faces_idx.verts_idx
 
 # Initialize each vertex to be white in color.
@@ -111,10 +111,8 @@ for i in np.arange(5000):
 
     plt.figure(figsize=(2, 2))
     plt.imshow(image_ref)
-
     plt.figure(figsize=(2, 2))
-    plt.imshow(cropped)
-    
+    plt.imshow(cropped)    
     plt.show()
 print("Elapsed: {0}".format(time.time()-start))
 data={"images":images,"Rs":Rs,"ts":ts, "quats":quats}

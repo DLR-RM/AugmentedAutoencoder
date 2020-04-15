@@ -138,7 +138,7 @@ class BatchRender:
         elif(method=="hard-depth"):
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
-                blur_radius= 0.001,
+                blur_radius= 0,
                 faces_per_pixel= 20
             )
             
@@ -183,10 +183,10 @@ class BatchRender:
             # )
 
             lights = PointLights(device=self.device,
-                                 ambient_color=[[0.3, 0.3, 0.3]],
+                                 ambient_color=[[0.4, 0.4, 0.4]],
                                  diffuse_color=[[0.4, 0.4, 0.4]],
-                                 specular_color=[[0.3, 0.3, 0.3]],
-                                 location=[[-30.0, -30.0, -30.0]])
+                                 specular_color=[[0.0, 0.0, 0.0]],
+                                 location=[[0.0, 0.0, -100.0]])
             
             renderer = MeshRenderer(
                 rasterizer=MeshRasterizer(

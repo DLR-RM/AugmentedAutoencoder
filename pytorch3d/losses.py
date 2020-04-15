@@ -216,6 +216,15 @@ def Loss(predicted_poses, gt_poses, renderer, ts, mean, std, loss_method="diff",
         gt_imgs = torch.cat(gt_imgs)
         predicted_imgs = torch.cat(predicted_imgs)
 
+        for i in range(gt_imgs.shape[0]):
+            mask = gt_imgs[i] == -1.0
+            gt_imgs[i][mask] = 0.0
+            predicted_imgs[i][mask] = 0.0
+
+            mask = predicted_imgs[i] == -1.0
+            gt_imgs[i][mask] = 0.0
+            predicted_imgs[i][mask] = 0.0
+
         loss = nn.MSELoss(reduction="none")
         loss = loss(gt_imgs.flatten(start_dim=1), predicted_imgs.flatten(start_dim=1))
         loss = torch.mean(loss, dim=1)
