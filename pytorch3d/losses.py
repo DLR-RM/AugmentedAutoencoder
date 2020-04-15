@@ -118,54 +118,6 @@ def Loss(predicted_poses, gt_poses, renderer, ts, mean, std, loss_method="diff",
         loss = nn.MSELoss()
         loss = loss(Rs_predicted, Rs_gt)
         return loss, torch.mean(diff, dim=1), gt_imgs, predicted_imgs
-
-    elif(loss_method=="quat-loss"):
-        gt_imgs = []
-        predicted_imgs = []
-        quat_gt = torch.tensor(np.stack(gt_poses), device=renderer.device,
-                                dtype=torch.float32)
-        Rs_predicted = quat2mat(predicted_poses)
-        Rs_gt = quat2mat(quat_gt)
-        #Rs_predicted = compute_rotation_matrix_from_ortho6d(predicted_poses)
-        for v in views:
-            # Render ground truth images
-            Rs_new = torch.matmul(Rs_gt, v.to(renderer.device))
-            gt_images = renderer.renderBatch(Rs_new, ts)
-            gt_images = (gt_images-mean)/std
-            gt_imgs.append(gt_images)
-            
-            # Render images based on predicted pose
-            Rs_new = torch.matmul(Rs_predicted, v.to(renderer.device))
-            predicted_images = renderer.renderBatch(Rs_new, ts)
-            predicted_images = (predicted_images-mean)/std
-            predicted_imgs.append(predicted_images)
-
-        gt_imgs = torch.cat(gt_imgs)
-        predicted_imgs = torch.cat(predicted_imgs)
-        diff = torch.abs(gt_imgs - predicted_imgs).flatten(start_dim=1)
-
-        # product = torch.bmm(predicted_poses.view(20,1,4), quat_gt.view(20,4,1))
-        # product = torch.sum(product, 1)
-        # #loss = torch.log(1e-4 + 1.0 - torch.abs(product))
-        # loss = torch.abs(predicted_poses-quat_gt)
-        # loss = torch.sum(loss, 1)
-        # print(loss.shape)
-
-        #loss = nn.MSELoss()
-        #loss = loss(predicted_poses, quat_gt)
-
-        loss = torch.abs(predicted_poses - quat_gt)
-        loss = torch.sum(loss, 1)
-
-        norm = torch.sum(predicted_poses, 1)
-        #print(norm)
-        weight = torch.abs(1 - norm) + 1.0
-        #print(weight)
-        loss = loss*weight
-
-        loss = torch.mean(loss)
-        
-        return loss, torch.mean(diff, dim=1), gt_imgs, predicted_imgs                   
     
     elif(loss_method=="multiview"):
         gt_imgs = []
