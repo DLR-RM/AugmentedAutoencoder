@@ -78,9 +78,20 @@ def main():
             codes.append(np.array(code[0]))
             print(i)
 
-        coded_data = {"images": data["images"], "Rs": data["Rs"], "ts": data["ts"], "codes": codes, "quats": data["quats"]}
-        pickle_path_out = (arguments.pickle_path).replace("-images.p", "-codes.p")
-        pickle.dump(coded_data, open(pickle_path_out, "wb")) 
+        #coded_data = {"images": data["images"], "Rs": data["Rs"], "ts": data["ts"], "codes": codes, "quats": data["quats"]}
+        coded_data = {"images":data["images"],
+                      "Rs":data["Rs"],
+                      "ts":data["ts"],
+                      "elevs":data["elevs"],
+                      "azims":data["azims"],
+                      "dist":data["dist"],
+                      "light_dir":data["light_dir"],
+                      "codes":codes}
+        pickle_path_out = (arguments.pickle_path).replace("-images", "-codes")
+        print("Saving to: {0}".format(pickle_path_out))
+        pickle.dump(coded_data, open(pickle_path_out, "wb"), protocol=2)
             
 if __name__ == '__main__':
     main()
+
+

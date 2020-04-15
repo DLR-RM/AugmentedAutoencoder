@@ -45,6 +45,16 @@ def loadCheckpoint(model_path):
     print("Loaded the checkpoint: \n" + model_path)
     return model, optimizer, epoch, learning_rate
 
+def loadDataset(file_list):
+    data = {"codes":[],"Rs":[]}
+    for f in file_list:
+        print("Loading dataset: {0}".format(f))
+        with open(f, "rb") as f:
+            curr_data = pickle.load(f, encoding="latin1")
+            data["codes"] = data["codes"] + curr_data["codes"].copy()
+            data["Rs"] = data["Rs"] + curr_data["Rs"].copy()
+    return data
+
 def main():
     global learning_rate, optimizer, views, epoch
     # Read configuration file
@@ -79,8 +89,10 @@ def main():
     # Create an optimizer. Here we are using Adam and we pass in the parameters of the model
     learning_rate=args.getfloat('Training', 'LEARNING_RATE')
 
-    data = pickle.load(open(args.get('Dataset', 'TRAIN_DATA_PATH'),"rb"), encoding="latin1")
-    data["codes"] = data["codes"]
+    # Load the dataset
+    data = loadDataset(json.loads(args.get('Dataset', 'TRAIN_DATA_PATH')))
+    print("Loaded dataset with {0} samples!".format(len(data["codes"])))                       
+
     output_path = args.get('Training', 'OUTPUT_PATH')
     prepareDir(output_path)
     shutil.copy(cfg_file_path, os.path.join(output_path, cfg_file_path.split("/")[-1]))
