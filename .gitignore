@@ -3,7 +3,8 @@ install
 *.pyc
 *.vscode
 *.egg-info
-/data
+*pytorch3d/data
+*pytorch/experiments
 /AAE_workspace
 *~
 *.png
