@@ -1,0 +1,1 @@
+docker run -ti --rm --runtime=nvidia -v /home/hampus/vision:/shared-folder -e DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" --privileged tensorflow-opencv-opengl

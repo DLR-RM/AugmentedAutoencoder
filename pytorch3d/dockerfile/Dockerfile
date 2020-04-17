@@ -51,6 +51,8 @@ ENV LD_LIBRARY_PATH /usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
 # See http://bugs.python.org/issue19846
 ENV LANG C.UTF-8
 
+ENV TORCH_CUDA_ARCH_LIST=7.0
+
 # Required for Python3.6
 RUN apt-get update && apt-get -q install -y \
     python3-pip \
