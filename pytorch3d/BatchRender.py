@@ -31,7 +31,7 @@ class BatchRender:
         self.method = render_method
 
         # Setup batch of meshes
-        self.batch_mesh = self.initMeshes()
+        self.batch_verts, self.batch_faces, self.batch_textures = self.initMeshes()
 
         # Initialize the renderer
         self.renderer = self.initRender(image_size=image_size, method=self.method)
@@ -45,8 +45,19 @@ class BatchRender:
             batch_T = torch.tensor(np.stack(ts), device=self.device, dtype=torch.float32) # Bx3
         else:
             batch_T = ts
+
+        # Re-adjust to match current batch size
+        curr_batch_size = batch_R.shape[0]
+        mesh = Meshes(
+            verts=self.batch_verts[:curr_batch_size],
+            faces=self.batch_faces[:curr_batch_size],
+            textures=self.batch_textures[:curr_batch_size]
+        )
+
         
-        images = self.renderer(meshes_world=self.batch_mesh, R=batch_R, T=batch_T)
+        
+        
+        images = self.renderer(meshes_world=mesh, R=batch_R, T=batch_T)
         if(self.method == "soft-silhouette"):
             images = images[..., 3]
         elif(self.method == "hard-silhouette"):
@@ -75,12 +86,15 @@ class BatchRender:
         batch_verts_rgb = list_to_padded([verts_rgb for k in self.batch_indeces])  # B, Vmax, 3
         
         batch_textures = Textures(verts_rgb=batch_verts_rgb.to(self.device))
-        batch_mesh = Meshes(
-            verts=[verts.to(self.device) for k in self.batch_indeces],
-            faces=[faces.to(self.device) for k in self.batch_indeces],
-            textures=batch_textures
-        )
-        return batch_mesh
+        batch_verts=[verts.to(self.device) for k in self.batch_indeces]
+        batch_faces=[faces.to(self.device) for k in self.batch_indeces]
+        # batch_mesh = Meshes(
+        #     verts=[verts.to(self.device) for k in self.batch_indeces],
+        #     faces=[faces.to(self.device) for k in self.batch_indeces],
+        #     textures=batch_textures
+        # )
+
+        return batch_verts, batch_faces, batch_textures
 
 
     def initRender(self, method, image_size):      

@@ -55,6 +55,22 @@ def loadDataset(file_list):
             data["Rs"] = data["Rs"] + curr_data["Rs"].copy()
     return data
 
+# def renderGroundtruths(ground_truth, renderer, t, batch_size):
+#     gt_imgs = []
+
+#     for i,gt_pose in enumerate(ground_truth):
+#         gt_poses = [gt_pose]
+#         Rs_gt = torch.tensor(np.stack(gt_poses), device=renderer.device,
+#                              dtype=torch.float32)
+#         ts = [np.array(t, dtype=np.float32)]
+#         for v in views:
+#             # Render ground truth images
+#             Rs_new = torch.matmul(Rs_gt, v.to(renderer.device))
+#             gt_images = renderer.renderBatch(Rs_new, ts)
+#             gt_imgs.append(gt_images.detach().cpu())
+#         print("Rendered grouth truth: {0}/{1}".format(i,len(ground_truth)))
+#     return gt_imgs
+
 def main():
     global learning_rate, optimizer, views, epoch
     # Read configuration file
@@ -102,6 +118,8 @@ def main():
     std = 1
     #mean, std = calcMeanVar(br, data, device, json.loads(args.get('Rendering', 'T')))
 
+    #gt_imgs = renderGroundtruths(data["Rs"], br, t=json.loads(args.get('Rendering', 'T')))
+
     # Load checkpoint for last epoch if it exists
     model_path = latestCheckpoint(os.path.join(output_path, "models/"))
     if(model_path is not None):
@@ -140,8 +158,6 @@ def trainEpoch(mean, std, br, data, model,
     optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate)
     np.random.shuffle(data_indeces)
     for i,curr_batch in enumerate(batch(data_indeces, batch_size)):
-        if(len(curr_batch) != batch_size):
-            continue
         optimizer.zero_grad()
         codes = []
         for b in curr_batch:
@@ -163,7 +179,7 @@ def trainEpoch(mean, std, br, data, model,
         loss.backward()
         optimizer.step()
 
-        print("Step: {0}/{1} - loss: {2}".format(i,round(num_samples/batch_size),loss.data))
+        print("Batch: {0}/{1} (size: {2}) - loss: {3}".format(i+1,round(num_samples/batch_size), len(Rs),loss.data))
         losses.append(loss.data.detach().cpu().numpy())
 
         if(visualize):
