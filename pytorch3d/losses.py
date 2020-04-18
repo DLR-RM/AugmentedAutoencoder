@@ -154,7 +154,7 @@ def Loss(predicted_poses, gt_poses, renderer, ts, mean, std, loss_method="diff",
         Rs_predicted = compute_rotation_matrix_from_ortho6d(predicted_poses)
         for v in views:
             # Render ground truth images
-            Rs_new = Rs_gt #torch.matmul(Rs_gt, v.to(renderer.device))
+            Rs_new = torch.matmul(Rs_gt, v.to(renderer.device))
             gt_images = renderer.renderBatch(Rs_new, ts)
             gt_images = (gt_images-mean)/std
             gt_imgs.append(gt_images)
