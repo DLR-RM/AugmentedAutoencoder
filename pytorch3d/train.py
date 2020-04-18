@@ -78,6 +78,7 @@ def main():
     br = BatchRender(args.get('Dataset', 'CAD_PATH'),
                      device,
                      batch_size=args.getint('Training', 'BATCH_SIZE'),
+                     faces_per_pixel=args.getint('Rendering', 'FACES_PER_PIXEL'),
                      render_method=args.get('Rendering', 'SHADER'),
                      image_size=args.getint('Rendering', 'IMAGE_SIZE'))
                    

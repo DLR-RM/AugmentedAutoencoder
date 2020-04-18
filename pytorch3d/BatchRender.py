@@ -21,9 +21,10 @@ from pytorch3d.renderer import (
 from CustomRenderers import *
 
 class BatchRender:
-    def __init__(self, obj_path, device, batch_size=12,
+    def __init__(self, obj_path, device, batch_size=12, faces_per_pixel=16,
                  render_method="silhouette", image_size=256):
         self.batch_size = batch_size
+        self.faces_per_pixel = faces_per_pixel
         self.batch_indeces = np.arange(self.batch_size)
         self.obj_path = obj_path
         self.device = device
@@ -91,7 +92,7 @@ class BatchRender:
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
                 blur_radius=np.log(1. / 1e-7 - 1.) * blend_params.sigma, 
-                faces_per_pixel=20, 
+                faces_per_pixel=self.faces_per_pixel, 
                 bin_size=0
             )
             
@@ -125,7 +126,7 @@ class BatchRender:
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
                 blur_radius= np.log(1. / 1e-7 - 1.) * blend_params.sigma, 
-                faces_per_pixel=20
+                faces_per_pixel=self.faces_per_pixel
             )
             
             renderer = MeshRenderer(
@@ -155,7 +156,7 @@ class BatchRender:
             raster_settings = RasterizationSettings(
                 image_size=image_size, 
                 blur_radius= np.log(1. / 1e-3 - 1.) * blend_params.sigma, 
-                faces_per_pixel=20
+                faces_per_pixel=self.faces_per_pixel
             )
             
             renderer = MeshRenderer(
@@ -171,7 +172,7 @@ class BatchRender:
             raster_settings = RasterizationSettings(
                 image_size=image_size,
                 blur_radius=np.log(1. / 1e-8 - 1.) * blend_params.sigma, 
-                faces_per_pixel=10, 
+                faces_per_pixel=self.faces_per_pixel, 
                 bin_size=0
             )
 
