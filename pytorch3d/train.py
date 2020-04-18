@@ -55,21 +55,32 @@ def loadDataset(file_list):
             data["Rs"] = data["Rs"] + curr_data["Rs"].copy()
     return data
 
-# def renderGroundtruths(ground_truth, renderer, t, batch_size):
-#     gt_imgs = []
+def renderGroundtruths(ground_truth, renderer, t):
+    gt_imgs = []
 
-#     for i,gt_pose in enumerate(ground_truth):
-#         gt_poses = [gt_pose]
-#         Rs_gt = torch.tensor(np.stack(gt_poses), device=renderer.device,
-#                              dtype=torch.float32)
-#         ts = [np.array(t, dtype=np.float32)]
-#         for v in views:
-#             # Render ground truth images
-#             Rs_new = torch.matmul(Rs_gt, v.to(renderer.device))
-#             gt_images = renderer.renderBatch(Rs_new, ts)
-#             gt_imgs.append(gt_images.detach().cpu())
-#         print("Rendered grouth truth: {0}/{1}".format(i,len(ground_truth)))
-#     return gt_imgs
+    start_indecs = 0
+    while start_indecs < len(ground_truth):
+        curr_batch = np.arange(renderer.batch_size) + start_indecs
+        curr_batch = curr_batch[curr_batch < len(ground_truth)]
+        
+        # Prepare ground truth poses
+        T = np.array(t, dtype=np.float32)
+        Rs = []
+        ts = []
+        for b in curr_batch:
+            Rs.append(ground_truth[b])
+            ts.append(T.copy())
+
+        Rs_gt = torch.tensor(np.stack(Rs), device=renderer.device,
+                             dtype=torch.float32)
+        for v in views:
+            # Render ground truth images
+            Rs_new = torch.matmul(Rs_gt, v.to(renderer.device))
+            gt_images = renderer.renderBatch(Rs_new, ts)
+            gt_imgs.append(gt_images.detach().cpu())
+        start_indecs = start_indecs + curr_batch.shape[0]
+        print("Rendered grouth truth: {0}/{1}".format(start_indecs,len(ground_truth)))
+    return gt_imgs
 
 def main():
     global learning_rate, optimizer, views, epoch
