@@ -32,18 +32,27 @@ def prepareDir(dir_path):
     if not os.path.isdir(dir_path):
         os.makedirs(dir_path)
 
-def plotLoss(csv_name, file_name):
+def plotLoss(csv_name, file_name, validation_csv=None):
     with open(csv_name) as f:
         reader = csv.reader(f, delimiter='\n')
         loss = list(reader)
+    if validation_csv:
+        with open(validation_csv) as f:
+            val_reader = csv.reader(f, delimiter='\n')
+            val_loss = list(val_reader)
+        val_loss = np.array(val_loss, dtype=np.float32).flatten()
+        print(val_loss)
     loss = np.array(loss, dtype=np.float32).flatten()
     print(loss)
-        
+
     fig = plt.figure(figsize=(8, 5))
     plt.grid(True)
-    plt.plot(loss)
+    plt.plot(loss, label='train')
+    if validation_csv:
+        plt.plot(val_loss, label='validation')
     plt.xlabel('epochs')
     plt.ylabel('loss')
+    plt.legend()
     fig.tight_layout()
     fig.savefig(file_name, dpi=fig.dpi)
     plt.close()
@@ -76,7 +85,7 @@ def plotView(currView, numViews, vmin, vmax, groundtruth, predicted, predicted_p
     plt.imshow(groundtruth[currView*batch_size].detach().cpu().numpy(),
                vmin=vmin, vmax=vmax)
     plt.title("View {0} - GT".format(currView))
-    
+
     plt.subplot(3, numViews, currView+(1+numViews))
     plt.imshow(predicted[currView*batch_size].detach().cpu().numpy(),
                vmin=vmin, vmax=vmax)
@@ -84,7 +93,7 @@ def plotView(currView, numViews, vmin, vmax, groundtruth, predicted, predicted_p
         plt.title("Predicted: \n " + np.array2string((predicted_pose[currView*batch_size]).detach().cpu().numpy(),precision=2))
     else:
         plt.title("Predicted")
-    
+
     loss_contrib = np.abs((groundtruth[currView*batch_size]).detach().cpu().numpy() - (predicted[currView*batch_size]).detach().cpu().numpy())
     plt.subplot(3, numViews, currView+(1+2*numViews))
     plt.imshow(loss_contrib) #, vmin=vmin, vmax=vmax)
@@ -105,7 +114,7 @@ def quat2mat(quat):
 
     norm_quat = quat/quat.norm(p=2, dim=1, keepdim=True)
     w, x, y, z = norm_quat[:,0], norm_quat[:,1], norm_quat[:,2], norm_quat[:,3]
-    
+
     B = quat.size(0)
 
     w2, x2, y2, z2 = w.pow(2), x.pow(2), y.pow(2), z.pow(2)
@@ -190,8 +199,8 @@ def q2m(quat):
         [1.0-q[2, 2]-q[3, 3],     q[1, 2]-q[3, 0],     q[1, 3]+q[2, 0], 0.0],
         [    q[1, 2]+q[3, 0], 1.0-q[1, 1]-q[3, 3],     q[2, 3]-q[1, 0], 0.0],
         [    q[1, 3]-q[2, 0],     q[2, 3]+q[1, 0], 1.0-q[1, 1]-q[2, 2], 0.0],
-        [                0.0,                 0.0,                 0.0, 1.0]]) 
-    
+        [                0.0,                 0.0,                 0.0, 1.0]])
+
 def quaternion_matrix(quaternion):
     """Return homogeneous rotation matrix from quaternion.
 
