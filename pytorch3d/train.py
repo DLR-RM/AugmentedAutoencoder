@@ -166,67 +166,70 @@ def testEpoch(mean, std, br, val_data, model,
                device, output_path, loss_method, t,
                visualize=False):
     global learning_rate, optimizer
-    print("Before test memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)))
+    with torch.no_grad():
+        print("Before test memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)))
 
-    model.eval()
-    losses = []
-    batch_size = br.batch_size
-    num_samples = len(val_data["codes"])
-    data_indeces = np.arange(num_samples)
+        model.eval()
+        losses = []
+        batch_size = br.batch_size
+        num_samples = len(val_data["codes"])
+        data_indeces = np.arange(num_samples)
 
-    print(1)
-    for i,curr_batch in enumerate(batch(data_indeces, batch_size)):
-        codes = []
-        for b in curr_batch:
-            codes.append(val_data["codes"][b])
-        print(2)
-        batch_codes = torch.tensor(np.stack(codes), device=device, dtype=torch.float32) # Bx128
+        for i,curr_batch in enumerate(batch(data_indeces, batch_size)):
+            codes = []
+            for b in curr_batch:
+                codes.append(val_data["codes"][b])
+            batch_codes = torch.tensor(np.stack(codes), device=device, dtype=torch.float32) # Bx128
 
-        predicted_poses = model(batch_codes)
+            predicted_poses = model(batch_codes)
 
-        print(3)
-        # Prepare ground truth poses for the loss function
-        T = np.array(t, dtype=np.float32)
-        Rs = []
-        ts = []
-        for b in curr_batch:
-            Rs.append(val_data["Rs"][b])
-            ts.append(T.copy())
+            # Prepare ground truth poses for the loss function
+            T = np.array(t, dtype=np.float32)
+            Rs = []
+            ts = []
+            for b in curr_batch:
+                Rs.append(val_data["Rs"][b])
+                ts.append(T.copy())
 
-        loss, batch_loss, gt_images, predicted_images = Loss(predicted_poses, Rs, br, ts,
-                                                             mean, std, loss_method=loss_method, views=views)
+            loss, batch_loss, gt_images, predicted_images = Loss(predicted_poses, Rs, br, ts,
+                                                                 mean, std, loss_method=loss_method, views=views)
 
-        print(4)
-        print("Test batch: {0}/{1} (size: {2}) - loss: {3}".format(i+1,round(num_samples/batch_size), len(Rs),loss.data))
-        losses.append(loss.data.detach().cpu().numpy())
+            #detach all from gpu
+            batch_codes.detach().cpu().numpy()
+            loss.detach().cpu().numpy()
+            gt_images.detach().cpu().numpy()
+            predicted_images.detach().cpu().numpy()
 
-        if(visualize):
-            batch_img_dir = os.path.join(output_path, "val-images/epoch{0}".format(epoch))
-            prepareDir(batch_img_dir)
-            gt_img = (gt_images[0]).detach().cpu().numpy()
-            predicted_img = (predicted_images[0]).detach().cpu().numpy()
+            print("Test batch: {0}/{1} (size: {2}) - loss: {3}".format(i+1,round(num_samples/batch_size), len(Rs),loss.data))
+            losses.append(loss.data.detach().cpu().numpy())
 
-            vmin = min(np.min(gt_img), np.min(predicted_img))
-            vmax = max(np.max(gt_img), np.max(predicted_img))
+            if(visualize):
+                batch_img_dir = os.path.join(output_path, "val-images/epoch{0}".format(epoch))
+                prepareDir(batch_img_dir)
+                gt_img = (gt_images[0]).detach().cpu().numpy()
+                predicted_img = (predicted_images[0]).detach().cpu().numpy()
+
+                vmin = min(np.min(gt_img), np.min(predicted_img))
+                vmax = max(np.max(gt_img), np.max(predicted_img))
 
 
-            fig = plt.figure(figsize=(5+len(views)*2, 9))
-            for viewNum in np.arange(len(views)):
-                plotView(viewNum, len(views), vmin, vmax, gt_images, predicted_images,
-                         predicted_poses, batch_loss, batch_size)
-            fig.tight_layout()
+                fig = plt.figure(figsize=(5+len(views)*2, 9))
+                for viewNum in np.arange(len(views)):
+                    plotView(viewNum, len(views), vmin, vmax, gt_images, predicted_images,
+                             predicted_poses, batch_loss, batch_size)
+                fig.tight_layout()
 
-            #plt.hist(gt_img,bins=20)
-            fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}.png".format(epoch,i)), dpi=fig.dpi)
-            plt.close()
+                #plt.hist(gt_img,bins=20)
+                fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}.png".format(epoch,i)), dpi=fig.dpi)
+                plt.close()
 
-            # fig = plt.figure(figsize=(4,4))
-            # plt.imshow(data["images"][curr_batch[0]])
-            # fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}-gt.png".format(epoch,i)), dpi=fig.dpi)
-            # plt.close()
+                # fig = plt.figure(figsize=(4,4))
+                # plt.imshow(data["images"][curr_batch[0]])
+                # fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}-gt.png".format(epoch,i)), dpi=fig.dpi)
+                # plt.close()
 
-    print("After test memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)))
-    return np.mean(losses)
+        print("After test memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)))
+        return np.mean(losses)
 
 def trainEpoch(mean, std, br, data, model,
                device, output_path, loss_method, t,
@@ -267,6 +270,12 @@ def trainEpoch(mean, std, br, data, model,
                                                              mean, std, loss_method=loss_method, views=views)
         loss.backward()
         optimizer.step()
+
+        #detach all from gpu
+        batch_codes.detach().cpu().numpy()
+        loss.detach().cpu().numpy()
+        gt_images.detach().cpu().numpy()
+        predicted_images.detach().cpu().numpy()
 
         print("Batch: {0}/{1} (size: {2}) - loss: {3}".format(i+1,round(num_samples/batch_size), len(Rs),loss.data))
         losses.append(loss.data.detach().cpu().numpy())
