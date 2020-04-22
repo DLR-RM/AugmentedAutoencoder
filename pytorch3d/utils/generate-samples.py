@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from skimage import img_as_ubyte
+import argparse
 
 import time
 import pickle
@@ -28,12 +29,22 @@ from pytorch3d.renderer import (
     HardPhongShader, PointLights, DirectionalLights
 )
 
-# Parameters
-batch_size = 1
-dist = 20
-loops = 10000
-obj_path = "../data/ikea-mug/cad/ikea_mug_scaled_reduced_centered.obj"
-visualize = False
+# Parse parameters
+parser = argparse.ArgumentParser()
+parser.add_argument("obj_path", help="path to the .obj file")
+parser.add_argument("-b", help="batch size", type=int, default=1)
+parser.add_argument("-d", help="distance to the object", type=float, default=20.0)
+parser.add_argument("-n", help="number of data points to create", type=int, default=100)
+parser.add_argument("-v", help="visualize the data", type=bool, default=False)
+parser.add_argument("-o", help="output path", default="")
+arguments = parser.parse_args()
+
+batch_size = arguments.b
+dist = arguments.d
+loops = arguments.n
+obj_path = arguments.obj_path
+visualize = arguments.v
+output_path = arguments.o
 
 # Set the cuda device 
 device = torch.device("cuda:0")
@@ -112,10 +123,8 @@ for i in np.arange(loops):
     batch_R = torch.tensor(np.stack(curr_Rs), device=device, dtype=torch.float32)
     batch_T = torch.tensor(np.stack(curr_ts), device=device, dtype=torch.float32)
 
-    random_light = [random.uniform(-1.0,1.0) for i in np.arange(3)]
     
-
-    #phong_renderer.shader.lights.location = torch.tensor(cam_pose, device=device, dtype=torch.float32).unsqueeze(0)
+    random_light = [random.uniform(-1.0,1.0) for i in np.arange(3)]
     phong_renderer.shader.lights.direction = [random_light]
     lights.append(random_light)
     
@@ -149,4 +158,7 @@ data={"images":images,
       "azims":azims,
       "dist":dist,
       "light_dir":lights}
-pickle.dump(data, open("./training-images-part3.p", "wb"), protocol=2)
+
+if(output_path == ""):
+    output_path = "./training-images.p"
+pickle.dump(data, open(output_path, "wb"), protocol=2)
