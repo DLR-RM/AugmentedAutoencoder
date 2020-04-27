@@ -14,13 +14,19 @@ import glob
 from utils.utils import *
 
 from Model import Model
-from BatchRender import BatchRender 
+from BatchRender import BatchRender
 from losses import Loss
 
 learning_rate = -1
 optimizer = None
 views = []
 epoch = 0
+
+dbg_memory = False
+
+def dbg(message, flag):
+    if flag:
+        print(message)
 
 def latestCheckpoint(model_dir):
     checkpoints = glob.glob(os.path.join(model_dir, "*.pt"))
@@ -62,7 +68,7 @@ def renderGroundtruths(ground_truth, renderer, t):
     while start_indecs < len(ground_truth):
         curr_batch = np.arange(renderer.batch_size) + start_indecs
         curr_batch = curr_batch[curr_batch < len(ground_truth)]
-        
+
         # Prepare ground truth poses
         T = np.array(t, dtype=np.float32)
         Rs = []
@@ -88,7 +94,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_name")
     arguments = parser.parse_args()
-    
+
     cfg_file_path = os.path.join("./experiments", arguments.experiment_name)
     args = configparser.ConfigParser()
     args.read(cfg_file_path)
@@ -97,7 +103,7 @@ def main():
     eulerViews = json.loads(args.get('Rendering', 'VIEWS'))
     views = prepareViews(eulerViews)
 
-    # Set the cuda device 
+    # Set the cuda device
     device = torch.device("cuda:0")
     torch.cuda.set_device(device)
 
@@ -108,7 +114,7 @@ def main():
                      faces_per_pixel=args.getint('Rendering', 'FACES_PER_PIXEL'),
                      render_method=args.get('Rendering', 'SHADER'),
                      image_size=args.getint('Rendering', 'IMAGE_SIZE'))
-                   
+
 
     # Initialize a model using the renderer, mesh and reference image
     model = Model(output_size=6).to(device)
@@ -119,7 +125,11 @@ def main():
 
     # Load the dataset
     data = loadDataset(json.loads(args.get('Dataset', 'TRAIN_DATA_PATH')))
-    print("Loaded dataset with {0} samples!".format(len(data["codes"])))                       
+    print("Loaded dataset with {0} samples!".format(len(data["codes"])))
+
+    # Load the validationset
+    val_data = loadDataset(json.loads(args.get('Dataset', 'VALID_DATA_PATH')))
+    print("Loaded validation set with {0} samples!".format(len(val_data["codes"])))
 
     output_path = args.get('Training', 'OUTPUT_PATH')
     prepareDir(output_path)
@@ -145,18 +155,95 @@ def main():
                           t=json.loads(args.get('Rendering', 'T')),
                           visualize=args.getboolean('Training', 'SAVE_IMAGES'))
         append2file([loss], os.path.join(output_path, "train-loss.csv"))
+        val_loss = testEpoch(mean, std, br, val_data, model, device, output_path,
+                          loss_method=args.get('Training', 'LOSS'),
+                          t=json.loads(args.get('Rendering', 'T')),
+                          visualize=args.getboolean('Training', 'SAVE_IMAGES'))
+        append2file([val_loss], os.path.join(output_path, "validation-loss.csv"))
         plotLoss(os.path.join(output_path, "train-loss.csv"),
-                 os.path.join(output_path, "train-loss.png"))
+                 os.path.join(output_path, "train-loss.png"),
+                 validation_csv=os.path.join(output_path, "validation-loss.csv"))
         print("-"*20)
-        print("Epoch: {0} - loss: {1}".format(epoch,loss))
+        print("Epoch: {0} - train loss: {1} - validation loss: {2}".format(epoch,loss,val_loss))
         print("-"*20)
         epoch = epoch+1
-    
+
+def testEpoch(mean, std, br, val_data, model,
+               device, output_path, loss_method, t,
+               visualize=False):
+    global learning_rate, optimizer
+    with torch.no_grad():
+        dbg("Before test memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)), dbg_memory)
+
+        model.eval()
+        losses = []
+        batch_size = br.batch_size
+        num_samples = len(val_data["codes"])
+        data_indeces = np.arange(num_samples)
+
+        for i,curr_batch in enumerate(batch(data_indeces, batch_size)):
+            codes = []
+            for b in curr_batch:
+                codes.append(val_data["codes"][b])
+            batch_codes = torch.tensor(np.stack(codes), device=device, dtype=torch.float32) # Bx128
+
+            predicted_poses = model(batch_codes)
+
+            # Prepare ground truth poses for the loss function
+            T = np.array(t, dtype=np.float32)
+            Rs = []
+            ts = []
+            for b in curr_batch:
+                Rs.append(val_data["Rs"][b])
+                ts.append(T.copy())
+
+            loss, batch_loss, gt_images, predicted_images = Loss(predicted_poses, Rs, br, ts,
+                                                                 mean, std, loss_method=loss_method, views=views)
+
+            #detach all from gpu
+            batch_codes.detach().cpu().numpy()
+            loss.detach().cpu().numpy()
+            gt_images.detach().cpu().numpy()
+            predicted_images.detach().cpu().numpy()
+
+            print("Test batch: {0}/{1} (size: {2}) - loss: {3}".format(i+1,round(num_samples/batch_size), len(Rs),loss.data))
+            losses.append(loss.data.detach().cpu().numpy())
+
+            if(visualize):
+                batch_img_dir = os.path.join(output_path, "val-images/epoch{0}".format(epoch))
+                prepareDir(batch_img_dir)
+                gt_img = (gt_images[0]).detach().cpu().numpy()
+                predicted_img = (predicted_images[0]).detach().cpu().numpy()
+
+                vmin = min(np.min(gt_img), np.min(predicted_img))
+                vmax = max(np.max(gt_img), np.max(predicted_img))
+
+
+                fig = plt.figure(figsize=(5+len(views)*2, 9))
+                for viewNum in np.arange(len(views)):
+                    plotView(viewNum, len(views), vmin, vmax, gt_images, predicted_images,
+                             predicted_poses, batch_loss, batch_size)
+                fig.tight_layout()
+
+                #plt.hist(gt_img,bins=20)
+                fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}.png".format(epoch,i)), dpi=fig.dpi)
+                plt.close()
+
+                # fig = plt.figure(figsize=(4,4))
+                # plt.imshow(data["images"][curr_batch[0]])
+                # fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}-gt.png".format(epoch,i)), dpi=fig.dpi)
+                # plt.close()
+
+        dbg("After test memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)), dbg_memory)
+        return np.mean(losses)
+
 def trainEpoch(mean, std, br, data, model,
                device, output_path, loss_method, t,
                visualize=False):
     global learning_rate, optimizer
-    
+    dbg("Before train memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)), dbg_memory)
+
+    model.train()
     losses = []
     batch_size = br.batch_size
     num_samples = len(data["codes"])
@@ -165,7 +252,7 @@ def trainEpoch(mean, std, br, data, model,
     if(epoch % 2 == 1):
         learning_rate = learning_rate * 0.9
         print("Current learning rate: {0}".format(learning_rate))
-    
+
     optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate)
     np.random.shuffle(data_indeces)
     for i,curr_batch in enumerate(batch(data_indeces, batch_size)):
@@ -175,7 +262,7 @@ def trainEpoch(mean, std, br, data, model,
             codes.append(data["codes"][b])
         batch_codes = torch.tensor(np.stack(codes), device=device, dtype=torch.float32) # Bx128
 
-        predicted_poses = model(batch_codes)        
+        predicted_poses = model(batch_codes)
 
         # Prepare ground truth poses for the loss function
         T = np.array(t, dtype=np.float32)
@@ -184,11 +271,17 @@ def trainEpoch(mean, std, br, data, model,
         for b in curr_batch:
             Rs.append(data["Rs"][b])
             ts.append(T.copy())
-        
+
         loss, batch_loss, gt_images, predicted_images = Loss(predicted_poses, Rs, br, ts,
                                                              mean, std, loss_method=loss_method, views=views)
         loss.backward()
         optimizer.step()
+
+        #detach all from gpu
+        batch_codes.detach().cpu().numpy()
+        loss.detach().cpu().numpy()
+        gt_images.detach().cpu().numpy()
+        predicted_images.detach().cpu().numpy()
 
         print("Batch: {0}/{1} (size: {2}) - loss: {3}".format(i+1,round(num_samples/batch_size), len(Rs),loss.data))
         losses.append(loss.data.detach().cpu().numpy())
@@ -198,17 +291,17 @@ def trainEpoch(mean, std, br, data, model,
             prepareDir(batch_img_dir)
             gt_img = (gt_images[0]).detach().cpu().numpy()
             predicted_img = (predicted_images[0]).detach().cpu().numpy()
-            
+
             vmin = min(np.min(gt_img), np.min(predicted_img))
             vmax = max(np.max(gt_img), np.max(predicted_img))
 
-            
+
             fig = plt.figure(figsize=(5+len(views)*2, 9))
             for viewNum in np.arange(len(views)):
                 plotView(viewNum, len(views), vmin, vmax, gt_images, predicted_images,
-                         predicted_poses, batch_loss, batch_size)            
+                         predicted_poses, batch_loss, batch_size)
             fig.tight_layout()
-            
+
             #plt.hist(gt_img,bins=20)
             fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}.png".format(epoch,i)), dpi=fig.dpi)
             plt.close()
@@ -225,6 +318,7 @@ def trainEpoch(mean, std, br, data, model,
              'learning_rate': learning_rate,
              'epoch': epoch}
     torch.save(state, os.path.join(model_dir,"model-epoch{0}.pt".format(epoch)))
+    dbg("After train memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)), dbg_memory)
     return np.mean(losses)
 
 if __name__ == '__main__':
