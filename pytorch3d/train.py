@@ -22,6 +22,12 @@ optimizer = None
 views = []
 epoch = 0
 
+dbg_memory = False
+
+def dbg(message, flag):
+    if flag:
+        print(message)
+
 def latestCheckpoint(model_dir):
     checkpoints = glob.glob(os.path.join(model_dir, "*.pt"))
     checkpoints_sorted = sorted(checkpoints, key=os.path.getmtime)
@@ -167,7 +173,7 @@ def testEpoch(mean, std, br, val_data, model,
                visualize=False):
     global learning_rate, optimizer
     with torch.no_grad():
-        print("Before test memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)))
+        dbg("Before test memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)), dbg_memory)
 
         model.eval()
         losses = []
@@ -228,14 +234,14 @@ def testEpoch(mean, std, br, val_data, model,
                 # fig.savefig(os.path.join(batch_img_dir, "epoch{0}-batch{1}-gt.png".format(epoch,i)), dpi=fig.dpi)
                 # plt.close()
 
-        print("After test memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)))
+        dbg("After test memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)), dbg_memory)
         return np.mean(losses)
 
 def trainEpoch(mean, std, br, data, model,
                device, output_path, loss_method, t,
                visualize=False):
     global learning_rate, optimizer
-    print("Before train memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)))
+    dbg("Before train memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)), dbg_memory)
 
     model.train()
     losses = []
@@ -312,7 +318,7 @@ def trainEpoch(mean, std, br, data, model,
              'learning_rate': learning_rate,
              'epoch': epoch}
     torch.save(state, os.path.join(model_dir,"model-epoch{0}.pt".format(epoch)))
-    print("After train memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)))
+    dbg("After train memory: {}".format(torch.cuda.memory_summary(device=device, abbreviated=False)), dbg_memory)
     return np.mean(losses)
 
 if __name__ == '__main__':
