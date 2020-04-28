@@ -118,7 +118,33 @@ def Loss(predicted_poses, gt_poses, renderer, ts, mean, std, loss_method="diff",
         loss = nn.MSELoss()
         loss = loss(Rs_predicted, Rs_gt)
         return loss, torch.mean(diff, dim=1), gt_imgs, predicted_imgs
-        
+    elif(loss_method=="l1-clamped"):
+        gt_imgs = []
+        predicted_imgs = []
+        Rs_gt = torch.tensor(np.stack(gt_poses), device=renderer.device,
+                                dtype=torch.float32)
+        Rs_predicted = compute_rotation_matrix_from_ortho6d(predicted_poses)
+        for v in views:
+            # Render ground truth images
+            Rs_new = torch.matmul(Rs_gt, v.to(renderer.device))
+            gt_images = renderer.renderBatch(Rs_new, ts)
+            gt_images = (gt_images-mean)/std
+            gt_imgs.append(gt_images)
+
+            # Render images based on predicted pose
+            Rs_new = torch.matmul(Rs_predicted, v.to(renderer.device))
+            predicted_images = renderer.renderBatch(Rs_new, ts)
+            predicted_images = (predicted_images-mean)/std
+            predicted_imgs.append(predicted_images)
+
+        gt_imgs = torch.cat(gt_imgs)
+        predicted_imgs = torch.cat(predicted_imgs)
+        diff = torch.abs(gt_imgs - predicted_imgs).flatten(start_dim=1)
+        diff = torch.clamp(diff, 0.0, 0.5)
+        loss = torch.mean(diff)
+        #print(predicted_imgs.shape)
+        return loss, torch.mean(diff, dim=1), gt_imgs, predicted_imgs
+    
     elif(loss_method=="multiview"):
         gt_imgs = []
         predicted_imgs = []
@@ -145,7 +171,6 @@ def Loss(predicted_poses, gt_poses, renderer, ts, mean, std, loss_method="diff",
         loss = torch.mean(diff)
         #print(predicted_imgs.shape)
         return loss, torch.mean(diff, dim=1), gt_imgs, predicted_imgs
-
     elif(loss_method=="multiview-l2"):
         gt_imgs = []
         predicted_imgs = []
