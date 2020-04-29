@@ -81,7 +81,6 @@ def calcMeanVar(br, data, device, t):
     return torch.mean(result), torch.std(result)
 
 def plotView(currView, numViews, vmin, vmax, groundtruth, predicted, predicted_pose, loss, batch_size):
-    vmin=14
     plt.subplot(3, numViews, currView+1)
     plt.imshow(groundtruth[currView*batch_size].detach().cpu().numpy(),
                vmin=vmin, vmax=vmax)
@@ -95,13 +94,13 @@ def plotView(currView, numViews, vmin, vmax, groundtruth, predicted, predicted_p
     else:
         plt.title("Predicted")
 
-    gt_img = (groundtruth[currView*batch_size]).detach().cpu().numpy()
-    predicted_img = (predicted[currView*batch_size]).detach().cpu().numpy()
-    diff = np.abs(gt_img - predicted_img)
-    diff[diff > 0.5] = 0.5        
-    loss_contrib = diff
+    # gt_img = (groundtruth[currView*batch_size]).detach().cpu().numpy()
+    # predicted_img = (predicted[currView*batch_size]).detach().cpu().numpy()
+    # diff = np.abs(gt_img - predicted_img)
+    # diff[diff > 0.5] = 0.5        
+    # loss_contrib = diff
         
-    #loss_contrib = np.abs((groundtruth[currView*batch_size]).detach().cpu().numpy() - (predicted[currView*batch_size]).detach().cpu().numpy())
+    loss_contrib = np.abs((groundtruth[currView*batch_size]).detach().cpu().numpy() - (predicted[currView*batch_size]).detach().cpu().numpy())
     plt.subplot(3, numViews, currView+(1+2*numViews))
     plt.imshow(loss_contrib) #, vmin=vmin, vmax=vmax)
     plt.title("Loss: {:02f}".format((loss[currView*batch_size]).detach().cpu().numpy()))

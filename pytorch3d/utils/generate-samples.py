@@ -13,6 +13,9 @@ import pickle
 import random
 from utils import *
 
+import imgaug as ia
+import imgaug.augmenters as iaa
+
 # io utils
 from pytorch3d.io import load_obj
 
@@ -28,6 +31,20 @@ from pytorch3d.renderer import (
     RasterizationSettings, MeshRenderer, MeshRasterizer, BlendParams,
     HardPhongShader, PointLights, DirectionalLights
 )
+
+# Augmentation
+aug = iaa.Sequential([
+    #iaa.Sometimes(0.5, iaa.PerspectiveTransform(0.05)),
+    iaa.Sometimes(0.5, iaa.CropAndPad(percent=(-0.05, 0.1))),
+    iaa.Sometimes(0.5, iaa.Affine(scale=(1.0, 1.2))),
+    iaa.Sometimes(0.5, iaa.CoarseDropout( p=0.2, size_percent=0.05) ),
+    iaa.Sometimes(0.5, iaa.GaussianBlur(1.2*np.random.rand())),
+    iaa.Sometimes(0.5, iaa.Add((-25.0/255.0, 25.0/255.0), per_channel=0.3)),
+    iaa.Sometimes(0.3, iaa.Invert(0.2, per_channel=True)),
+    iaa.Sometimes(0.5, iaa.Multiply((0.6, 1.4), per_channel=0.5)),
+    iaa.Sometimes(0.5, iaa.Multiply((0.6, 1.4))),
+    iaa.Sometimes(0.5, iaa.ContrastNormalization((0.5, 2.2), per_channel=0.3))],
+                     random_order=False)
 
 # Parse parameters
 parser = argparse.ArgumentParser()
@@ -130,14 +147,19 @@ for i in np.arange(loops):
     
     image_renders = phong_renderer(meshes_world=batch_mesh, R=batch_R, T=batch_T)
 
+    # Augment data
+    image_renders = image_renders.cpu().numpy()
+    images_aug = aug(images=image_renders)
+
     for k in np.arange(batch_size):
-        image_ref = image_renders[k].cpu().numpy().squeeze()
+        image_ref = images_aug[k]
         image_ref = image_ref[:,:,:3]
 
         Rs.append(curr_Rs[k].cpu().numpy().squeeze())
         ts.append(curr_ts[k].cpu().numpy().squeeze())
 
-        ys, xs = np.nonzero(image_ref[:,:,0] > 0)
+        org_img = image_renders[k]
+        ys, xs = np.nonzero(org_img[:,:,0] > 0)
         obj_bb = calc_2d_bbox(xs,ys,[640,640])
         cropped = extract_square_patch(image_ref, obj_bb)   
         images.append(cropped)
