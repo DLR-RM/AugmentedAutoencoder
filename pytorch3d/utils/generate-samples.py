@@ -39,7 +39,7 @@ aug = iaa.Sequential([
     iaa.Sometimes(0.5, iaa.Affine(scale=(1.0, 1.2))),
     iaa.Sometimes(0.5, iaa.CoarseDropout( p=0.2, size_percent=0.05) ),
     iaa.Sometimes(0.5, iaa.GaussianBlur(1.2*np.random.rand())),
-    iaa.Sometimes(0.5, iaa.Add((-25.0/255.0, 25.0/255.0), per_channel=0.3)),
+    iaa.Sometimes(0.5, iaa.Add((-0.1, 0.1), per_channel=0.3)),
     iaa.Sometimes(0.3, iaa.Invert(0.2, per_channel=True)),
     iaa.Sometimes(0.5, iaa.Multiply((0.6, 1.4), per_channel=0.5)),
     iaa.Sometimes(0.5, iaa.Multiply((0.6, 1.4))),
@@ -115,6 +115,7 @@ ts = []
 elevs = []
 azims = []
 images = []
+org_images = []
 lights = []
 
 start = time.time()
@@ -154,6 +155,7 @@ for i in np.arange(loops):
     for k in np.arange(batch_size):
         image_ref = images_aug[k]
         image_ref = image_ref[:,:,:3]
+        image_ref = np.clip(image_ref, 0.0, 1.0)
 
         Rs.append(curr_Rs[k].cpu().numpy().squeeze())
         ts.append(curr_ts[k].cpu().numpy().squeeze())
@@ -161,19 +163,30 @@ for i in np.arange(loops):
         org_img = image_renders[k]
         ys, xs = np.nonzero(org_img[:,:,0] > 0)
         obj_bb = calc_2d_bbox(xs,ys,[640,640])
-        cropped = extract_square_patch(image_ref, obj_bb)   
+        cropped = extract_square_patch(image_ref, obj_bb)
+        cropped_org = extract_square_patch(org_img, obj_bb)   
         images.append(cropped)
+        org_images.append(cropped_org)
         print("Loop: {0} Batch: {1}".format(i,k))
 
         if(visualize):
-            plt.figure(figsize=(2, 2))
-            plt.imshow(image_ref)
-            plt.figure(figsize=(2, 2))
-            plt.imshow(cropped)    
+            plt.figure(figsize=(6, 2))
+            plt.subplot(1, 3, 1)
+            plt.imshow(org_img)
+            plt.title("Rendered image")
+
+            plt.subplot(1, 3, 2)
+            plt.imshow(cropped_org)
+            plt.title("Cropped image")
+            
+            plt.subplot(1, 3, 3)
+            plt.imshow(cropped)
+            plt.title("Augmented image")
             plt.show()
 print("Elapsed: {0}".format(time.time()-start))
 
 data={"images":images,
+      "org_images":org_images,
       "Rs":Rs,
       "ts":ts,
       "elevs":elevs,
