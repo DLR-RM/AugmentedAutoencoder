@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-from auto_pose.ae import factory
+from auto_pose.ae import ae_factory as factory
 from auto_pose.ae import utils as u
 from auto_pose.eval import eval_utils, icp_utils, eval_plots, latex_report
 from sixd_toolkit.pysixd import inout, pose_error
