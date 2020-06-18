@@ -19,7 +19,7 @@ year = {2018}
 ```
 
 ### Multi-path Learning for Object Pose Estimation Across Domains
-Martin Sundermeyer, Maximilian Durner, En Yen Puang, Zoltan-Csaba Marton, Narunas Vaskevicius, Kai O. Arras, Rudolph Triebel
+Martin Sundermeyer, Maximilian Durner, En Yen Puang, Zoltan-Csaba Marton, Narunas Vaskevicius, Kai O. Arras, Rudolph Triebel  
 CVPR 2020  
 The code of this work can be found [here](https://github.com/DLR-RM/AugmentedAutoencoder/tree/multipath)
 
