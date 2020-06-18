@@ -83,11 +83,11 @@ class Shader(object):
         return shader
 
     def print_info(self):
-        print(glGetProgramInterfaceiv(self.__program, GL_PROGRAM_OUTPUT, GL_ACTIVE_RESOURCES))
+        print((glGetProgramInterfaceiv(self.__program, GL_PROGRAM_OUTPUT, GL_ACTIVE_RESOURCES)))
         for i in range(glGetProgramInterfaceiv(self.__program, GL_PROGRAM_OUTPUT, GL_ACTIVE_RESOURCES)):
             name = glGetProgramResourceName(self.__program, GL_PROGRAM_OUTPUT, i, 0)
             params =  glGetProgramResourceiv(self.__program, GL_PROGRAM_OUTPUT, i, 2, [GL_TYPE, GL_LOCATION], 2, 0)
-            print('Index %d: %s %s @ location %s' % (i, params[0], name, params[1]))
+            print(('Index %d: %s %s @ location %s' % (i, params[0], name, params[1])))
 
     def delete(self):
         glDeleteProgram(self.__program)

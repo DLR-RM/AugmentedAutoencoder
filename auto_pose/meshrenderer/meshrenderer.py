@@ -23,6 +23,7 @@ class Renderer(object):
         self._fbo = gu.Framebuffer( { GL_COLOR_ATTACHMENT0: gu.Texture(GL_TEXTURE_2D, 1, GL_RGB8, W, H),
                                       GL_COLOR_ATTACHMENT1: gu.Texture(GL_TEXTURE_2D, 1, GL_R32F, W, H),
                                       GL_DEPTH_ATTACHMENT: gu.Renderbuffer(GL_DEPTH_COMPONENT32F, W, H) } )
+
         self._fbo_depth = gu.Framebuffer( { GL_COLOR_ATTACHMENT0: gu.Texture(GL_TEXTURE_2D, 1, GL_RGB8, W, H),
                                       GL_COLOR_ATTACHMENT1: gu.Texture(GL_TEXTURE_2D, 1, GL_R32F, W, H),
                                       GL_DEPTH_ATTACHMENT: gu.Renderbuffer(GL_DEPTH_COMPONENT32F, W, H) } )
@@ -35,10 +36,12 @@ class Renderer(object):
 
         # VAO
         vert_norms = gu.geo.load_meshes(models_cad_files, vertex_tmp_store_folder, recalculate_normals=True)
+        self.verts = []
 
         vertices = np.empty(0, dtype=np.float32)
         for vert_norm in vert_norms:
             _verts = vert_norm[0] * vertex_scale
+            self.verts.append(_verts)
             vertices = np.hstack((vertices, np.hstack((_verts, vert_norm[1])).reshape(-1)))
 
 
@@ -47,6 +50,7 @@ class Renderer(object):
                             (1, 3, GL_FLOAT, GL_FALSE, 3*4)]})
 
         sizes = [vert[0].shape[0] for vert in vert_norms]
+
         offsets = [sum(sizes[:i]) for i in range(len(sizes))]
 
         ibo = gu.IBO(sizes, np.ones(len(vert_norms)), offsets, np.zeros(len(vert_norms)))
@@ -137,7 +141,7 @@ class Renderer(object):
         return bgr, depth
 
 
-    def render_many(self, obj_ids, W, H, K, Rs, ts, near, far, random_light=False, phong={'ambient':0.4,'diffuse':0.8, 'specular':0.3}):
+    def render_many(self, obj_ids, W, H, K, Rs, ts, near, far, random_light=False, phong={'ambient':0.4,'diffuse':0.8, 'specular':0.3}, return_masks=False):
         assert W <= Renderer.MAX_FBO_WIDTH and H <= Renderer.MAX_FBO_HEIGHT
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -158,7 +162,10 @@ class Renderer(object):
             self.set_specular_light(phong['specular'])
 
         bbs = []
+        binary_masks = []
+
         for i in range(len(obj_ids)):
+
             o = obj_ids[i]
             R = Rs[i]
             t = ts[i]
@@ -181,6 +188,8 @@ class Renderer(object):
             ys, xs = np.nonzero(depth > 0)
             obj_bb = misc.calc_2d_bbox(xs, ys, (W,H))
             bbs.append(obj_bb)
+            binary_masks.append(depth.squeeze() > 0)
+
 
         glBindFramebuffer(GL_FRAMEBUFFER, self._fbo.id)
         glNamedFramebufferReadBuffer(self._fbo.id, GL_COLOR_ATTACHMENT0)
@@ -191,8 +200,9 @@ class Renderer(object):
         depth_flipped = glReadPixels(0, 0, W, H, GL_RED, GL_FLOAT).reshape(H,W)
         depth = np.flipud(depth_flipped).copy()
 
-        return bgr, depth, bbs
-
-
+        if return_masks:
+            return bgr, depth, bbs, binary_masks
+        else:
+            return bgr, depth, bbs
     def close(self):
         self._context.close()

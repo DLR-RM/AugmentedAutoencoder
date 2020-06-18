@@ -4,7 +4,9 @@ import glob
 
 import math
 import numpy as np
+
 from .write_xml import *
+
 import auto_pose.meshrenderer.meshrenderer as mr
 import auto_pose.meshrenderer.meshrenderer_phong as mr_phong
 import cv2
@@ -30,7 +32,8 @@ class SceneRenderer(object):
         min_n_views=1000,
         radius=650,
         obj_ids=None,
-        model_type='reconst'):
+        model_type='reconst',
+        colored=True):
 
         self._models_cad_files = models_cad_files
         self._width = width
@@ -42,12 +45,13 @@ class SceneRenderer(object):
         self._max_num_objects_per_scene = max_num_objects_per_scene
         self._near_plane = near_plane
         self._far_plane = far_plane
+        self._colored = colored
         self.obj_ids = np.array(obj_ids)
 
 
         # pascal_imgs_path = os.path.join(vocdevkit_path, 'VOC2012/JPEGImages')
         self._voc_imgs = glob.glob( os.path.join(vocdevkit_path , '*.jpg' )) + glob.glob( os.path.join(vocdevkit_path, '*.png') )
-        print (len(self._voc_imgs))
+
         if model_type == 'reconst':
             self._renderer = mr_phong.Renderer(
                 self._models_cad_files,
@@ -63,7 +67,7 @@ class SceneRenderer(object):
                 vertex_scale=vertex_scale
             )
         else:
-            print ('unknown model_type, ', model_type)
+            print(('unknown model_type, ', model_type))
             exit()
 
         azimuth_range =  (0, 2 * math.pi)
@@ -102,7 +106,7 @@ class SceneRenderer(object):
 
                 if len(ts_norm) > 0 and np.any(np.dot(np.array(ts_norm),t_norm.reshape(3,1)) > 0.99):
                     success = False
-                    print ('fail')
+                    
                 else:
                     ts_norm.append(t_norm)
                     ts.append( t )
@@ -110,7 +114,7 @@ class SceneRenderer(object):
                     success = True
 
 
-        bgr, depth, bbs = self._renderer.render_many(
+        bgr, depth, bbs, masks = self._renderer.render_many(
             obj_is,
             self._width,
             self._height,
@@ -119,12 +123,18 @@ class SceneRenderer(object):
             ts,
             self._near_plane,
             self._far_plane,
-            random_light=True
+            phong= {'ambient':0.4,'diffuse':0.5, 'specular':0.8},
+            random_light=True,
+            return_masks = True
         )
 
 
         rand_voc = cv2.imread( self._voc_imgs[np.random.randint( len(self._voc_imgs) )] )
         rand_voc = cv2.resize(rand_voc, (self._width, self._height))
+        if not self._colored:
+            rand_voc = cv2.cvtColor(rand_voc, cv2.COLOR_BGR2GRAY)
+            rand_voc = np.dstack((rand_voc,rand_voc,rand_voc))
+
         rand_voc = rand_voc.astype(np.float32) / 255.
         # print bgr.max()
         bgr = bgr.astype(np.float32) / 255.
@@ -144,5 +154,4 @@ class SceneRenderer(object):
 
         if self._augmenters != None:
             bgr = self._augmenters.augment_image(bgr)
-
-        return bgr, obj_info
+        return bgr, masks, obj_info

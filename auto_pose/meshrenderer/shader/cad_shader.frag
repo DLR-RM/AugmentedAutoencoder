@@ -18,9 +18,9 @@ void main(void) {
     vec3 LightDir = normalize(v_light_dir);
     vec3 ViewDir = normalize(v_view);
 
-    vec3 material_ambient = vec3(223./255, 214./255, 205./255 );
-    vec3 material_diffuse = vec3(223./255, 214./255, 205./255 );
-    vec3 material_specular = vec3(223./255, 214./255  , 205./255 );
+    vec3 material_ambient = vec3(183./255, 174./255, 175./255 );
+    vec3 material_diffuse = vec3(183./255, 174./255, 175./255 );
+    vec3 material_specular = vec3(183./255, 174./255  , 175./255 );
     
     vec3 diffuse = max(dot(Normal, LightDir), 0.0) * material_diffuse;
     vec3 R = reflect(-LightDir, Normal);

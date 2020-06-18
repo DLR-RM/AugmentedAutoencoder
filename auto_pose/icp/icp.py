@@ -2,7 +2,7 @@ import os
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from auto_pose.ae.pysixd_stuff import transform, misc
-from renderer import SynRenderer
+from .renderer import SynRenderer
 
 # Constants
 N = 3000                                 # number of random points in the dataset
@@ -12,8 +12,8 @@ angle_change_limit = 0.35 # = 20 deg #0.5236=30 deg
 
 
 class ICP():
-    def __init__(self, test_args, all_train_args):
-        self.syn_renderer = SynRenderer(test_args, all_train_args)
+    def __init__(self, test_args):
+        self.syn_renderer = SynRenderer(test_args)
 
     def best_fit_transform(self,A, B, depth_only=False, no_depth=False):
         '''
@@ -160,7 +160,7 @@ class ICP():
 
 
     def icp_refinement(self,depth_crop, R_est, t_est, K_test, test_render_dims, depth_only=False, no_depth=False,clas_idx=0):
-        synthetic_pts = self.syn_renderer.generate_synthetic_depth(K_test, R_est, t_est, test_render_dims, clas_idx=clas_idx)
+        synthetic_pts = self.syn_renderer.generate_synthetic_depth(K_test, R_est, t_est, test_render_dims,clas_idx=clas_idx)
         centroid_synthetic_pts = np.mean(synthetic_pts, axis=0)
         max_mean_dist = np.max(np.linalg.norm(synthetic_pts - centroid_synthetic_pts,axis=1))
         # print 'max_mean_dist', max_mean_dist
@@ -169,21 +169,21 @@ class ICP():
         K_test_crop[1,2] = depth_crop.shape[1]/2
         real_depth_pts = misc.rgbd_to_point_cloud(K_test_crop,depth_crop)[0]
 
-        print 'noofpoints real/syn: ', len(real_depth_pts)
+        print(('noofpoints real/syn: ', len(real_depth_pts)))
         real_synmean_dist = np.linalg.norm(real_depth_pts-centroid_synthetic_pts,axis=1)
         real_depth_pts = real_depth_pts[real_synmean_dist < max_mean_dist_factor*max_mean_dist]
-        print 'filtered noofpoints real/syn: ', len(real_depth_pts), len(synthetic_pts)
+        print(('noofpoints real/syn: ', len(real_depth_pts), len(synthetic_pts)))
 
-        print 'real min max x', np.min(real_depth_pts[:,0]), np.max(real_depth_pts[:,0])
-        print 'real min max y', np.min(real_depth_pts[:,1]), np.max(real_depth_pts[:,1])
-        print 'real min max z', np.min(real_depth_pts[:,2]), np.max(real_depth_pts[:,2])
-        print 'syn min max x', np.min(synthetic_pts[:,0]), np.max(synthetic_pts[:,0])
-        print 'syn min max y', np.min(synthetic_pts[:,1]), np.max(synthetic_pts[:,1])
-        print 'syn min max z', np.min(synthetic_pts[:,2]), np.max(synthetic_pts[:,2])
+        print(('real min max x', np.min(real_depth_pts[:,0]), np.max(real_depth_pts[:,0])))
+        print(('real min max y', np.min(real_depth_pts[:,1]), np.max(real_depth_pts[:,1])))
+        print(('real min max z', np.min(real_depth_pts[:,2]), np.max(real_depth_pts[:,2])))
+        print(('syn min max x', np.min(synthetic_pts[:,0]), np.max(synthetic_pts[:,0])))
+        print(('syn min max y', np.min(synthetic_pts[:,1]), np.max(synthetic_pts[:,1])))
+        print(('syn min max z', np.min(synthetic_pts[:,2]), np.max(synthetic_pts[:,2])))
 
 
         if len(real_depth_pts) < len(synthetic_pts)/8.:
-            print 'not enough visible points'
+            print('not enough visible points')
             R_refined = R_est
             t_refined = t_est
         else:

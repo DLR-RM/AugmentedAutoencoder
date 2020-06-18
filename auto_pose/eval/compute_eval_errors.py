@@ -52,8 +52,8 @@ workspace_path = os.environ.get('AE_WORKSPACE_PATH')
 train_cfg_file_path = get_config_file_path(workspace_path, experiment_name, experiment_group)
 eval_cfg_file_path = get_eval_config_file_path(workspace_path, eval_cfg=eval_cfg)
 
-train_args = configparser.ConfigParser()
-eval_args = configparser.ConfigParser()
+train_args = configparser.ConfigParser(inline_comment_prefixes="#")
+eval_args = configparser.ConfigParser(inline_comment_prefixes="#")
 train_args.read(train_cfg_file_path)
 eval_args.read(eval_cfg_file_path)
 
@@ -63,11 +63,17 @@ cam_type = eval_args.get('DATA','cam_type')
 estimate_bbs = eval_args.getboolean('BBOXES', 'ESTIMATE_BBS')
 icp = eval_args.getboolean('EVALUATION','ICP')
 gt_trans = eval_args.getboolean('EVALUATION','gt_trans')
+gt_masks = eval_args.getboolean('BBOXES','gt_masks')
+estimate_masks = eval_args.getboolean('BBOXES','estimate_masks')
+iterative_code_refinement = eval_args.getboolean('EVALUATION','iterative_code_refinement')
 
 
 evaluation_name = evaluation_name + '_icp' if icp else evaluation_name
 evaluation_name = evaluation_name + '_bbest' if estimate_bbs else evaluation_name
+evaluation_name = evaluation_name + '_maskest' if estimate_masks else evaluation_name
 evaluation_name = evaluation_name + '_gttrans' if gt_trans else evaluation_name
+evaluation_name = evaluation_name + '_gtmasks' if gt_masks else evaluation_name
+evaluation_name = evaluation_name + '_refined' if iterative_code_refinement else evaluation_name
 
 data = dataset_name + '_' + cam_type if len(cam_type) > 0 else dataset_name
 

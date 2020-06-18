@@ -1,10 +1,11 @@
-install
+.vscode
+ae.sublime-project
+ae.sublime-workspace
+*.pickle
 *.npy
 *.pyc
-*.vscode
-*.egg-info
-/data
-/AAE_workspace
-venv/
-workspace/
+*.bak
+.vscode
+auto_pose.egg-info
+**/__pycache__
 
