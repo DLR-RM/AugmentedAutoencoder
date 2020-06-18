@@ -1,6 +1,6 @@
 ## Multi-path Learning for Object Pose Estimation Across Domains  
-Martin Sundermeyer, M. Durner, E. Y. Puang, Z.-C. Marton, N. Vaskevicius, K. Arras, R. Triebel
-CVPR 2020.    
+Martin Sundermeyer, M. Durner, E. Y. Puang, Z.-C. Marton, N. Vaskevicius, K. Arras, R. Triebel  
+CVPR 2020    
 
 [paper + supplement](http://openaccess.thecvf.com/content_CVPR_2020/html/Sundermeyer_Multi-Path_Learning_for_Object_Pose_Estimation_Across_Domains_CVPR_2020_paper.html)
 
