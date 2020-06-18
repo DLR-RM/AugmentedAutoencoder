@@ -15,7 +15,7 @@ N = 3000                                 # number of random points in the datase
 dim = 3                                     # number of dimensions of the points
 verbose = False
 # max_mean_dist_factor = 2.0
-angle_change_limit = 20*np.pi/180.# = 20 deg #0.5236=30 deg
+angle_change_limit = 25*np.pi/180.# = 20 deg #0.5236=30 deg
 
 
 def best_fit_transform(A, B, depth_only=False, no_depth=False):
@@ -176,11 +176,10 @@ def icp(A, B, init_pose=None, max_iterations=100, tolerance=0.001, verbose=False
 
 
 class SynRenderer(object):
-    def __init__(self,train_args):
-        MODEL_PATH = train_args.get('Paths','MODEL_PATH')
+    def __init__(self,train_args,model_path):
         self.model = train_args.get('Dataset','MODEL')
         
-        self.model_path = MODEL_PATH.replace(self.model,'cad')
+        self.model_path = model_path.replace(self.model,'cad')
         self.renderer
 
     @lazy_property
@@ -247,7 +246,7 @@ class SynRenderer(object):
 
 def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_dims, depth_only=False,no_depth=False,max_mean_dist_factor=2.0):
     synthetic_pts = icp_renderer.generate_synthetic_depth(K_test, R_est,t_est,test_render_dims)
-    print synthetic_pts
+    print(synthetic_pts)
     centroid_synthetic_pts = np.mean(synthetic_pts, axis=0)
     max_mean_dist = np.max(np.linalg.norm(synthetic_pts - centroid_synthetic_pts,axis=1))
     # print 'max_mean_dist', max_mean_dist
@@ -259,10 +258,11 @@ def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_d
 
     real_synmean_dist = np.linalg.norm(real_depth_pts-centroid_synthetic_pts,axis=1)
     real_depth_pts = real_depth_pts[real_synmean_dist < max_mean_dist_factor*max_mean_dist]
-    print depth_crop.max()
-    print len(real_depth_pts), len(synthetic_pts)
+
+    print((depth_crop.max()))
+    print((len(real_depth_pts), len(synthetic_pts)))
     if len(real_depth_pts) < len(synthetic_pts)/8.:
-        print 'not enough visible points'
+        print('not enough visible points')
         R_refined = R_est
         t_refined = t_est
     else:
@@ -271,7 +271,7 @@ def icp_refinement(depth_crop, icp_renderer, R_est, t_est, K_test, test_render_d
         a=time.time()
         T, distances, iterations = icp(synthetic_pts[sub_idcs_syn], real_depth_pts[sub_idcs_real], 
                                         tolerance=0.000001, verbose=verbose, depth_only=depth_only, no_depth=no_depth)
-        print 'icp_time', time.time()-a
+        print(('icp_time', time.time()-a))
 
         # t_est_hom = np.ones((4,1))
         # t_est_hom[:3] = t_est.reshape(3,1)

@@ -46,7 +46,7 @@ def hinter_sampling(min_n_pts, radius=1):
                 # or get ID of the already added point.
                 edge = (face[i], face[(i + 1) % 3])
                 edge = (min(edge), max(edge))
-                if edge not in edge_pt_map.keys():
+                if edge not in list(edge_pt_map.keys()):
                     pt_new_id = len(pts)
                     edge_pt_map[edge] = pt_new_id
                     pt_inds.append(pt_new_id)

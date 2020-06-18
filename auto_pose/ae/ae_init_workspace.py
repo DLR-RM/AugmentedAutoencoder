@@ -5,6 +5,12 @@ import shutil
 
 from . import utils as u
 
+try:
+    range = xrange
+except NameError:
+    # when running on Python3
+    pass
+
 def main():
 
 	workspace_path = os.environ.get('AE_WORKSPACE_PATH')
@@ -21,6 +27,7 @@ def main():
 
 	cfg_path = os.path.join(workspace_path, 'cfg' )
 	eval_cfg_path = os.path.join(workspace_path, 'cfg_eval' )
+	m3_cfg_path = os.path.join(workspace_path, 'cfg_m3vision' )
 	experiments_path = os.path.join(workspace_path, 'experiments' )
 	dataset_path = os.path.join(workspace_path, 'tmp_datasets' )
 
@@ -33,6 +40,9 @@ def main():
 	if not os.path.exists(eval_cfg_path):
 		eval_cfg_template_path = os.path.join(this_dir, 'cfg_eval')
 		shutil.copytree(eval_cfg_template_path, eval_cfg_path)
+	if not os.path.exists(m3_cfg_path):
+		m3_cfg_template_path = os.path.join(this_dir, 'cfg_m3vision')
+		shutil.copytree(m3_cfg_template_path, m3_cfg_path)
 		
 	if not os.path.exists(experiments_path):
 		os.makedirs(experiments_path)

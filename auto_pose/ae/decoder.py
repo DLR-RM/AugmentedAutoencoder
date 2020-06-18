@@ -10,8 +10,9 @@ class Decoder(object):
 
     def __init__(self, reconstruction_target, latent_code, num_filters, 
                 kernel_size, strides, loss, bootstrap_ratio, 
-                auxiliary_mask, batch_norm, is_training=False):
-        self._reconstruction_target = reconstruction_target
+                auxiliary_mask, batch_norm, is_training=False,idx=0):
+	
+        self._reconstruction_target = reconstruction_target[2]
         self._latent_code = latent_code
         self._auxiliary_mask = auxiliary_mask
         if self._auxiliary_mask:
@@ -23,7 +24,8 @@ class Decoder(object):
         self._bootstrap_ratio = bootstrap_ratio
         self._batch_normalization = batch_norm
         self._is_training = is_training
-        self.reconstr_loss
+        with tf.variable_scope('decoder_' + str(idx)):
+            self.reconstr_loss
 
     @property
     def reconstruction_target(self):
@@ -34,8 +36,8 @@ class Decoder(object):
         z = self._latent_code
 
         h, w, c = self._reconstruction_target.get_shape().as_list()[1:]
-        print(h,w,c)
-        layer_dimensions = [ [int(h/np.prod(self._strides[i:])), int(w/np.prod(self._strides[i:]))]  for i in range(len(self._strides))]
+        print((h,w,c))
+        layer_dimensions = [ [h//np.prod(self._strides[i:]), w//np.prod(self._strides[i:])]  for i in range(len(self._strides))]
         print(layer_dimensions)
         x = tf.layers.dense(
             inputs=self._latent_code,
@@ -48,6 +50,7 @@ class Decoder(object):
         x = tf.reshape( x, [-1, layer_dimensions[0][0], layer_dimensions[0][1], self._num_filters[0] ] )
 
         for filters, layer_size in zip(self._num_filters[1:], layer_dimensions[1:]):
+            # shoudl have     align_corners=True
             x = tf.image.resize_nearest_neighbor(x, layer_size)
 
             x = tf.layers.conv2d(
@@ -83,10 +86,12 @@ class Decoder(object):
             )
         return x
 
+
+
     @lazy_property
     def reconstr_loss(self):
-        print(self.x.shape)
-        print(self._reconstruction_target.shape)
+        print((self.x.shape))
+        print((self._reconstruction_target.shape))
         if self._loss == 'L2':
             if self._bootstrap_ratio > 1:
 
@@ -115,7 +120,7 @@ class Decoder(object):
                     x_flat,
                     reduction=tf.losses.Reduction.NONE
                 )
-                print(l1.shape)
+                print((l1.shape))
                 l1_val,_ = tf.nn.top_k(l1,k=l1.shape[1]/self._bootstrap_ratio)
                 loss = tf.reduce_mean(l1_val)
             else:
@@ -127,10 +132,10 @@ class Decoder(object):
                     reduction=tf.losses.Reduction.MEAN
                 )
         else:
-            print('ERROR: UNKNOWN LOSS ', self._loss)
+            print(('ERROR: UNKNOWN LOSS ', self._loss))
             exit()
         
-        tf.summary.scalar('reconst_loss', loss)
+        #tf.summary.scalar('reconst_loss', loss)
         if self._auxiliary_mask:
             mask_loss = tf.losses.mean_squared_error (
                 tf.cast(tf.greater(tf.reduce_sum(self._reconstruction_target,axis=3,keepdims=True),0.0001),tf.float32),

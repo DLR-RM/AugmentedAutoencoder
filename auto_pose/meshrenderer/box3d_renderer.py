@@ -6,6 +6,7 @@ from OpenGL.GL import *
 
 from . import gl_utils as gu
 
+
 class Renderer(object):
 
     MAX_FBO_WIDTH = 2000
@@ -53,7 +54,6 @@ class Renderer(object):
             self.min_vert[obj_id] = np.min(vert_norm[0],axis=0)
             self.max_vert[obj_id] = np.max(vert_norm[0],axis=0)
 
-        print  self.min_vert,  self.max_vert
 
         vao = gu.VAO({(gu.Vertexbuffer(vertices), 0, 6*4):
                         [   (0, 3, GL_FLOAT, GL_FALSE, 0*4),
@@ -62,7 +62,9 @@ class Renderer(object):
 
         # IBO
         sizes = [vert[0].shape[0] for vert in vert_norms]
+
         offsets = [sum(sizes[:i]) for i in range(len(sizes))]
+
 
         ibo = gu.IBO(sizes, np.ones(len(vert_norms)), offsets, np.zeros(len(vert_norms)))
         ibo.bind()
@@ -87,6 +89,12 @@ class Renderer(object):
         self._scene_buffer = gu.ShaderStorage(0, gu.Camera().data , True)
         self._scene_buffer.bind()
 
+
+        self._box_or_cy = np.zeros((30,),np.int32)
+        self._box_or_cy[0:4] = 1
+        self._box_or_cy[12:18] = 1
+        self._box_or_cy[29] = 1
+
         glClearColor(0.0, 0.0, 0.0, 1.0)
         self.camera = gu.Camera()
         self.debug_mode = debug_mode
@@ -104,6 +112,7 @@ class Renderer(object):
         camera.realCamera(W, H, K, R, t, near, far)
         self._scene_buffer.update(camera.data)
 
+
         self._fbo.bind()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glViewport(0, 0, W, H)
@@ -111,7 +120,6 @@ class Renderer(object):
         # if reconst:
         #     self.scene_shader.use()
         #     glDrawArraysIndirect(GL_TRIANGLES, ctypes.c_void_p(obj_id*16))
-
         #     self._gradient_fbo.bind()
         #     self.outline_shader.use()
         #     glClear(GL_COLOR_BUFFER_BIT)
@@ -122,10 +130,15 @@ class Renderer(object):
         #number of lines
         glUniform3f(0, self.min_vert[obj_id][0], self.min_vert[obj_id][1], self.min_vert[obj_id][2])
         glUniform3f(1, self.max_vert[obj_id][0], self.max_vert[obj_id][1], self.max_vert[obj_id][2])
-        glDrawArraysInstanced(GL_LINES, 0, 2, 15)
+        glUniform1i(2, self._box_or_cy[obj_id])
+        if self._box_or_cy[obj_id] == 1:
+            glDrawArraysInstanced(GL_LINES, 0, 2, 25)
+        else:
+            glDrawArraysInstanced(GL_LINES, 0, 2, 12)
 
         rgb_flipped = np.frombuffer( glReadPixels(0, 0, W, H, GL_RGB, GL_UNSIGNED_BYTE), dtype=np.uint8 ).reshape(H,W,3)
         return np.flipud(rgb_flipped).copy()
+ 
 
     # def render(self, obj_id, K, R, t, near, far, scale, row, col, outline=False,reconst=False):
 
@@ -142,7 +155,6 @@ class Renderer(object):
         # self._scene_buffer.update(self.camera.data)
 
         # self.scene_shader.use()
-
         # glEnable(GL_DEPTH_TEST)
         # if reconst:
         #     glDrawArraysIndirect(GL_TRIANGLES, ctypes.c_void_p(obj_id*16))
@@ -158,7 +170,6 @@ class Renderer(object):
         #     self.edge_shader.use()
         # glUniform1f(0, scale)
         # glDrawArrays(GL_TRIANGLE_FAN, 0, 4)
-
         # self.line_shader.use()
         # #number of lines
         # glUniform3f(0, self.min_vert[0], self.min_vert[1], self.min_vert[2])
@@ -242,3 +253,4 @@ class Renderer(object):
 
     def close(self):
         self._context.close()
+
