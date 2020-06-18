@@ -18,6 +18,11 @@ year = {2018}
 }
 ```
 
+### Multi-path Learning for Object Pose Estimation Across Domains
+Martin Sundermeyer, Maximilian Durner, En Yen Puang, Zoltan-Csaba Marton, Narunas Vaskevicius, Kai O. Arras, Rudolph Triebel
+CVPR 2020
+The code of this work can be found [here](https://github.com/DLR-RM/AugmentedAutoencoder/tree/multipath)
+
 ## Overview
 
 We propose a real-time RGB-based pipeline for object detection and 6D pose estimation. Our novel 3D orientation estimation is based on a variant of the Denoising Autoencoder that is trained on simulated views of a 3D model using Domain Randomization. This so-called Augmented Autoencoder has several advantages over existing methods: It does not require real, pose-annotated training data, generalizes to various test sensors and inherently handles object and view symmetries.  
