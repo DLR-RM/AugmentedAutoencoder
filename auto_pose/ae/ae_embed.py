@@ -7,8 +7,8 @@ import signal
 import progressbar
 import tensorflow as tf
 
-from . import ae_factory as factory
-from . import utils as u
+from auto_pose.ae import ae_factory as factory
+from auto_pose.ae import utils as u
 
 def main():
     workspace_path = os.environ.get('AE_WORKSPACE_PATH')
