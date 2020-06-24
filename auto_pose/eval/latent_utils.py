@@ -377,13 +377,13 @@ def relative_pose_refinement(sess, args_latent, dataset, codebook):
                     full_target_view_copy[:, :, 2] = red_chan
 
                     # cv2.imshow('deep_im_vis', full_target_view_copy/255.)
-                    cv2.imwrite('/net/rmc-lx0314/home_local/sund_ma/autoencoder_ws/iccv_results/final3/%s_%s_%s_%s.png' % (test_class,i,j,p), full_target_view_copy)
+                    cv2.imwrite('%s_%s_%s_%s.png' % (test_class,i,j,p), full_target_view_copy)
                     # cv2.waitKey(0)
                     if p == 0:
                         full_target_view_copy = full_target_view.copy()
                         full_target_view_copy[:,:, 1] = red_chan
                         # cv2.imshow('deep_im_vis', full_target_view_copy/255.)
-                        cv2.imwrite('/net/rmc-lx0314/home_local/sund_ma/autoencoder_ws/iccv_results/final3/%s_%s_%s_%s_init.png' % (test_class,i,j,p), full_target_view_copy)
+                        cv2.imwrite('%s_%s_%s_%s_init.png' % (test_class,i,j,p), full_target_view_copy)
                         # cv2.waitKey(0)
                 # full_perturbed_view_3, _ = dataset.renderer.render(obj_id=i,
                 #                                                 W=render_dims[0],

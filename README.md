@@ -136,7 +136,7 @@ Extract it to `$AE_WORKSPACE_PATH/experiments/exp_group/obj1_18_v2`
 
 ### Evaluate and visualize 6D pose estimation of MP-Encoder with ground truth bounding boxes
 
-Set `gt_masks = True`, `estimate_bbs=False` and `estimate_masks=False` in the evaluation config.  
+Set `gt_masks = True`, `estimate_bbs=False` and `estimate_masks=False` in the evaluation config. Set `external` to the path with the gt masks in npy format. You can download the T-LESS gt masks [here](https://dlrmax.dlr.de/get/540391e2-597e-5bfa-80b1-f74b9ea10db1/):
 
 To evaluate a specific object and visualize predictions execute
 
@@ -148,7 +148,7 @@ ae_eval exp_group/obj1_18_v2 test_eval --eval_cfg eval_template.cfg --model_path
 
 ### Evaluate 6D Object Detection based on Mask RCNN
 
-Set `gt_masks = False`, `estimate_bbs=True` and `estimate_masks=True` in the evaluation config and `external` to the path with the predicted masks in npy format. You can download our T-LESS MaskRCNN predictions [here](https://dlrmax.dlr.de/get/13e79d1d-593c-5577-a66f-ae3b3fe4a212/):   
+Set `gt_masks = False`, `estimate_bbs=True` and `estimate_masks=True` in the evaluation config. Set `external` to the path with the predicted masks in npy format. You can download our T-LESS MaskRCNN predictions [here](https://dlrmax.dlr.de/get/13e79d1d-593c-5577-a66f-ae3b3fe4a212/):   
 
 To evaluate a specific object and visualize predictions execute
 

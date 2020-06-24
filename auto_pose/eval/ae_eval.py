@@ -107,6 +107,8 @@ def main():
     R_errors = []
     all_test_visibs = []
 
+    external_path = eval_args.get('BBOXES','EXTERNAL')
+
     test_embeddings = []  
     for scene_id in scenes:
 
@@ -114,8 +116,8 @@ def main():
         test_imgs_depth = eval_utils.load_scenes(scene_id, eval_args, depth=True) if icp else None
 
         if estimate_bbs:
-            print((eval_args.get('BBOXES','EXTERNAL')))
-            if eval_args.get('BBOXES','EXTERNAL') == 'False':
+            print(external_path)
+            if external_path == 'False':
                 bb_preds = {}
                 for i,img in enumerate(test_imgs):
                     print((img.shape))
@@ -123,17 +125,17 @@ def main():
                 print(bb_preds)
             else:
                 if estimate_masks:
-                    bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'), '{:02d}/mask_rcnn_predict.yml'.format(scene_id)))
+                    bb_preds = inout.load_yaml(os.path.join(external_path, '{:02d}/mask_rcnn_predict.yml'.format(scene_id)))
                     print(list(bb_preds[0][0].keys()))
-                    mask_paths = glob.glob(os.path.join(eval_args.get('BBOXES','EXTERNAL'), '{:02d}/masks/*.npy'.format(scene_id)))
+                    mask_paths = glob.glob(os.path.join(external_path, '{:02d}/masks/*.npy'.format(scene_id)))
                     maskrcnn_scene_masks = [np.load(mp) for mp in mask_paths] 
                 else:
                     maskrcnn_scene_masks = None
-                    bb_preds = inout.load_yaml(os.path.join(eval_args.get('BBOXES','EXTERNAL'),'{:02d}.yml'.format(scene_id)))
+                    bb_preds = inout.load_yaml(os.path.join(external_path,'{:02d}.yml'.format(scene_id)))
 
             test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.generate_scene_crops(test_imgs, test_imgs_depth, bb_preds, eval_args, (H_AE, W_AE), inst_masks = maskrcnn_scene_masks)
         else:
-            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks = gt_masks)
+            test_img_crops, test_img_depth_crops, bbs, bb_scores, visibilities = eval_utils.get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks = external_path if gt_masks else gt_masks)
 
         if len(test_img_crops) == 0:
             print(('ERROR: object %s not in scene %s' % (obj_id,scene_id)))

@@ -86,18 +86,11 @@ def show_nearest_rotation(pred_views, test_crop, view):
     cv2.imshow('nearest_views',cv2.resize(nearest_views/255.,(len(pred_views)*256,256)))
     cv2.imshow('test_crop',cv2.resize(test_crop,(256,256)))
 
-    # cv2.imwrite('/home_local2/sund_ma/autoencoder_ws/aae_imgs/nearest_views_%s.png' % view,nearest_views)
     
 
 def plot_scene_with_3DBoxes(scene_res_dirs,dataset_name='tless',scene_id=1,save=False):
 
-    # sixd_img_path = '/home_local/sund_ma/data/linemod_dataset/test'
-    # model_path = '/home_local/sund_ma/data/linemod_dataset/models'
-    
-
-
-
-    # inout.save_results_sixd17(res_path, preds, run_time=run_time)
+        # inout.save_results_sixd17(res_path, preds, run_time=run_time)
 
 
     # obj_gts = []
@@ -259,7 +252,6 @@ def plot_scene_with_estimate(test_img,renderer,K_test, R_est_old, t_est_old,R_es
         cv2.putText(scene_view_refined,'%s: %1.3f' % (obj_id,test_score), (xmin, ymax+20), cv2.FONT_ITALIC, .5, (0,255,0), 2)
         cv2.imshow('scene_estimation_refined',scene_view_refined)
     cv2.waitKey(0)
-    # cv2.imwrite('/net/rmc-lx0314/home_local/sund_ma/autoencoder_ws/bosch/thr_sc2_obj7/%s.png'% view_idx,scene_view_refined)
     view_idx += 1
 
     # for gt in gts:

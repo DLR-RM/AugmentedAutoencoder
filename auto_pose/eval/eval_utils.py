@@ -53,10 +53,10 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
         visib_gt = inout.load_yaml(data_params['scene_gt_stats_mpath'].format(scene_id, delta))
         
         gt = inout.load_gt(data_params['scene_gt_mpath'].format(scene_id))
-
+        
         gt_inst_masks = None
         if load_gt_masks:
-            mask_paths = glob.glob('/net/rmc-lx0314/home_local_nvme/sund_ma/data/scene_renderings/tless_scene_masks/{:02d}/masks/*.npy'.format(scene_id))
+            mask_paths = glob.glob(os.path.join(load_gt_masks, '{:02d}/masks/*.npy'.format(scene_id)))
             gt_inst_masks = [np.load(mp) for mp in mask_paths] 
         
 
@@ -77,45 +77,6 @@ def get_gt_scene_crops(scene_id, eval_args, train_args, load_gt_masks=False):
 
 
     return (test_img_crops, test_img_depth_crops, bbs, bb_scores, bb_vis)
-
-
-def get_moped_gt_crops(dataset, obj_name, xxx_todo_changeme, num_views, pad_factor=1.2, base_path=None):
-
-    (H_AE, W_AE) = xxx_todo_changeme
-    base_dir = '/net/rmc-lx0314/home_local/sund_ma/data/MOPED_Dataset/data/{}/reference/'.format(obj_name)
-    if base_path == None:
-        color_base_path = os.path.join(base_dir, '**/color/*.jpg')
-    import glob2
-    all_image_paths = sorted(glob2.glob(color_base_path))
-    print((color_base_path.format(obj_name)))
-    assert len(all_image_paths) > 0
-
-
-    cropped_imgs = []
-    view_idx = 0
-    while view_idx < num_views:
-        rand_idx = np.random.randint(len(all_image_paths))
-        
-        im_path = all_image_paths[rand_idx]
-        mask_path = im_path.replace('color', 'mask').replace('jpg', 'png')
-
-        if not os.path.exists(mask_path):
-            continue
-        
-        view_idx += 1
-
-        img = cv2.imread(im_path)
-        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-
-        img_masked = np.zeros_like(img)
-        img_masked[mask > 0 ] = img[mask > 0]
-
-        ys, xs = np.nonzero(mask > 0)
-        target_bb = view_sampler.calc_2d_bbox(xs, ys, img.shape[:2])
-        cropped_imgs.append(dataset.extract_square_patch(img_masked, target_bb, pad_factor))
-
-    return cropped_imgs
-
 
 def get_sixd_gt_train_crops(obj_id, hw_ae, pad_factor=1.2, dataset='tless', cam_type='primesense'):
     
