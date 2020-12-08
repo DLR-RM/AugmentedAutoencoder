@@ -40,12 +40,19 @@ def get_checkpoint_dir(log_dir):
     )
 
 def get_log_dir(workspace_path, experiment_name, experiment_group=''):
-    return os.path.join(
+    log_dir = os.path.join(
         workspace_path, 
         'experiments',
         experiment_group,
         experiment_name
     )
+    if not os.path.exists(log_dir):
+        log_dir = os.path.join(
+            workspace_path, 
+            experiment_group,
+            experiment_name
+        )
+    return log_dir
 
 def get_train_fig_dir(log_dir):
     return os.path.join(
@@ -184,3 +191,9 @@ def tiles(batch, rows, cols, spacing_x=0, spacing_y=0, scale=1.0):
                     img[start_y:end_y,start_x:end_x,0] = cv2.resize(batch[i], (W,H))
             i += 1
     return img
+
+def load_depth2(path):
+    import scipy.misc
+    d = scipy.misc.imread(path)
+    d = d.astype(np.float32)
+    return d

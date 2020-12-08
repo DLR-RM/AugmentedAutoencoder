@@ -34,6 +34,7 @@ class Codebook(object):
         self.embedding_assign_op = {}
         self.embed_obj_bbs_assign_op = {}
         self.cos_similarity = {}
+        self.embed_obj_bbs_values = {}
 
         for emb in self.existing_embs:
             model_name = emb
@@ -54,7 +55,7 @@ class Codebook(object):
                     name='embed_obj_bbs_var_' + model_name
                 )
                 self.embed_obj_bbs_assign_op[model_name] = tf.assign(self.embed_obj_bbs_var[model_name], self.embed_obj_bbs)
-                self.embed_obj_bbs_values = None
+                self.embed_obj_bbs_values[model_name] = None
         
             self.cos_similarity[model_name] = tf.matmul(self.normalized_embedding_query, self.embeddings_normalized[model_name], transpose_b=True)
 
@@ -62,7 +63,6 @@ class Codebook(object):
         self.image_ph_tofloat = self._image_ph / 255.
     
     def _get_codebook_name(self, model_path):
-
         if os.path.basename(model_path).split('.')[0] in self.existing_embs:
             # dirty backwards compat:
             model_name = os.path.basename(model_path).split('.')[0]
@@ -74,28 +74,29 @@ class Codebook(object):
     def add_new_codebook_to_graph(self, model_path):
         
         model_name = self._get_codebook_name(model_path)
+        # model_name = os.path.basename(model_path).split('.')[0]
 
-        if model_name in self.existing_embs:
-            print((model_name, ' already has codebook'))
-            exit()
-        else:
-            self.embeddings_normalized[model_name] = tf.Variable(
-                np.zeros((self._dataset.embedding_size, self._encoder.latent_space_size)),
-                dtype=tf.float32,
+        # if model_name in self.existing_embs:
+        #     print((model_name, ' already has codebook'))
+        #     # exit()
+        # else:
+        self.embeddings_normalized[model_name] = tf.Variable(
+            np.zeros((self._dataset.embedding_size, self._encoder.latent_space_size)),
+            dtype=tf.float32,
+            trainable=False,
+            name = 'embedding_normalized_' + model_name
+        )
+        self.embedding_assign_op[model_name] = tf.assign(self.embeddings_normalized[model_name], self.embedding)
+        
+        if self.embed_bb:
+            self.embed_obj_bbs_var[model_name] = tf.Variable(
+                np.zeros((self._dataset.embedding_size, 4)),
+                dtype=tf.int32,
                 trainable=False,
-                name = 'embedding_normalized_' + model_name
+                name='embed_obj_bbs_var_' + model_name
             )
-            self.embedding_assign_op[model_name] = tf.assign(self.embeddings_normalized[model_name], self.embedding)
-            
-            if self.embed_bb:
-                self.embed_obj_bbs_var[model_name] = tf.Variable(
-                    np.zeros((self._dataset.embedding_size, 4)),
-                    dtype=tf.int32,
-                    trainable=False,
-                    name='embed_obj_bbs_var_' + model_name
-                )
-                self.embed_obj_bbs_assign_op[model_name] = tf.assign(self.embed_obj_bbs_var[model_name], self.embed_obj_bbs)
-                self.embed_obj_bbs_values = None
+            self.embed_obj_bbs_assign_op[model_name] = tf.assign(self.embed_obj_bbs_var[model_name], self.embed_obj_bbs)
+            self.embed_obj_bbs_values[model_name] = None
 
     def refined_nearest_rotation(self, session, target_view, top_n, R_init=None, t_init=None, budget=10, epochs=3,
                                  high=6./180*np.pi, obj_id=0, top_n_refine=1, target_bb=None, cb_name_for_init=None):
@@ -271,6 +272,69 @@ class Codebook(object):
         else:
             return self._dataset.viewsphere_for_embedding[idcs].squeeze()
 
+
+    def retrieve_nearest_shape(self, session, target_views, top_n=1, dist_matching='backwards_mapping'):
+        
+        if target_views.dtype == 'uint8':
+            target_views = target_views/255.
+        if target_views.ndim == 3:
+            target_views = np.expand_dims(target_views, 0)
+
+        target_embeddings = session.run(self.normalized_embedding_query, {self._encoder.x: target_views})
+
+        if dist_matching == 'svd':
+            _,target_emb_singular_vals,_ = np.linalg.svd(target_embeddings)
+
+        mean_max_cosine_sim = {}
+        mean_max_cosine_sim_back = {}
+        mean_max_cosine_sim_mixed = {}
+
+        for emb in self.existing_embs:
+            
+            cosine_sims = session.run(self.cos_similarity[emb], {self.normalized_embedding_query: target_embeddings})
+            max_cosine_sims = np.max(cosine_sims, axis=1)
+            
+            mean_max_cosine_sim[emb] = np.mean(max_cosine_sims)
+
+            if dist_matching == 'svd':
+                max_view_idx_cosine_sim = np.argmax(max_cosine_sims)
+                embedding = session.run(self.embeddings_normalized[emb])
+                row_i = np.random.choice(embedding.shape[0], 500)
+                _,singular_vals,_ = np.linalg.svd(embedding[row_i, :])
+                print('embedding svd: ',singular_vals[:10])
+                print('target svd: ', target_emb_singular_vals[:10])
+                print('difference: ', np.abs(singular_vals[:10] - target_emb_singular_vals[:10]))
+                # singular values not enough, have to align random sample of embedding and target embedding, 
+                # then measure: mean(random sample of embedding - nearest target code)
+            elif dist_matching == 'backwards_mapping':
+                # random codes in the shape embedding should not be too far from target_view embeddings
+                # is that a one-sided Hausdorff distance for subset?
+                mean_max_cosine_sim_back[emb] = np.mean(np.max(cosine_sims, axis=0))
+                mean_max_cosine_sim_mixed[emb] = mean_max_cosine_sim[emb] + mean_max_cosine_sim_back[emb]
+            elif dist_matching == 'rotation_variance':
+                # simply ask for maximized rotation variance of retreived shape
+                idcs = np.argmax(cosine_sims, axis=1)
+                Rs = self._dataset.viewsphere_for_embedding[idcs].squeeze()              
+                # todo: but be careful of symmetries
+
+
+        # closest = max(mean_max_cosine_sim, key=mean_max_cosine_sim.get)
+        closest = sorted(mean_max_cosine_sim, key=mean_max_cosine_sim.get, reverse=True)
+        closest_back = sorted(mean_max_cosine_sim_back, key=mean_max_cosine_sim_back.get, reverse=True)
+        closest_mixed = sorted(mean_max_cosine_sim_mixed, key=mean_max_cosine_sim_mixed.get, reverse=True)
+
+        mean_cosine_sims = {}
+        nearest_shapes = {}
+        mean_cosine_sims['forward'] =  mean_max_cosine_sim
+        mean_cosine_sims['backward'] = mean_max_cosine_sim_back
+        mean_cosine_sims['mixed'] = mean_max_cosine_sim_mixed
+        nearest_shapes['forward'] = closest[:top_n]
+        nearest_shapes['backward'] = closest_back[:top_n]
+        nearest_shapes['mixed'] = closest_mixed[:top_n]
+
+        return mean_cosine_sims, nearest_shapes
+
+
     def auto_pose6d(self, session, x, predicted_bb, K_test, top_n, train_args, model_name, depth_pred=None, upright=False, refine=False):
         
         if refine:
@@ -293,15 +357,15 @@ class Codebook(object):
         K_diag_ratio = np.sqrt(K_test[0,0]**2 + K_test[1,1]**2) / np.sqrt(K_train[0,0]**2 + K_train[1,1]**2)  
         # mean_K_ratio = np.mean([K00_ratio,K11_ratio])
 
-        if self.embed_obj_bbs_values is None:
-            self.embed_obj_bbs_values = session.run(self.embed_obj_bbs_var[model_name])
+        if self.embed_obj_bbs_values[model_name] is None:
+            self.embed_obj_bbs_values[model_name] = session.run(self.embed_obj_bbs_var[model_name])
 
         ts_est = np.empty((top_n,3))
 
         for i,R_est in enumerate(Rs_est):
 
             if not refine:
-                rendered_bb = self.embed_obj_bbs_values[idcs[i]].squeeze()
+                rendered_bb = self.embed_obj_bbs_values[model_name][idcs[i]].squeeze()
                 
             if depth_pred is None:
                 bb_diag_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
@@ -314,7 +378,7 @@ class Codebook(object):
             center_obj_y_train = rendered_bb[1] + rendered_bb[3]/2. - K_train[1,2]
 
             center_obj_x_test = predicted_bb[0] + predicted_bb[2]/2 - K_test[0,2]
-            center_obj_y_test = predicted_bb[1] + predicted_bb[3]/2 - K_test[1,2]
+            center_obj_y_test = predicted_bb[1] + predicted_bb[3]/2 - K_test[1,2]                                                                   
             
             center_obj_mm_x = center_obj_x_test * z / K_test[0,0] - center_obj_x_train * render_radius / K_train[0,0]  
             center_obj_mm_y = center_obj_y_test * z / K_test[1,1] - center_obj_y_train * render_radius / K_train[1,1]  

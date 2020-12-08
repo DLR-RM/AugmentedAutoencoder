@@ -8,12 +8,30 @@ from auto_pose.ae.utils import lazy_property
 
 class PoseVisualizer:
 
-    def __init__(self, ae_pose_est, downsample=1):
+    def __init__(self, mp_pose_estimator, downsample=1, vertex_scale=False):
 
         self.downsample = downsample
-        self.classes = list(ae_pose_est.class_2_encoder.keys())
-        self.vertex_scale = list(set([ae_pose_est.all_train_args[c].getint('Dataset','VERTEX_SCALE') for c in self.classes]))
-        self.ply_model_paths = [str(ae_pose_est.all_train_args[c].get('Paths','MODEL_PATH')) for c in self.classes]
+        self.vertex_scale = [mp_pose_estimator.train_args.getint('Dataset', 'VERTEX_SCALE')] if not vertex_scale else [1.]
+        if hasattr(mp_pose_estimator, 'class_2_objpath'):
+            self.classes, self.ply_model_paths = zip(*mp_pose_estimator.class_2_objpath.items())
+        else:
+            # For BOP evaluation (sry!):
+            self.classes = mp_pose_estimator.class_2_codebook.keys()
+            all_model_paths = eval(mp_pose_estimator.train_args.get('Paths', 'MODEL_PATH'))
+            base_path = '/'.join(all_model_paths[0].split('/')[:-3])
+            itodd_paths = [os.path.join(base_path, 'itodd/models/obj_0000{: 02d}.ply'.format(i)) for i in range(29)]
+            all_model_paths = all_model_paths + itodd_paths
+            all_model_paths = [model_p.replace('YCB_VideoDataset/original2sixd/bop_models/', 'bop/original/ycbv/models_eval/') for model_p in all_model_paths]
+            self.ply_model_paths = []
+            for cb_name in mp_pose_estimator.class_2_codebook.values():
+                for model_path in all_model_paths:
+                    bop_dataset = cb_name.split('_')[0]
+                    bop_dataset = 'ycbv' if bop_dataset == 'original2sixd' else bop_dataset
+                    model_type, obj, obj_id = cb_name.split('_')[-3:]
+                    model_name = obj + '_' + obj_id
+                    if bop_dataset in model_path and model_name in model_path:
+                        self.ply_model_paths.append(model_path)
+
         print(('renderer', 'Model paths: ', self.ply_model_paths))
 
     @lazy_property
@@ -21,7 +39,7 @@ class PoseVisualizer:
        return meshrenderer.Renderer(self.ply_model_paths, 
                         samples=1, 
                         vertex_tmp_store_folder='.',
-                        vertex_scale=float(self.vertex_scale[0])) #1000 for models in meters
+                        vertex_scale=float(self.vertex_scale[0]))  # 1000 for models in meters
 
     def render_poses(self, image, camK, pose_ests, dets, vis_bbs=True, vis_mask=False, all_pose_estimates_rgb=None, depth_image=None, waitKey=True):
         W_d = image.shape[1] / self.downsample

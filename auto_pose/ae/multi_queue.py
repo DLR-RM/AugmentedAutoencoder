@@ -161,7 +161,7 @@ class MultiQueue(object):
         dsets = []
         for m,model in enumerate(self._model_paths):
             print(model)
-            current_config_hash = hashlib.md5(str(args.items('Dataset')) + model).hexdigest()
+            current_config_hash = hashlib.md5((str(args.items('Dataset')) + model).encode('utf-8')).hexdigest()
             current_file_name = os.path.join(dataset_path, current_config_hash + '.tfrecord')
             tfrecord_dataset = tf.data.TFRecordDataset(current_file_name)
             dsets.append(self.preprocess_pipeline(tfrecord_dataset))
