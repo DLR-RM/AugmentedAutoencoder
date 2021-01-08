@@ -16,14 +16,6 @@ from auto_pose.m3_interface.mp_pose_estimator import MPPoseEstimator
 from auto_pose.ae.utils import get_dataset_path
 
 
-
-
-# def load_depth2(path):
-#     import scipy.misc
-#     d = scipy.misc.imread(path)
-#     d = d.astype(np.float32)
-#     return d
-
 def load_depth(path, mul=1., shift=(-4, -1)):
     r = png.Reader(filename=path)
     im = np.vstack(list(map(np.uint16, r.asDirect()[2])))
