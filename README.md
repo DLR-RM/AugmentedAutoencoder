@@ -126,11 +126,11 @@ ae_embed_multi exp_group/my_mpencoder --model_path '/path/to/ply_or_off/file'
 *For the evaluation you will also need*
 https://github.com/thodan/sixd_toolkit + our extensions, see sixd_toolkit_extension/help.txt  
 
-### Pretrained Model
+### Pretrained Models
 
-Here is an MP-Encoder model trained on the first 18 objects of the T-LESS dataset with codebooks of all 30 objects:
+Here is an MP-Encoder model trained on the first 18 objects of the T-LESS dataset with codebooks of all 30 objects (paper results):
 
-[Download](https://dlrmax.dlr.de/get/e28d4aee-a538-517e-aa6e-9c600162b0ae/)
+[Download](https://dlrmax.dlr.de/get/b42e7289-7558-5da0-8f26-4c472ad830a9/)
 
 Extract it to `$AE_WORKSPACE_PATH/experiments/exp_group/obj1_18_v2`
 
@@ -159,8 +159,44 @@ ae_eval multi_object/obj1_18_v2 test_eval --eval_cfg eval_template.cfg --model_p
 ```
 We trained a MaskRCNN on the T-LESS training set pasted randomly on COCO images using https://github.com/facebookresearch/maskrcnn-benchmark
 
-### ToDo
+### Reproducing and visualizing BOP challenge 2020 results
 
-- BOP Results
+Here is an MP-Encoder model trained on 80 objects from BOP datasets with codebooks of all 108 objects (BOP Challenge 2020 results):
+
+[Download](https://dlrmax.dlr.de/get/87f2bcb2-6224-517e-94d1-e6a49d18aaa1/)
+
+Extract it to `$AE_WORKSPACE_PATH/experiments/multi_object/bop_except_itodd`
+
+Also get precomputed MaskRCNN predictions for all BOP datasets:
+
+[Download](https://dlrmax.dlr.de/get/cd6df1ae-e096-5424-9a7f-b8443e0c86e3/)
+
+Open the bop20 evaluation configs, e.g. `auto_pose/ae/cfg_m3vision/m3_config_lmo_mp.cfg`, and point the `path_to_masks` parameter to the downloaded maskrcnn predictions.
+
+You can visualize (-vis option) and reproduce BOP results by running:
+
+```bash
+python auto_pose/m3_interface/compute_bop_results_m3.py auto_pose/ae/cfg_m3vision/m3_config_lmo_mp.cfg 
+                                                     --eval_name test 
+                                                     --dataset_name=lmo 
+                                                     --datasets_path=/path/to/bop/datasets 
+                                                     --result_folder /folder/to/results 
+                                                     -vis
+```
+Note: You will need the [bop_toolkit](https://github.com/thodan/bop_toolkit). I created a package `bop_toolkit_lib` from it, but you can also just add the required files to sys.path()
+
+### Test on your own data
+
+After creating the mp_encoder codebooks, adapt the parameters in an m3 config file `auto_pose/ae/cfg_m3vision/m3_template.cfg`.
+
+`auto_pose/m3_interface/test_m3.py` shows an example how to use the API for 6-DoF pose estimation. Insert your own detector / bounding boxes and then run 
+
+```bash
+python auto_pose/m3_interface/test_m3.py --m3_config_path=/path/to/cfg_m3vision/m3_template.cfg 
+                                         --img_path=/path/to/an/img.png
+                                         -vis
+```
+
+
+### ToDo
 - Document ModelNet Evaluation
-- Add ICP that was used in evaluations
