@@ -148,7 +148,7 @@ ae_eval exp_group/obj1_18_v2 test_eval --eval_cfg eval_template.cfg --model_path
 
 ### Evaluate 6D Object Detection based on Mask RCNN
 
-Set `gt_masks = False`, `estimate_bbs=True` and `estimate_masks=True` in the evaluation config. Set `external` to the path with the predicted masks in npy format. You can download our T-LESS MaskRCNN predictions [here](https://dlrmax.dlr.de/get/13e79d1d-593c-5577-a66f-ae3b3fe4a212/):   
+Set `gt_masks = False`, `estimate_bbs=True` and `estimate_masks=True` in the evaluation config. Set `external` to the path with the predicted masks in npy format. You can download our T-LESS MaskRCNN predictions [here](https://dlrmax.dlr.de/get/c677b2a7-78cf-5787-815b-7ba2c26555a7/):   
 
 To evaluate a specific object and visualize predictions execute
 
