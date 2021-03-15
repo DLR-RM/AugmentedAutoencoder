@@ -53,7 +53,11 @@ def load_meshes(obj_files, vertex_tmp_store_folder, recalculate_normals=False):
         for model_path in bar(obj_files):
             scene = pyassimp.load(model_path, pyassimp.postprocess.aiProcess_Triangulate)
             mesh = scene.meshes[0]
-            vertices = mesh.vertices
+            vertices = []
+            for face in mesh.faces:
+                vertices.extend([mesh.vertices[face[0]], mesh.vertices[face[1]], mesh.vertices[face[2]]])
+            vertices = np.array(vertices)
+            # vertices = mesh.vertices
             normals = calc_normals(vertices) if recalculate_normals else mesh.normals
             attributes.append( (vertices, normals) )
             pyassimp.release(scene)

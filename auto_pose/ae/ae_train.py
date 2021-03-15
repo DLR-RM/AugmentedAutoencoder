@@ -11,8 +11,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import progressbar
 import tensorflow as tf
 
-from . import ae_factory as factory
-from . import utils as u
+from auto_pose.ae import ae_factory as factory
+from auto_pose.ae import utils as u
 
 
 def main():
