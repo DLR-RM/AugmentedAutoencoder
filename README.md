@@ -163,7 +163,7 @@ We trained a MaskRCNN on the T-LESS training set pasted randomly on COCO images 
 
 Here is an MP-Encoder model trained on 80 objects from BOP datasets with codebooks of all 108 objects (BOP Challenge 2020 results):
 
-[Download](https://dlrmax.dlr.de/get/87f2bcb2-6224-517e-94d1-e6a49d18aaa1/)
+[Download](http://fex.dlr.de/fop/Te7peqPc/bop.zip)
 
 Extract it to `$AE_WORKSPACE_PATH/experiments/multi_object/bop_except_itodd`
 
