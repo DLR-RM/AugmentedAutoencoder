@@ -43,7 +43,7 @@ Duration depending on Configuration and Hardware: ~3h per Object
 
 ## Requirements: Software
 
-Linux, Python 2.7 / Python 3 (experimental)
+Linux, Python 2.7 / Python 3
 
 GLFW for OpenGL: 
 ```bash
