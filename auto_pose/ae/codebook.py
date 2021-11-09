@@ -77,16 +77,11 @@ class Codebook(object):
         idcs = self.nearest_rotation(session, x, top_n=top_n, upright=upright,return_idcs=True)
         Rs_est = self._dataset.viewsphere_for_embedding[idcs]
 
-
-
         # test_depth = f_test / f_train * render_radius * diag_bb_ratio
         K_train = np.array(eval(train_args.get('Dataset','K'))).reshape(3,3)
         render_radius = train_args.getfloat('Dataset','RADIUS')
 
-        K00_ratio = K_test[0,0] / K_train[0,0]  
-        K11_ratio = K_test[1,1] / K_train[1,1]  
-        
-        mean_K_ratio = np.mean([K00_ratio,K11_ratio])
+        K_diag_ratio = np.sqrt(K_test[0,0]**2 + K_test[1,1]**2) / np.sqrt(K_train[0,0]**2 + K_train[1,1]**2)  
 
         if self.embed_obj_bbs_values is None:
             self.embed_obj_bbs_values = session.run(self.embed_obj_bbs_var)
@@ -96,44 +91,39 @@ class Codebook(object):
 
             rendered_bb = self.embed_obj_bbs_values[idx].squeeze()
             if depth_pred is None:
-                diag_bb_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
-                z = diag_bb_ratio * mean_K_ratio * render_radius
+                bb_diag_ratio = np.linalg.norm(np.float32(rendered_bb[2:])) / np.linalg.norm(np.float32(predicted_bb[2:]))
+                z = bb_diag_ratio * K_diag_ratio * render_radius
             else:
                 z = depth_pred
 
 
-            # object center in image plane (bb center =/= object center)
             center_obj_x_train = rendered_bb[0] + rendered_bb[2]/2. - K_train[0,2]
             center_obj_y_train = rendered_bb[1] + rendered_bb[3]/2. - K_train[1,2]
 
             center_obj_x_test = predicted_bb[0] + predicted_bb[2]/2 - K_test[0,2]
             center_obj_y_test = predicted_bb[1] + predicted_bb[3]/2 - K_test[1,2]
-            
-            center_obj_mm_x = center_obj_x_test * z / K_test[0,0] - center_obj_x_train * render_radius / K_train[0,0]  
-            center_obj_mm_y = center_obj_y_test * z / K_test[1,1] - center_obj_y_train * render_radius / K_train[1,1]  
 
+            center_mm_tx = center_obj_x_test * z / K_test[0,0] - center_obj_x_train * render_radius / K_train[0,0]  
+            center_mm_ty = center_obj_y_test * z / K_test[1,1] - center_obj_y_train * render_radius / K_train[1,1]  
 
-            t_est = np.array([center_obj_mm_x, center_obj_mm_y, z])
+            t_est = np.array([center_mm_tx, center_mm_ty, z])
             ts_est[i] = t_est
 
             # correcting the rotation matrix 
             # the codebook consists of centered object views, but the test image crop is not centered
             # we determine the rotation that preserves appearance when translating the object
-            d_alpha_x = - np.arctan(t_est[0]/t_est[2])
-            d_alpha_y = - np.arctan(t_est[1]/t_est[2])
+            d_alpha_y = np.arctan(t_est[0]/np.sqrt(t_est[2]**2+t_est[1]**2))
+            d_alpha_x = - np.arctan(t_est[1]/t_est[2])
             R_corr_x = np.array([[1,0,0],
-                                [0,np.cos(d_alpha_y),-np.sin(d_alpha_y)],
-                                [0,np.sin(d_alpha_y),np.cos(d_alpha_y)]]) 
-            R_corr_y = np.array([[np.cos(d_alpha_x),0,-np.sin(d_alpha_x)],
+                                [0,np.cos(d_alpha_x),-np.sin(d_alpha_x)],
+                                [0,np.sin(d_alpha_x),np.cos(d_alpha_x)]]) 
+            R_corr_y = np.array([[np.cos(d_alpha_y),0,np.sin(d_alpha_y)],
                                 [0,1,0],
-                                [np.sin(d_alpha_x),0,np.cos(d_alpha_x)]]) 
+                                [-np.sin(d_alpha_y),0,np.cos(d_alpha_y)]]) 
             R_corrected = np.dot(R_corr_y,np.dot(R_corr_x,Rs_est[i]))
             Rs_est[i] = R_corrected
         return (Rs_est, ts_est)
         
-
-
-
     def nearest_rotation_batch(self, session, x):
         idcs = session.run(self.nearest_neighbor_idx, {self._encoder.x: x})
         return self._dataset.viewsphere_for_embedding[idcs]
