@@ -9,7 +9,11 @@ import datetime
 import cv2
 import threading
 import time
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 
 import sys
 PY2 = sys.version_info[0] == 2

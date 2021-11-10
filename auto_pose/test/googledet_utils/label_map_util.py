@@ -17,7 +17,11 @@
 
 import logging
 
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 from google.protobuf import text_format
 import string_int_label_map_pb2
 

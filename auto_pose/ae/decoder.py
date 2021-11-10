@@ -2,7 +2,11 @@
 
 import numpy as np
 
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 
 from .utils import lazy_property
 
@@ -41,7 +45,6 @@ class Decoder(object):
             inputs=self._latent_code,
             units= layer_dimensions[0][0]*layer_dimensions[0][1]*self._num_filters[0],
             activation=tf.nn.relu,
-            kernel_initializer=tf.contrib.layers.xavier_initializer()
         )
         if self._batch_normalization:
             x = tf.layers.batch_normalization(x, training=self._is_training)
@@ -55,7 +58,6 @@ class Decoder(object):
                 filters=filters,
                 kernel_size=self._kernel_size,
                 padding='same',
-                kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
                 activation=tf.nn.relu
             )
             if self._batch_normalization:
@@ -69,7 +71,6 @@ class Decoder(object):
                     filters=1,
                     kernel_size=self._kernel_size,
                     padding='same',
-                    kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
                     activation=tf.nn.sigmoid
                 )
 
@@ -78,7 +79,6 @@ class Decoder(object):
                 filters=c,
                 kernel_size=self._kernel_size,
                 padding='same',
-                kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
                 activation=tf.nn.sigmoid
             )
         return x
@@ -90,8 +90,8 @@ class Decoder(object):
         if self._loss == 'L2':
             if self._bootstrap_ratio > 1:
 
-                x_flat = tf.contrib.layers.flatten(self.x)
-                reconstruction_target_flat = tf.contrib.layers.flatten(self._reconstruction_target)
+                x_flat = tf.layers.flatten(self.x)
+                reconstruction_target_flat = tf.layers.flatten(self._reconstruction_target)
                 l2 = tf.losses.mean_squared_error (
                     reconstruction_target_flat,
                     x_flat,
@@ -108,8 +108,8 @@ class Decoder(object):
         elif self._loss == 'L1':
             if self._bootstrap_ratio > 1:
 
-                x_flat = tf.contrib.layers.flatten(self.x)
-                reconstruction_target_flat = tf.contrib.layers.flatten(self._reconstruction_target)
+                x_flat = tf.layers.flatten(self.x)
+                reconstruction_target_flat = tf.layers.flatten(self._reconstruction_target)
                 l1 = tf.losses.absolute_difference(
                     reconstruction_target_flat,
                     x_flat,
@@ -119,8 +119,8 @@ class Decoder(object):
                 l1_val,_ = tf.nn.top_k(l1,k=l1.shape[1]/self._bootstrap_ratio)
                 loss = tf.reduce_mean(l1_val)
             else:
-                x_flat = tf.contrib.layers.flatten(self.x)
-                reconstruction_target_flat = tf.contrib.layers.flatten(self._reconstruction_target)
+                x_flat = tf.layers.flatten(self.x)
+                reconstruction_target_flat = tf.layers.flatten(self._reconstruction_target)
                 l1 = tf.losses.absolute_difference(
                     reconstruction_target_flat,
                     x_flat,

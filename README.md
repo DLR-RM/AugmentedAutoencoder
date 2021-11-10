@@ -58,12 +58,12 @@ Tensorflow >= 1.6
 OpenCV >= 3.1
 
 ```bash
-pip install --user --pre --upgrade PyOpenGL PyOpenGL_accelerate
-pip install --user cython
-pip install --user cyglfw3
-pip install --user pyassimp==3.3
-pip install --user imgaug
-pip install --user progressbar
+pip install --pre --upgrade PyOpenGL PyOpenGL_accelerate
+pip install cython
+pip install cyglfw3
+pip install pyassimp==3.3
+pip install imgaug
+pip install progressbar
 ```
 
 ### Headless Rendering
@@ -73,11 +73,21 @@ export PYOPENGL_PLATFORM='egl'
 ```
 In order to make the EGL context work, you might need to change PyOpenGL like [here](https://github.com/mcfletch/pyopengl/issues/27)
 
+## Support for Tensorflow 2.6 / Python 3
+
+The code now also supports TF 2.6 with python 3. Instead of the pip installs above, you can also use the provided conda environment.
+
+```bash
+conda env create -f aae_py37_tf26.yml
+```
+
+In the activated environment proceed with the preparatory steps.
+
 ## Preparatory Steps
 
 *1. Pip installation*
 ```bash
-pip install --user .
+pip install .
 ```
 
 *2. Set Workspace path, consider to put this into your bash profile, will always be required*

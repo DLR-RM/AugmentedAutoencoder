@@ -6,7 +6,11 @@ import cv2
 import os
 import time
 import numpy as np
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 from auto_pose.ae.utils import tiles
 from sklearn.decomposition import PCA
 import glob

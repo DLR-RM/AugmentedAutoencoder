@@ -79,11 +79,18 @@ def build_ae(encoder, decoder, args):
 def build_train_op(ae, args):
     LEARNING_RATE = args.getfloat('Training', 'LEARNING_RATE')
     OPTIMIZER_NAME = args.get('Training', 'OPTIMIZER')
-    import tensorflow
-    optimizer = eval('tensorflow.train.{}Optimizer'.format(OPTIMIZER_NAME))
-    optim = optimizer(LEARNING_RATE)
-
-    train_op = tensorflow.contrib.training.create_train_op(ae.loss, optim, global_step=ae.global_step)
+    try:
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
+        import tf_slim as slim
+        optimizer = eval('tf.train.{}Optimizer'.format(OPTIMIZER_NAME))
+        optim = optimizer(LEARNING_RATE)
+        train_op = slim.learning.create_train_op(ae.loss, optim, global_step=ae.global_step)
+    except:
+        import tensorflow as tf
+        optimizer = eval('tf.train.{}Optimizer'.format(OPTIMIZER_NAME))
+        optim = optimizer(LEARNING_RATE)
+        train_op = tf.contrib.training.create_train_op(ae.loss, optim, global_step=ae.global_step)
 
     return train_op
 
@@ -103,7 +110,11 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
         exit(-1)
 
     from . import utils as u
-    import tensorflow as tf
+    try:
+    import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
+    except:
+        import tensorflow as tf
 
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
     checkpoint_file = u.get_checkpoint_basefilename(log_dir)
@@ -137,7 +148,11 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
 
 def restore_checkpoint(session, saver, ckpt_dir, at_step=None):
 
-    import tensorflow as tf
+    try:
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
+    except:
+        import tensorflow as tf
     import os
 
     chkpt = tf.train.get_checkpoint_state(ckpt_dir)

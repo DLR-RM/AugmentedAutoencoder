@@ -5,7 +5,11 @@ import argparse
 import numpy as np
 import signal
 import progressbar
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 
 from auto_pose.ae import ae_factory as factory
 from auto_pose.ae import utils as u
