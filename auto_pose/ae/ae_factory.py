@@ -111,7 +111,7 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
 
     from . import utils as u
     try:
-    import tensorflow.compat.v1 as tf
+        import tensorflow.compat.v1 as tf
         tf.disable_eager_execution()
     except:
         import tensorflow as tf

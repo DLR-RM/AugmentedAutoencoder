@@ -177,6 +177,34 @@ python auto_pose/test/aae_googledet_webcam_multi.py exp_group/my_autoencoder exp
 
 ## Evaluate a model
 
+### Reproducing and visualizing BOP challenge results
+
+Here are AAE models trained the BOP datasets with codebooks of all 108 objects:
+
+[Download](http://fex.dlr.de/fop/hlT1jWI6/bop19_aae_models.zip)
+
+Extract it to `$AE_WORKSPACE_PATH/experiments`
+
+Also get precomputed MaskRCNN predictions for all BOP datasets:
+
+[Download](https://dlrmax.dlr.de/get/cd6df1ae-e096-5424-9a7f-b8443e0c86e3/)
+
+Open the bop20 evaluation configs, e.g. `auto_pose/ae/cfg_m3vision/m3_config_lmo.cfg`, and point the `path_to_masks` parameter to the downloaded maskrcnn predictions.
+
+You can visualize (-vis option) and reproduce BOP results by running:
+
+```bash
+python auto_pose/m3_interface/compute_bop_results_m3.py auto_pose/ae/cfg_m3vision/m3_config_lmo.cfg 
+                                                     --eval_name test 
+                                                     --dataset_name=lmo 
+                                                     --datasets_path=/path/to/bop/datasets 
+                                                     --result_folder /folder/to/results 
+                                                     -vis
+```
+Note: You will need the [bop_toolkit](https://github.com/thodan/bop_toolkit). I created a package `bop_toolkit_lib` from it, but you can also just add the required files to sys.path()
+
+### Original paper evaluation with T-LESS v1
+
 *For the evaluation you will also need*
 https://github.com/thodan/sixd_toolkit + our extensions, see sixd_toolkit_extension/help.txt  
 
@@ -187,7 +215,7 @@ cp $AE_WORKSPACE_PATH/cfg_eval/eval_template.cfg $AE_WORKSPACE_PATH/cfg_eval/eva
 gedit $AE_WORKSPACE_PATH/cfg_eval/eval_group/eval_my_autoencoder.cfg
 ```
 
-### Evaluate and visualize 6D pose estimation of AAE with ground truth bounding boxes
+#### Evaluate and visualize 6D pose estimation of AAE with ground truth bounding boxes
 
 Set estimate_bbs=False in the evaluation config  
 
@@ -197,7 +225,7 @@ e.g.
 ae_eval tless_nobn/obj5 eval_name --eval_cfg tless/5.cfg
 ```
 
-### Evaluate 6D Object Detection with a 2D Object Detector
+#### Evaluate 6D Object Detection with a 2D Object Detector
 
 Set estimate_bbs=True in the evaluation config  
 
