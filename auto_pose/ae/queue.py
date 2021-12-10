@@ -2,7 +2,11 @@
 
 import threading
 
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 
 from auto_pose.ae.utils import lazy_property
 import time

@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 
 from .utils import lazy_property
 

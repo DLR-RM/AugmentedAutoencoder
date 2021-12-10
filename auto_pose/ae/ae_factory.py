@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
-import tensorflow as tf
-from tensorflow.contrib.framework.python.framework import checkpoint_utils
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+    list_variables = tf.train.list_variables
+except:
+    import tensorflow as tf
+    from tensorflow.contrib.framework.python.framework import checkpoint_utils
+    list_variables = checkpoint_utils.list_variables
 
 from .dataset import Dataset
 from .queue import Queue
@@ -112,7 +118,14 @@ def build_ae(encoder, decoder, args):
     return ae
 
 def build_train_op(ae, args):
-    import tensorflow as tf
+    try:
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
+        import tf_slim as slim
+        create_train_op_func = slim.learning.create_train_op
+    except:
+        import tensorflow as tf
+        create_train_op_func = tf.contrib.training.create_train_op
 
     LEARNING_RATE = args.getfloat('Training', 'LEARNING_RATE')
     LEARNING_RATE_SCHEDULE = args.get('Training','LEARNING_RATE_SCHEDULE')
@@ -130,22 +143,23 @@ def build_train_op(ae, args):
 
     optimizer = eval('tf.train.{}Optimizer'.format(OPTIMIZER_NAME))
     optim = optimizer(LEARNING_RATE)
+
     if len(LAYERS_TO_FREEZE)>0:
         freeze_vars = []
         all_vars = set([var for var in tf.trainable_variables()])
         for layer_to_freeze in LAYERS_TO_FREEZE:
             freeze_vars += [v for v in all_vars if layer_to_freeze in v.name]
         train_vars = list(all_vars.symmetric_difference(freeze_vars))
-        train_op = tf.contrib.training.create_train_op(ae.loss, 
-                                                        optim, 
-                                                        global_step=ae._encoder.global_step, 
-                                                        variables_to_train=train_vars,
-                                                        colocate_gradients_with_ops=True)
+        train_op = create_train_op_func(ae.loss, 
+                                        optim, 
+                                        global_step=ae._encoder.global_step, 
+                                        variables_to_train=train_vars,
+                                        colocate_gradients_with_ops=True)
     else:
-        train_op = tf.contrib.training.create_train_op(ae.loss, 
-                                                        optim, 
-                                                        global_step=ae._encoder.global_step, 
-                                                        colocate_gradients_with_ops=True)
+        train_op = create_train_op_func(ae.loss, 
+                                        optim, 
+                                        global_step=ae._encoder.global_step, 
+                                        colocate_gradients_with_ops=True)
 
     return train_op
 
@@ -160,7 +174,7 @@ def build_codebook_multi(encoder, dataset, args, checkpoint_file_basename=None):
 
     existing_embs = []
     if checkpoint_file_basename is not None:
-        var_list = checkpoint_utils.list_variables(checkpoint_file_basename)
+        var_list = list_variables(checkpoint_file_basename)
         for v in var_list:
             if 'embedding_normalized_' in v[0]:
                 print(v)
@@ -181,7 +195,11 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
         exit(-1)
 
     from . import utils as u
-    import tensorflow as tf
+    try:
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
+    except:
+        import tensorflow as tf
 
     log_dir = u.get_log_dir(workspace_path, experiment_name, experiment_group)
     cfg_file_path = u.get_train_config_exp_file_path(log_dir, experiment_name)
@@ -223,7 +241,11 @@ def build_codebook_from_name(experiment_name, experiment_group='', return_datase
 
 def restore_checkpoint(session, saver, ckpt_dir, at_step=None):
 
-    import tensorflow as tf
+    try:
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
+    except:
+        import tensorflow as tf
     import os
 
     chkpt = tf.train.get_checkpoint_state(ckpt_dir)

@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 
 
 from .utils import lazy_property
@@ -33,7 +37,6 @@ class MultiQueue(object):
         self.invert = eval(aug_args['invert'])
         self.invert_whole = eval(aug_args['invert_whole'])
         self._random_bg = eval(aug_args['random_bg'])
-        self.occl = eval(aug_args['transparent_shape_occlusion'])
 
 
         print(('zoom_range: ', self.zoom_range))
@@ -43,7 +46,6 @@ class MultiQueue(object):
         print(('max_off_brightness: ', self.max_off_brightness))
         print(('gaussian_blur: ', self.gaussian_blur))
         print(('invert: ', self.invert))
-        print(('occl: ', self.occl))
     
         self.bg_img_init = None
         self.next_bg_element = None
@@ -96,7 +98,6 @@ class MultiQueue(object):
     def _tf_augmentations(self, train_x, mask_x, train_y, bg):
         # train_x = add_black_patches(train_x)
         train_x = zoom_image_object(train_x,np.linspace(self.zoom_range[0], self.zoom_range[1], 50).astype(np.float32))
-        train_x = add_black_patches(train_x, max_area_cov = self.occl) if self.occl > 0 else train_x
         train_x = add_background(train_x, bg) if self._random_bg else train_x
         train_x = gaussian_noise(train_x) if self.g_noise else train_x
         # train_x = gaussian_blur(train_x) if self.gaussian_blur else train_x

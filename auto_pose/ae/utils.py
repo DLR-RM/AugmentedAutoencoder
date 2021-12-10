@@ -4,7 +4,11 @@ import pickle
 import numpy as np
 import functools
 import cv2
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 
 # https://danijar.com/structuring-your-tensorflow-models/
 def lazy_property(function):

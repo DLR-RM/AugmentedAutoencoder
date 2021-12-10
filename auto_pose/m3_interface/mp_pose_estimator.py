@@ -1,5 +1,9 @@
 import cv2
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 import numpy as np
 import glob
 import os

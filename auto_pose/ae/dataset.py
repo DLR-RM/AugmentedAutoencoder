@@ -188,7 +188,11 @@ class Dataset(object):
             np.save(current_file_name,self.bg_imgs)
 
 
-        import tensorflow as tf
+        try:
+            import tensorflow.compat.v1 as tf
+            tf.disable_eager_execution()
+        except:
+            import tensorflow as tf
         self.bg_imgs = self.bg_imgs/255.
         print(('loaded %s bg images' % self.noof_bg_imgs))
 

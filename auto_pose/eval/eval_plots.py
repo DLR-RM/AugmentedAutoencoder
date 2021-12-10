@@ -7,7 +7,11 @@ import cv2
 import os
 import time
 import numpy as np
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 from auto_pose.ae.utils import tiles, get_config_file_path, get_eval_config_file_path, get_log_dir, get_eval_dir
 from sklearn.decomposition import PCA
 from scipy import interpolate 

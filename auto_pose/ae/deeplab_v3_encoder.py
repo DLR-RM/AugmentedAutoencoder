@@ -4,7 +4,11 @@
 
 
 
-import tensorflow as tf
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf
 
 from tensorflow.contrib.slim.nets import resnet_v2
 from tensorflow.contrib import layers as layers_lib

@@ -7,7 +7,11 @@ from math import pi
 #<matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 
-import tensorflow as tf 
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_eager_execution()
+except:
+    import tensorflow as tf 
 import numpy as np 
 
 def map_decorator(name):
@@ -185,124 +189,6 @@ def zoom_and_translate(in_tensor, zoom_range, trans_range):
 def in_plane_rotation(in_tensor):
 	rad_rot = tf.random_uniform([], 0, 2 * pi)
 	return tf.contrib.image.rotate(in_tensor, rad_rot)
-
-@map_decorator('add_black_patches')
-def add_black_patches(in_tensor, max_area_cov = 0.25, max_patch_nb = 5):
-	
-	@map_decorator('square_patch')
-	def square_patch(in_tensor, max_coverage = 0.05):
-		
-		in_tensor_shape = in_tensor.get_shape()
-		in_tensor_shape_list = in_tensor.get_shape().as_list()
-		print(in_tensor_shape)
-		print(in_tensor_shape_list)
-		
-		coverage = tf.random_uniform([], minval = 0.01, maxval = max_coverage)
-
-		patch_edge_len = tf.cast(tf.multiply(tf.sqrt(coverage), 
-				tf.minimum(tf.to_float(in_tensor_shape[1]), tf.to_float(in_tensor_shape[2]))), dtype=tf.int32)
-			
-		max_x = tf.subtract(in_tensor_shape[1], patch_edge_len)
-		max_y = tf.subtract(in_tensor_shape[2], patch_edge_len)
-
-
-		# shape = in_tensor.get_shape().as_list()
-		# #print(shape)
-		# brightness_offset = tf.random_uniform([shape[0]], minval = -max_offset, maxval = max_offset, dtype = tf.float32)
-		
-		x_offset = tf.random_uniform([in_tensor_shape_list[0], 1], 0, max_x, dtype = tf.int32)
-		y_offset = tf.random_uniform([in_tensor_shape_list[0], 1], 0, max_y, dtype = tf.int32)
-
-		patch = tf.ones([in_tensor_shape[0], patch_edge_len, patch_edge_len, in_tensor_shape[3]], dtype=tf.float32)
-		#Pad to start position, then translate
-		mask = tf.image.pad_to_bounding_box(patch, 0, 0, in_tensor_shape_list[1], in_tensor_shape_list[2])
-
-		mask = tf.contrib.image.translate(mask, 
-					translations = tf.to_float(tf.concat([x_offset, y_offset], axis = 1)), 
-					interpolation = 'NEAREST')
-
-		mask = in_plane_rotation(mask)
-
-		return tf.multiply(in_tensor, 1.0 - mask)
-
-	@map_decorator('circle_patch')
-	def circle_patch(in_tensor, max_coverage = 0.05):
-		"""
-		Create a circlic occlusion patch in the input tensor on a random position
-		
-		Input:
-			in_tensor:	A Tensor input, on which the patch should be applied. Must either be 3-dimensional with the 
-					dimensions (Height, Width, Channels) or 4-dimensional with the dimensions (Batch Size, Height, Width, Channels)
-			coverage:: 	percentage of how much of the image should be covered by the patch. Must be between 0 and 1
-
-		Output:
-			returns the original input image with a random circlic black occlusion patch on it.
-		"""
-		in_tensor_shape = in_tensor.get_shape()
-		in_tensor_shape_list = in_tensor.get_shape().as_list()
-		coverage = tf.random_uniform([], minval = 0.01, maxval = max_coverage)
-
-		# Calculate the diameter of the circle out of the coverage
-		# This is done by calculating the squareroot of the area coverage and multiplying it with the smaller 
-		# dimension (either Height or Width) of the input tensor
-		patch_edge_len = tf.cast(tf.multiply(tf.sqrt(coverage), 
-				tf.minimum(tf.to_float(in_tensor_shape[1]), tf.to_float(in_tensor_shape[2]))), dtype=tf.int32)
-		# patch_edge_len = 20
-
-		# Search for the pixel out of the boundaries and turn them black
-		# Calculate the radius. Starting point is in the mid of a pixel, end point is the half of the diameter
-		radius = tf.to_float(patch_edge_len) / 2.0 - 0.5
-
-		# Create x and y pixel position masks ranging from 0 to the diameter of the circle
-		x_pos = tf.ones([patch_edge_len, patch_edge_len]) * tf.range(0.0, tf.to_float(patch_edge_len), 1.0, dtype=tf.float32)
-		y_pos = tf.transpose(x_pos)
-
-		# Calculate the distance of every pixel to the centerpoint of the circle and expand the dimensions to the input tensor dimension
-		distance_to_mid = tf.sqrt(tf.add(tf.square(tf.subtract(x_pos, radius)), tf.square(tf.subtract(y_pos, radius))))
-		distance_to_mid = tf.expand_dims(distance_to_mid, axis=0)
-		distance_to_mid = tf.tile(tf.expand_dims(distance_to_mid, axis = 3), [in_tensor_shape_list[0], 1, 1, in_tensor_shape_list[3]])
-
-		# Create the circlic patch --> 0, if the distance to the center is greater than the radius, 1 otherwise
-		patch = tf.where(tf.greater(distance_to_mid, radius),
-				tf.zeros([in_tensor_shape[0], patch_edge_len, patch_edge_len, in_tensor_shape[3]], dtype=tf.float32), 
-				tf.ones([in_tensor_shape[0], patch_edge_len, patch_edge_len, in_tensor_shape[3]], dtype = tf.float32))
-
-		# Create the image mask out of the patch --> has the same size as the input tensor
-		mask = tf.image.pad_to_bounding_box(patch, 0, 0, in_tensor_shape_list[1], in_tensor_shape_list[2])
-
-		# Move the mask element in the image to a random position
-		max_x = tf.subtract(in_tensor_shape_list[1], patch_edge_len)
-		max_y = tf.subtract(in_tensor_shape_list[2], patch_edge_len)
-		x_offset = tf.random_uniform([in_tensor_shape_list[0], 1], 0, max_x, dtype = tf.int32)
-		y_offset = tf.random_uniform([in_tensor_shape_list[0], 1], 0, max_y, dtype = tf.int32)
-
-		mask = tf.contrib.image.translate(mask,
-				translations = tf.to_float(tf.concat([x_offset, y_offset], axis = 1)),
-				interpolation = 'NEAREST')
-
-		# return the input multiplied by the inverted mask
-		return tf.multiply(in_tensor, 1.0 - mask)
-
-	def no_patch(in_tensor):
-		return in_tensor
-
-	modified_tensor = in_tensor
-	choices = 3
-	patches = 5
-	max_coverage = max_area_cov / patches
-	patch_1 = lambda: square_patch(modified_tensor, max_coverage)
-	patch_2 = lambda: circle_patch(modified_tensor, max_coverage)
-	patch_default = lambda: no_patch(modified_tensor)
-
-	for i in range(patches):
-		prob = tf.random_uniform([], minval = 0.0, maxval = 1.0, dtype = tf.float32)
-
-		modified_tensor = tf.case([(tf.less(prob, 1.0/choices), patch_1), 
-				(tf.logical_and(tf.greater_equal(prob, 1.0/choices), tf.less(prob, 2.0/choices)), patch_2)],
-				default = patch_default)
-		modified_tensor.set_shape(in_tensor.get_shape())
-
-	return modified_tensor	
 
 @map_decorator('gaussian_noise')
 def gaussian_noise(in_tensor, stddev = 0.01):

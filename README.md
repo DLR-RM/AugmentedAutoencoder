@@ -36,7 +36,7 @@ RAM >= 64GB
 
 ## Requirements: Software
 
-Linux, Python 2.7 / Python 3 (experimental)
+Linux, Python 2.7 / Python 3
 
 GLFW for OpenGL: 
 ```bash
@@ -47,7 +47,7 @@ Assimp:
 sudo apt-get install libassimp-dev  
 ```
 
-Tensorflow 1.13  
+Tensorflow >=1.13  
 OpenCV >= 3.1
 
 ```bash
@@ -65,6 +65,16 @@ Please note that we use the GLFW context as default which does not support headl
 export PYOPENGL_PLATFORM='egl'
 ```
 In order to make the EGL context work, you might need to change PyOpenGL like [here](https://github.com/mcfletch/pyopengl/issues/27)
+
+## Support for Tensorflow 2.6 / Python 3
+
+The code now also supports TF 2.6 with python 3. Instead of the pip installs above, you can also use the provided conda environment.
+
+```bash
+conda env create -f aae_py37_tf26.yml
+```
+
+In the activated environment proceed with the preparatory steps.
 
 ## Preparatory Steps
 
