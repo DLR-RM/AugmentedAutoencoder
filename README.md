@@ -187,7 +187,7 @@ Extract it to `$AE_WORKSPACE_PATH/experiments`
 
 Also get precomputed MaskRCNN predictions for all BOP datasets:
 
-[Download](https://dlrmax.dlr.de/get/cd6df1ae-e096-5424-9a7f-b8443e0c86e3/)
+[Download](http://fex.dlr.de/fop/YFSAWlV8/precomputed_bop_masks.zip)
 
 Open the bop20 evaluation configs, e.g. `auto_pose/ae/cfg_m3vision/m3_config_lmo.cfg`, and point the `path_to_masks` parameter to the downloaded maskrcnn predictions.
 
