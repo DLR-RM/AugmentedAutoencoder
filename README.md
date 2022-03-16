@@ -140,7 +140,7 @@ https://github.com/thodan/sixd_toolkit + our extensions, see sixd_toolkit_extens
 
 Here is an MP-Encoder model trained on the first 18 objects of the T-LESS dataset with codebooks of all 30 objects (paper results):
 
-[Download](https://dlrmax.dlr.de/get/b42e7289-7558-5da0-8f26-4c472ad830a9/)
+[Download](http://fex.dlr.de/fop/DPxzhNbI/obj1_18_v2.zip)
 
 Extract it to `$AE_WORKSPACE_PATH/experiments/exp_group/obj1_18_v2`
 
@@ -179,7 +179,7 @@ Extract it to `$AE_WORKSPACE_PATH/experiments/multi_object/bop_except_itodd`
 
 Also get precomputed MaskRCNN predictions for all BOP datasets:
 
-[Download](https://dlrmax.dlr.de/get/cd6df1ae-e096-5424-9a7f-b8443e0c86e3/)
+[Download](http://fex.dlr.de/fop/YFSAWlV8/precomputed_bop_masks.zip)
 
 Open the bop20 evaluation configs, e.g. `auto_pose/ae/cfg_m3vision/m3_config_lmo_mp.cfg`, and point the `path_to_masks` parameter to the downloaded maskrcnn predictions.
 
