@@ -42,7 +42,7 @@ for b,c in zip(bboxes, classes):
 aae_pose_estimator = AePoseEstimator(args.m3_config_path)
 
 # Predict 6-DoF poses
-pose_ests = aae_pose_estimator.process(bbs,img,camK)
+pose_ests = aae_pose_estimator.process(bbs, img, camK, mm = False) # Set mm = True if 3d model is in mm
 print(np.array([{p.name:p.trafo} for p in pose_ests]))
 
 # Visualize
