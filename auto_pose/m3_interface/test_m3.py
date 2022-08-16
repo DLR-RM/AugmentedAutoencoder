@@ -36,7 +36,7 @@ bboxes = [[276, 143, 131, 73], [195, 233, 32, 26], [550, 321, 41, 23], [181, 182
 bbs = []
 h,w = float(H), float(W)
 for b,c in zip(bboxes, classes):
-    bbs.append(BoundingBox(xmin=b[0]/w, xmax=(b[0]+b[2])/w , ymin=b[1]/h, ymax=(b[1]+b[3])/h, classes={str(c):1.0}))
+    bbs.append(BoundingBox(xmin=b[0]/w, xmax=(b[0]+b[2])/w , ymin=b[1]/h, ymax=(b[1]+b[3])/h, classes={c:1.0}))
 
 # MultiPath Encoder Initialization
 aae_pose_estimator = AePoseEstimator(args.m3_config_path)
